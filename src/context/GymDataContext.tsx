@@ -54,7 +54,7 @@ interface GymDataContextType {
   enquiries: GymEnquiry[];
   
   // Member actions
-  addMember: (memberData: Omit<Member, 'id' | 'memberCode' | 'pin'>) => Member;
+  addMember: (memberData: Omit<Member, 'id' | 'memberCode' | 'pin'> & { pin?: string }) => Member;
   updateMember: (id: string, data: Partial<Member>) => void;
   deleteMember: (id: string) => void;
   renewMember: (
@@ -407,7 +407,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   // Member CRUD using local relational database
-  const addMember = (memberData: Omit<Member, 'id' | 'memberCode' | 'pin'>): Member => {
+  const addMember = (memberData: Omit<Member, 'id' | 'memberCode' | 'pin'> & { pin?: string }): Member => {
     const registered = localDb.registerMember({
       name: memberData.name,
       email: memberData.email,
@@ -430,6 +430,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       paymentMethod: memberData.paymentMethod,
       workoutSlot: memberData.workoutSlot,
       avatarUrl: memberData.avatarUrl,
+      pin: memberData.pin,
     });
 
     setMembers(localDb.getJoinedMembers());
@@ -438,7 +439,16 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     syncDocToFirestore(FIRESTORE_COLLECTIONS.MEMBERSHIPS, registered.id, registered);
     syncDocToFirestore(FIRESTORE_COLLECTIONS.MEMBER_PROFILES, registered.id, registered);
     if (registered.userId) {
-      syncDocToFirestore(FIRESTORE_COLLECTIONS.USERS, registered.userId, registered);
+      syncDocToFirestore(FIRESTORE_COLLECTIONS.USERS, registered.userId, {
+        id: registered.userId,
+        name: registered.name,
+        email: registered.email,
+        phone: registered.phone,
+        role: 'member',
+        pin: registered.pin,
+        created_at: registered.joiningDate,
+        avatar_url: registered.avatarUrl,
+      });
     }
 
     // Automatically record revenue transaction if payment was made

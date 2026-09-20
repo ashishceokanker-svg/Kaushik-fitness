@@ -29,6 +29,11 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({ onClos
   const [fitnessGoal, setFitnessGoal] = useState<FitnessGoal>('muscle_building');
   const [medicalConditions, setMedicalConditions] = useState('');
   const [workoutSlot, setWorkoutSlot] = useState<string>('06:00 AM - 07:00 AM');
+  const [pin, setPin] = useState<string>(() => String(Math.floor(1000 + Math.random() * 9000)));
+
+  const handleGeneratePin = () => {
+    setPin(String(Math.floor(1000 + Math.random() * 9000)));
+  };
 
   // Membership & PT
   const [duration, setDuration] = useState<MembershipDuration>('3_months');
@@ -135,6 +140,7 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({ onClos
       workoutSlot,
       active: true,
       avatarUrl,
+      pin: pin.trim().length === 4 ? pin.trim() : undefined,
     });
 
     // Fire Confetti!
@@ -311,6 +317,53 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({ onClos
                     <option value="female">महिला (Female)</option>
                     <option value="other">अन्य (Other)</option>
                   </select>
+                </div>
+              </div>
+            </div>
+
+            {/* PIN Generation & Customization Box */}
+            <div className="p-3 bg-amber-500/10 border border-amber-300/80 rounded-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
+                <div>
+                  <label className="block text-xs font-bold text-amber-950">
+                    सदस्य ऐप लॉगिन व अटेंडेंस 4-अंक पिन (Member Security PIN) *
+                  </label>
+                  <p className="text-[11px] text-amber-800">
+                    सदस्य मोबाइल ऐप लॉगिन और जिम अटेंडेंस के लिए इसी 4-अंक पिन का उपयोग करेंगे।
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleGeneratePin}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white text-xs font-bold rounded-lg shadow-sm transition-all cursor-pointer self-start sm:self-auto"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  नया पिन बनाएं
+                </button>
+              </div>
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  maxLength={4}
+                  required
+                  placeholder="उदा. 7784"
+                  value={pin}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                    setPin(val);
+                  }}
+                  className="w-32 bg-white border-2 border-amber-500/60 rounded-xl px-3 py-1.5 text-center text-lg font-mono font-black text-amber-950 tracking-widest focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-600 shadow-inner"
+                />
+                <div className="text-xs">
+                  {pin.length === 4 ? (
+                    <span className="text-emerald-700 font-bold flex items-center gap-1">
+                      ✓ 4 अंकों का पिन मान्य है
+                    </span>
+                  ) : (
+                    <span className="text-rose-600 font-medium">
+                      ⚠️ कृपया 4 अंकों का पिन दर्ज करें ({pin.length}/4)
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

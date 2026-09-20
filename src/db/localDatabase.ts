@@ -1406,6 +1406,7 @@ class LocalGymDatabase {
     medicalConditions?: string;
     workoutSlot?: string;
     avatarUrl?: string;
+    pin?: string;
   }): Member {
     const users = this.getUsers();
     const profiles = this.getMemberProfiles();
@@ -1417,7 +1418,9 @@ class LocalGymDatabase {
 
     const memberCodeNum = profiles.length + 1;
     const memberCode = `KF-2024-${String(memberCodeNum).padStart(3, '0')}`;
-    const pin = String(Math.floor(1000 + Math.random() * 9000));
+    const pin = (input.pin && input.pin.trim().length === 4) 
+      ? input.pin.trim() 
+      : String(Math.floor(1000 + Math.random() * 9000));
 
     const newUser: DbUser = {
       id: newUserId,
