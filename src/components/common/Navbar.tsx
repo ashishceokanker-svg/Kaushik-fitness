@@ -296,11 +296,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Quick Logout Button */}
           <button
             onClick={logout}
-            title="Sign out and return to login page"
-            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold transition-all cursor-pointer"
+            title="लॉगआउट (Logout / Sign out)"
+            className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs active:scale-95"
           >
-            <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Logout</span>
+            <LogOut className="w-3.5 h-3.5 text-rose-600" />
+            <span className="hidden xs:inline sm:inline">Logout</span>
           </button>
         </div>
       </div>

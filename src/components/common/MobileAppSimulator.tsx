@@ -41,6 +41,7 @@ import {
   MessageCircle,
   Cloud,
   Trash2,
+  LogOut,
 } from 'lucide-react';
 
 interface MobileAppSimulatorProps {
@@ -48,7 +49,7 @@ interface MobileAppSimulatorProps {
 }
 
 export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMobileView }) => {
-  const { currentUser, role, switchRole } = useAuth();
+  const { currentUser, role, switchRole, logout } = useAuth();
   const { members, staff, isCloudSynced } = useGymData();
 
   const isDeveloper = currentUser?.id === 'usr-dev' || currentUser?.phone === '9244249975';
@@ -197,13 +198,22 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
               {isMemberExpired ? (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
                   <Lock className="w-2.5 h-2.5 text-rose-600" />
-                  <span>सदस्यता समाप्त</span>
+                  <span>समाप्त</span>
                 </span>
               ) : (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300">
-                  सक्रिय सदस्य
+                  सक्रिय
                 </span>
               )}
+              {/* Quick Logout Button */}
+              <button
+                onClick={logout}
+                title="Logout / बाहर निकलें"
+                className="px-2 py-0.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[10px] font-bold flex items-center gap-1 shadow-2xs transition-all cursor-pointer active:scale-95"
+              >
+                <LogOut className="w-2.5 h-2.5 text-rose-600" />
+                <span>Exit</span>
+              </button>
             </div>
           </div>
 
@@ -632,6 +642,17 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                     <p className="text-[10px] text-slate-300 text-left">
                       Janpad Panchayat Baderajpur, District Kondagaon (C.G.)
                     </p>
+                  </div>
+
+                  {/* Member Logout Button */}
+                  <div className="pt-2">
+                    <button
+                      onClick={logout}
+                      className="w-full py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold text-xs flex items-center justify-center gap-2 shadow-2xs transition-all active:scale-98 cursor-pointer"
+                    >
+                      <LogOut className="w-4 h-4 text-rose-600" />
+                      <span>Logout (लॉगआउट करें)</span>
+                    </button>
                   </div>
                 </div>
               </div>

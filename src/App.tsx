@@ -42,10 +42,11 @@ import {
   TrendingUp,
   MessageSquare,
   Database,
+  LogOut,
 } from 'lucide-react';
 
 const MainAppContent: React.FC = () => {
-  const { currentUser, role, isAuthenticated } = useAuth();
+  const { currentUser, role, isAuthenticated, logout } = useAuth();
   const { members } = useGymData();
   const isDeveloper = currentUser?.id === 'usr-dev' || currentUser?.phone === '9244249975';
   const activeMember =
@@ -130,7 +131,7 @@ const MainAppContent: React.FC = () => {
         { id: 'database', label: 'Local DB', icon: Database },
         { id: 'dashboard', label: 'Admin', icon: LayoutDashboard },
         { id: 'members', label: 'Members', icon: Users },
-        { id: 'attendance', label: 'Attend', icon: CalendarCheck },
+        { id: 'logout', label: 'Logout', icon: LogOut, isAction: true },
       ];
     }
     if (role === 'admin') {
@@ -139,8 +140,8 @@ const MainAppContent: React.FC = () => {
         { id: 'members', label: 'Members', icon: Users },
         { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
         { id: 'finance', label: 'Finance', icon: CreditCard },
-        { id: 'staff', label: 'Staff', icon: Shield },
         { id: 'developer', label: 'Dev', icon: CodeXml },
+        { id: 'logout', label: 'Logout', icon: LogOut, isAction: true },
       ];
     }
     if (role === 'trainer') {
@@ -149,8 +150,8 @@ const MainAppContent: React.FC = () => {
         { id: 'clients', label: 'Clients', icon: Users },
         { id: 'fitness', label: 'Fitness', icon: Dumbbell },
         { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
-        { id: 'progress', label: 'Progress', icon: TrendingUp },
         { id: 'developer', label: 'Dev', icon: CodeXml },
+        { id: 'logout', label: 'Logout', icon: LogOut, isAction: true },
       ];
     }
     if (role === 'staff') {
@@ -159,15 +160,15 @@ const MainAppContent: React.FC = () => {
         { id: 'fees', label: 'Fees', icon: CreditCard },
         { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
         { id: 'members', label: 'Members', icon: Users },
-        { id: 'enquiries', label: 'Enquiry', icon: MessageSquare },
         { id: 'developer', label: 'Dev', icon: CodeXml },
+        { id: 'logout', label: 'Logout', icon: LogOut, isAction: true },
       ];
     }
     return [
       { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
       { id: 'fitness', label: 'Fitness', icon: Dumbbell },
-      { id: 'progress', label: 'Progress', icon: TrendingUp },
       { id: 'developer', label: 'Dev', icon: CodeXml },
+      { id: 'logout', label: 'Logout', icon: LogOut, isAction: true },
     ];
   };
 
@@ -362,17 +363,26 @@ const MainAppContent: React.FC = () => {
         {mobileNavItems.map((item) => {
           const ItemIcon = item.icon;
           const isActive = activeTab === item.id;
+          const isLogout = item.id === 'logout';
           return (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => {
+                if (isLogout) {
+                  logout();
+                } else {
+                  setActiveTab(item.id);
+                }
+              }}
               className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 py-1 rounded-xl transition-all cursor-pointer ${
-                isActive
+                isLogout
+                  ? 'text-rose-600 hover:text-rose-700 hover:bg-rose-50/80 font-bold'
+                  : isActive
                   ? 'text-amber-600 font-bold bg-amber-50/80 shadow-2xs'
                   : 'text-slate-500 hover:text-slate-800 font-medium'
               }`}
             >
-              <ItemIcon className={`w-4 h-4 shrink-0 ${isActive ? 'text-amber-600' : 'text-slate-500'}`} />
+              <ItemIcon className={`w-4 h-4 shrink-0 ${isLogout ? 'text-rose-600' : isActive ? 'text-amber-600' : 'text-slate-500'}`} />
               <span className="text-[9.5px] truncate max-w-full leading-tight">{item.label}</span>
             </button>
           );
