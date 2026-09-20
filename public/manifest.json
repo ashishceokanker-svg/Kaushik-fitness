@@ -1,0 +1,19 @@
+{
+  "short_name": "Koushik Gym",
+  "name": "Kaushik Fitness Kanker - Gym Management",
+  "description": "Official Fitness & Gym Management Portal - Kaushik Fitness Kanker",
+  "icons": [
+    {
+      "src": "/dumbbell.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "scope": "/"
+}
