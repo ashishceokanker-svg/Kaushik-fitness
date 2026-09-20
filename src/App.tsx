@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GymDataProvider, useGymData } from './context/GymDataContext';
 import { Navbar } from './components/common/Navbar';
@@ -31,17 +31,45 @@ import { CloudDatabaseModal } from './components/admin/CloudDatabaseModal';
 import { InstallPwaBanner } from './components/common/InstallPwaBanner';
 import { AppInstallModal } from './components/common/AppInstallModal';
 import { Member, FitnessGoal } from './types';
+import {
+  LayoutDashboard,
+  Users,
+  CalendarCheck,
+  CreditCard,
+  Shield,
+  CodeXml,
+  Dumbbell,
+  TrendingUp,
+  MessageSquare,
+  Database,
+} from 'lucide-react';
 
 const MainAppContent: React.FC = () => {
   const { currentUser, role, isAuthenticated } = useAuth();
   const { members } = useGymData();
-  const activeMember = members.find((m) => m.id === currentUser?.memberId) || members[0];
   const isDeveloper = currentUser?.id === 'usr-dev' || currentUser?.phone === '9244249975';
+  const activeMember =
+    members.find(
+      (m) =>
+        (currentUser?.memberId && m.id === currentUser.memberId) ||
+        (currentUser?.id && m.userId === currentUser.id) ||
+        (currentUser?.phone && m.phone.replace(/\D/g, '') === currentUser.phone.replace(/\D/g, '')) ||
+        (currentUser?.email && m.email.toLowerCase() === currentUser.email.toLowerCase())
+    ) || members[0];
 
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
-  const [isMobileSimulator, setIsMobileSimulator] = useState<boolean>(() => {
-    return typeof window !== 'undefined' && (window.matchMedia('(display-mode: standalone)').matches || window.innerWidth < 768);
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    return isDeveloper ? 'developer' : 'dashboard';
   });
+
+  useEffect(() => {
+    if (isDeveloper) {
+      setActiveTab('developer');
+    } else {
+      setActiveTab('dashboard');
+    }
+  }, [currentUser?.id, isDeveloper]);
+
+  const [isMobileSimulator, setIsMobileSimulator] = useState<boolean>(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState<boolean>(false);
   const [isCloudModalOpen, setIsCloudModalOpen] = useState<boolean>(false);
   const [isEnquiryModalOpen, setIsEnquiryModalOpen] = useState<boolean>(false);
@@ -80,10 +108,70 @@ const MainAppContent: React.FC = () => {
     );
   }
 
-  // If mobile app view is active (default on mobile / PWA install, or toggled on desktop)
-  if (isMobileSimulator) {
+  // Only show Member Mobile App Simulator:
+  // 1. If the logged in user is a MEMBER on a mobile screen/PWA app
+  // 2. OR if an Admin / Developer explicitly clicked "App Preview" on desktop
+  const isRealMobileDevice =
+    typeof window !== 'undefined' &&
+    (window.innerWidth < 768 || window.matchMedia('(display-mode: standalone)').matches);
+
+  const shouldShowMemberMobileApp =
+    (role === 'member' && isRealMobileDevice) ||
+    (isMobileSimulator && (role === 'admin' || isDeveloper));
+
+  if (shouldShowMemberMobileApp) {
     return <MobileAppSimulator onExitMobileView={() => setIsMobileSimulator(false)} />;
   }
+
+  const getMobileNavItems = () => {
+    if (isDeveloper) {
+      return [
+        { id: 'developer', label: 'Dev', icon: CodeXml },
+        { id: 'database', label: 'Local DB', icon: Database },
+        { id: 'dashboard', label: 'Admin', icon: LayoutDashboard },
+        { id: 'members', label: 'Members', icon: Users },
+        { id: 'attendance', label: 'Attend', icon: CalendarCheck },
+      ];
+    }
+    if (role === 'admin') {
+      return [
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'members', label: 'Members', icon: Users },
+        { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
+        { id: 'finance', label: 'Finance', icon: CreditCard },
+        { id: 'staff', label: 'Staff', icon: Shield },
+        { id: 'developer', label: 'Dev', icon: CodeXml },
+      ];
+    }
+    if (role === 'trainer') {
+      return [
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'clients', label: 'Clients', icon: Users },
+        { id: 'fitness', label: 'Fitness', icon: Dumbbell },
+        { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
+        { id: 'progress', label: 'Progress', icon: TrendingUp },
+        { id: 'developer', label: 'Dev', icon: CodeXml },
+      ];
+    }
+    if (role === 'staff') {
+      return [
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'fees', label: 'Fees', icon: CreditCard },
+        { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
+        { id: 'members', label: 'Members', icon: Users },
+        { id: 'enquiries', label: 'Enquiry', icon: MessageSquare },
+        { id: 'developer', label: 'Dev', icon: CodeXml },
+      ];
+    }
+    return [
+      { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
+      { id: 'fitness', label: 'Fitness', icon: Dumbbell },
+      { id: 'progress', label: 'Progress', icon: TrendingUp },
+      { id: 'developer', label: 'Dev', icon: CodeXml },
+    ];
+  };
+
+  const mobileNavItems = getMobileNavItems();
 
   // Determine which view to render
   const renderContent = () => {
@@ -223,7 +311,7 @@ const MainAppContent: React.FC = () => {
         />
 
         {/* Scrollable Center Content Area */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8">
           {renderContent()}
         </main>
       </div>
@@ -268,6 +356,28 @@ const MainAppContent: React.FC = () => {
         isOpen={isAppInstallOpen}
         onClose={() => setIsAppInstallOpen(false)}
       />
+
+      {/* Mobile Bottom Icon Navigation Bar (Rendered on mobile screens < 768px for non-member views) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-1 py-1.5 flex items-center justify-around shadow-lg w-full max-w-full overflow-x-hidden">
+        {mobileNavItems.map((item) => {
+          const ItemIcon = item.icon;
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 py-1 rounded-xl transition-all cursor-pointer ${
+                isActive
+                  ? 'text-amber-600 font-bold bg-amber-50/80 shadow-2xs'
+                  : 'text-slate-500 hover:text-slate-800 font-medium'
+              }`}
+            >
+              <ItemIcon className={`w-4 h-4 shrink-0 ${isActive ? 'text-amber-600' : 'text-slate-500'}`} />
+              <span className="text-[9.5px] truncate max-w-full leading-tight">{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
 
       {/* Floating Install App Banner */}
       <InstallPwaBanner />

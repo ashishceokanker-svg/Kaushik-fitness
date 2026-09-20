@@ -100,7 +100,14 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
     };
   }, []);
 
-  const member = members.find((m) => m.id === currentUser?.memberId) || members[0];
+  const member =
+    members.find(
+      (m) =>
+        (currentUser?.memberId && m.id === currentUser.memberId) ||
+        (currentUser?.id && m.userId === currentUser.id) ||
+        (currentUser?.phone && m.phone.replace(/\D/g, '') === currentUser.phone.replace(/\D/g, '')) ||
+        (currentUser?.email && m.email.toLowerCase() === currentUser.email.toLowerCase())
+    ) || members[0];
   const isMemberExpired = new Date(member.expiryDate).getTime() < Date.now() || member.status === 'expired' || !member.active;
   const trainer = staff.find((s) => s.id === currentUser?.staffId) || staff[1];
 
