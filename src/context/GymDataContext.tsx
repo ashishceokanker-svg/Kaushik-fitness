@@ -21,7 +21,8 @@ import {
   INITIAL_PROGRESS_LOGS,
 } from '../data/initialData';
 import { calculateCountdown, calculateExpiryDate, MEMBERSHIP_PRICING, PT_PRICING } from '../utils/formatters';
-import { isFirebaseConfigured } from '../services/firebase';
+import { isFirebaseConfigured, getFirebaseInstance } from '../services/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 import {
   syncDocToFirestore,
   deleteDocFromFirestore,
@@ -173,14 +174,84 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setIsCloudSynced(isFirebaseConfigured());
   };
 
-  // Subscribe to real-time live updates if Firebase is configured
+  // Subscribe to real-time live updates and perform initial sync if Firebase is configured
   useEffect(() => {
     if (!isFirebaseConfigured()) return;
     setIsCloudSynced(true);
 
-    const unsubMembers = subscribeToLiveCollection(FIRESTORE_COLLECTIONS.MEMBERSHIPS, () => {
-      setMembers(localDb.getJoinedMembers());
-    });
+    // Initial immediate fetch from Cloud Firestore on mount (so laptop pulls phone additions instantly)
+    const initialSyncFromCloud = async () => {
+      try {
+        const { db } = getFirebaseInstance();
+        if (!db) return;
+
+        // Fetch cloud memberships / members
+        const membersSnap = await getDocs(collection(db, FIRESTORE_COLLECTIONS.MEMBERSHIPS));
+        if (!membersSnap.empty) {
+          membersSnap.forEach((docSnap) => {
+            const data = docSnap.data() as Partial<Member>;
+            if (data && docSnap.id && (data.name || data.phone || data.memberCode)) {
+              localDb.upsertMemberFromCloud({ id: docSnap.id, ...data } as Member);
+            }
+          });
+          setMembers(localDb.getJoinedMembers());
+        }
+
+        // Fetch cloud member profiles too
+        const profSnap = await getDocs(collection(db, FIRESTORE_COLLECTIONS.MEMBER_PROFILES));
+        if (!profSnap.empty) {
+          profSnap.forEach((docSnap) => {
+            const data = docSnap.data() as Partial<Member>;
+            if (data && docSnap.id && (data.name || data.phone || data.memberCode)) {
+              localDb.upsertMemberFromCloud({ id: docSnap.id, ...data } as Member);
+            }
+          });
+          setMembers(localDb.getJoinedMembers());
+        }
+
+        // Fetch cloud attendance
+        const attSnap = await getDocs(collection(db, FIRESTORE_COLLECTIONS.ATTENDANCE));
+        if (!attSnap.empty) {
+          const attItems: AttendanceRecord[] = [];
+          attSnap.forEach((d) => attItems.push({ id: d.id, ...d.data() } as AttendanceRecord));
+          if (attItems.length > 0) {
+            setAttendance(attItems);
+            localStorage.setItem('kf_attendance', JSON.stringify(attItems));
+            localStorage.setItem('kf_db_attendance', JSON.stringify(attItems));
+          }
+        }
+
+        // Fetch cloud transactions
+        const txSnap = await getDocs(collection(db, FIRESTORE_COLLECTIONS.TRANSACTIONS));
+        if (!txSnap.empty) {
+          const txItems: FinancialTransaction[] = [];
+          txSnap.forEach((d) => txItems.push({ id: d.id, ...d.data() } as FinancialTransaction));
+          if (txItems.length > 0) {
+            setTransactions(txItems);
+            localStorage.setItem('kf_transactions', JSON.stringify(txItems));
+            localStorage.setItem('kf_db_transactions', JSON.stringify(txItems));
+          }
+        }
+      } catch (err) {
+        console.warn('Initial cloud fetch error:', err);
+      }
+    };
+    initialSyncFromCloud();
+
+    // Live subscription for incoming members across devices
+    const handleIncomingMembers = (items: Array<Partial<Member> & { id?: string }>) => {
+      if (items && items.length > 0) {
+        items.forEach((item) => {
+          if (item && item.id && (item.name || item.phone || item.memberCode)) {
+            localDb.upsertMemberFromCloud(item as Member);
+          }
+        });
+        setMembers(localDb.getJoinedMembers());
+      }
+    };
+
+    const unsubMembers = subscribeToLiveCollection(FIRESTORE_COLLECTIONS.MEMBERSHIPS, handleIncomingMembers);
+    const unsubProfiles = subscribeToLiveCollection(FIRESTORE_COLLECTIONS.MEMBER_PROFILES, handleIncomingMembers);
 
     const unsubAttendance = subscribeToLiveCollection(FIRESTORE_COLLECTIONS.ATTENDANCE, (items: AttendanceRecord[]) => {
       if (items && items.length > 0) {
@@ -214,6 +285,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     return () => {
       if (unsubMembers) unsubMembers();
+      if (unsubProfiles) unsubProfiles();
       if (unsubAttendance) unsubAttendance();
       if (unsubTx) unsubTx();
       if (unsubSupplements) unsubSupplements();
@@ -251,6 +323,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     // Async sync to Firestore
     syncDocToFirestore(FIRESTORE_COLLECTIONS.MEMBERSHIPS, registered.id, registered);
+    syncDocToFirestore(FIRESTORE_COLLECTIONS.MEMBER_PROFILES, registered.id, registered);
     if (registered.userId) {
       syncDocToFirestore(FIRESTORE_COLLECTIONS.USERS, registered.userId, registered);
     }
@@ -274,12 +347,15 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const updateMember = (id: string, data: Partial<Member>) => {
     setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, ...data } : m)));
+    localDb.upsertMemberFromCloud({ id, ...data });
     syncDocToFirestore(FIRESTORE_COLLECTIONS.MEMBERSHIPS, id, data);
+    syncDocToFirestore(FIRESTORE_COLLECTIONS.MEMBER_PROFILES, id, data);
   };
 
   const deleteMember = (id: string) => {
     setMembers((prev) => prev.filter((m) => m.id !== id));
     deleteDocFromFirestore(FIRESTORE_COLLECTIONS.MEMBERSHIPS, id);
+    deleteDocFromFirestore(FIRESTORE_COLLECTIONS.MEMBER_PROFILES, id);
   };
 
   const renewMember = (

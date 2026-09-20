@@ -1599,6 +1599,100 @@ class LocalGymDatabase {
     };
   }
 
+  upsertMemberFromCloud(cloudMember: Partial<Member> & { id: string; name?: string; phone?: string }): void {
+    if (!cloudMember || !cloudMember.id) return;
+    if (!cloudMember.name && !cloudMember.phone && !cloudMember.memberCode) return;
+
+    const users = this.getUsers();
+    const profiles = this.getMemberProfiles();
+    const memberships = this.getMemberships();
+
+    const profileId = cloudMember.id;
+    const existingProfile = profiles.find((p) => p.id === profileId || (cloudMember.memberCode && p.member_code === cloudMember.memberCode));
+    const userId = cloudMember.userId || existingProfile?.user_id || `usr-${profileId.replace('prof-', '')}`;
+
+    // 1. Upsert User
+    const existingUserIdx = users.findIndex((u) => u.id === userId || (cloudMember.phone && u.phone === cloudMember.phone));
+    const updatedUser: DbUser = {
+      id: userId,
+      name: cloudMember.name || 'Athlete Member',
+      email: cloudMember.email || `${cloudMember.phone || 'member'}@kaushikfitness.com`,
+      phone: cloudMember.phone || '',
+      password_hash: '$2a$12$defaultHashedPassword2024',
+      role: 'member',
+      created_at: cloudMember.joiningDate || new Date().toISOString(),
+      pin: cloudMember.pin || '1111',
+      avatar_url: cloudMember.avatarUrl,
+    };
+    if (existingUserIdx >= 0) {
+      users[existingUserIdx] = { ...users[existingUserIdx], ...updatedUser };
+    } else {
+      users.unshift(updatedUser);
+    }
+    this.setTable(DB_KEYS.USERS, users);
+
+    // 2. Upsert Member Profile
+    const existingProfIdx = profiles.findIndex((p) => p.id === profileId);
+    const updatedProfile: DbMemberProfile = {
+      id: profileId,
+      user_id: userId,
+      member_code: cloudMember.memberCode || `KF-2024-${String(profiles.length + 1).padStart(3, '0')}`,
+      age: cloudMember.age || 25,
+      gender: cloudMember.gender || 'male',
+      height: cloudMember.heightCm || 170,
+      weight: cloudMember.weightKg || 70,
+      target_weight: cloudMember.targetWeightKg,
+      fitness_goal: cloudMember.fitnessGoal || 'muscle_building',
+      fitness_level: cloudMember.fitnessLevel || 'Intermediate',
+      fitness_score: cloudMember.fitnessScore || 80,
+      bmi: cloudMember.bmi || 24,
+      body_fat_percentage: cloudMember.bodyFatPercentage || 18,
+      target_daily_calories: cloudMember.targetDailyCalories || 2600,
+      emergency_contact: cloudMember.emergencyContact || '',
+      medical_conditions: cloudMember.medicalConditions || '',
+      measurements: { chest: 38, waist: 32, biceps: 13, thighs: 21 },
+      workout_slot: cloudMember.workoutSlot || '06:00 AM - 07:00 AM',
+    };
+    if (existingProfIdx >= 0) {
+      profiles[existingProfIdx] = { ...profiles[existingProfIdx], ...updatedProfile };
+    } else {
+      profiles.unshift(updatedProfile);
+    }
+    this.setTable(DB_KEYS.MEMBER_PROFILES, profiles);
+
+    // 3. Upsert Membership
+    const existingMshIdx = memberships.findIndex((m) => m.member_id === profileId);
+    const updatedMembership: DbMembership = {
+      id: existingMshIdx >= 0 ? memberships[existingMshIdx].id : `msh-${profileId}`,
+      member_id: profileId,
+      package_type: cloudMember.membershipDuration || '1_year',
+      is_personal_training: !!cloudMember.personalTraining,
+      pt_duration: cloudMember.ptDuration,
+      trainer_id: cloudMember.assignedTrainerId,
+      trainer_name: cloudMember.assignedTrainerName,
+      joining_date: cloudMember.joiningDate || new Date().toISOString(),
+      expiry_date: cloudMember.expiryDate || calculateExpiryDate(new Date().toISOString(), cloudMember.membershipDuration || '1_year'),
+      total_fee: cloudMember.totalPayable || 9999,
+      base_fee: cloudMember.baseFee || 9999,
+      pt_fee: cloudMember.ptFee || 0,
+      discount_applied: cloudMember.discountValue || 0,
+      discount_type: cloudMember.discountType || 'flat',
+      discount_value: cloudMember.discountValue || 0,
+      final_paid_fee: cloudMember.paidAmount || 9999,
+      due_amount: cloudMember.dueAmount || 0,
+      payment_status: (cloudMember.paymentStatus as any) || 'paid',
+      payment_method: cloudMember.paymentMethod || 'upi',
+      last_payment_date: cloudMember.lastPaymentDate || cloudMember.joiningDate || new Date().toISOString(),
+      active: cloudMember.active !== false,
+    };
+    if (existingMshIdx >= 0) {
+      memberships[existingMshIdx] = { ...memberships[existingMshIdx], ...updatedMembership };
+    } else {
+      memberships.unshift(updatedMembership);
+    }
+    this.setTable(DB_KEYS.MEMBERSHIPS, memberships);
+  }
+
   resetDatabase() {
     this.setTable(DB_KEYS.USERS, SEED_USERS);
     this.setTable(DB_KEYS.MEMBER_PROFILES, SEED_MEMBER_PROFILES);
