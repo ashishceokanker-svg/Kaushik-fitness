@@ -119,7 +119,7 @@ const MainAppContent: React.FC = () => {
 
   const shouldShowMemberMobileApp =
     (role === 'member' && isRealMobileDevice) ||
-    (isMobileSimulator && (role === 'admin' || isDeveloper));
+    (isMobileSimulator && isDeveloper);
 
   if (shouldShowMemberMobileApp) {
     return <MobileAppSimulator onExitMobileView={() => setIsMobileSimulator(false)} />;
@@ -142,7 +142,6 @@ const MainAppContent: React.FC = () => {
         { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
         { id: 'supplements', label: 'Store', icon: ShoppingBag },
         { id: 'finance', label: 'Finance', icon: CreditCard },
-        { id: 'developer', label: 'Dev', icon: CodeXml },
         { id: 'logout', label: 'Logout', icon: LogOut, isAction: true },
       ];
     }
@@ -152,7 +151,6 @@ const MainAppContent: React.FC = () => {
         { id: 'clients', label: 'Clients', icon: Users },
         { id: 'fitness', label: 'Fitness', icon: Dumbbell },
         { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
-        { id: 'developer', label: 'Dev', icon: CodeXml },
         { id: 'logout', label: 'Logout', icon: LogOut, isAction: true },
       ];
     }
@@ -163,14 +161,12 @@ const MainAppContent: React.FC = () => {
         { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
         { id: 'supplements', label: 'Store', icon: ShoppingBag },
         { id: 'members', label: 'Members', icon: Users },
-        { id: 'developer', label: 'Dev', icon: CodeXml },
         { id: 'logout', label: 'Logout', icon: LogOut, isAction: true },
       ];
     }
     return [
       { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
       { id: 'fitness', label: 'Fitness', icon: Dumbbell },
-      { id: 'developer', label: 'Dev', icon: CodeXml },
       { id: 'logout', label: 'Logout', icon: LogOut, isAction: true },
     ];
   };
@@ -186,7 +182,7 @@ const MainAppContent: React.FC = () => {
             <AdminDashboard
               onNavigate={(tab) => setActiveTab(tab)}
               onOpenRegister={() => setIsRegisterOpen(true)}
-              onOpenCloudDatabase={() => setIsCloudModalOpen(true)}
+              onOpenCloudDatabase={isDeveloper ? () => setIsCloudModalOpen(true) : undefined}
             />
           );
         }
@@ -268,6 +264,17 @@ const MainAppContent: React.FC = () => {
         return <DatabaseInspector />;
 
       case 'developer':
+        if (!isDeveloper) {
+          if (role === 'staff') return <StaffDashboard onNavigate={(tab) => setActiveTab(tab)} />;
+          if (role === 'trainer') return <TrainerDashboard onNavigate={(tab) => setActiveTab(tab)} />;
+          if (role === 'member') return <MemberDashboard onNavigate={(tab) => setActiveTab(tab)} />;
+          return (
+            <AdminDashboard
+              onNavigate={(tab) => setActiveTab(tab)}
+              onOpenRegister={() => setIsRegisterOpen(true)}
+            />
+          );
+        }
         return <DeveloperPage onBack={() => setActiveTab('dashboard')} />;
 
       default:
@@ -294,14 +301,14 @@ const MainAppContent: React.FC = () => {
       {/* Top Navigation Bar */}
       <Navbar
         isMobileView={isMobileSimulator}
-        onToggleMobileView={() => setIsMobileSimulator(!isMobileSimulator)}
+        onToggleMobileView={isDeveloper ? () => setIsMobileSimulator(!isMobileSimulator) : undefined}
         onOpenNotifications={() => setActiveTab('reminders')}
         onOpenLogin={() => setActiveTab('dashboard')}
         onOpenDatabase={isDeveloper ? () => setActiveTab('database') : undefined}
-        onOpenCloudDatabase={() => setIsCloudModalOpen(true)}
+        onOpenCloudDatabase={isDeveloper ? () => setIsCloudModalOpen(true) : undefined}
         onOpenEnquiry={role === 'admin' || role === 'staff' ? () => setIsEnquiryModalOpen(true) : undefined}
         onNavigateToStaffLogs={() => setActiveTab('staff_logs')}
-        onOpenDeveloper={() => setActiveTab('developer')}
+        onOpenDeveloper={isDeveloper ? () => setActiveTab('developer') : undefined}
         onOpenAppInstall={() => setIsAppInstallOpen(true)}
       />
 
@@ -349,11 +356,13 @@ const MainAppContent: React.FC = () => {
         }}
       />
 
-      {/* Cloud Firestore Live Sync Modal */}
-      <CloudDatabaseModal
-        isOpen={isCloudModalOpen}
-        onClose={() => setIsCloudModalOpen(false)}
-      />
+      {/* Cloud Firestore Live Sync Modal - DEVELOPER ONLY */}
+      {isDeveloper && (
+        <CloudDatabaseModal
+          isOpen={isCloudModalOpen}
+          onClose={() => setIsCloudModalOpen(false)}
+        />
+      )}
 
       {/* Mobile App Install & Link Guide Modal */}
       <AppInstallModal

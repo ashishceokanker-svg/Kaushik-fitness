@@ -174,30 +174,34 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
             </div>
 
             <div className="flex items-center gap-1.5">
-              {isCloudSynced ? (
-                <span
-                  title="Firebase Firestore Live Connected"
-                  className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold flex items-center gap-1 shadow-2xs"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Live</span>
-                </span>
-              ) : (
-                <span
-                  title="Local Storage Mode"
-                  className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold flex items-center gap-1 shadow-2xs"
-                >
-                  <span>Local</span>
-                </span>
+              {isDeveloper && (
+                <>
+                  {isCloudSynced ? (
+                    <span
+                      title="Firebase Firestore Live Connected"
+                      className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold flex items-center gap-1 shadow-2xs"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>Live</span>
+                    </span>
+                  ) : (
+                    <span
+                      title="Local Storage Mode"
+                      className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold flex items-center gap-1 shadow-2xs"
+                    >
+                      <span>Local</span>
+                    </span>
+                  )}
+                  <button
+                    onClick={() => setMobileTab(mobileTab === 'developer' ? 'home' : 'developer')}
+                    title="Developer Profile (Ashish Dey - Chief Executive Officer)"
+                    className="px-2 py-0.5 rounded-full bg-slate-900 text-white text-[10px] font-bold flex items-center gap-1 shadow-2xs hover:bg-slate-800 cursor-pointer border border-cyan-500/40"
+                  >
+                    <CodeXml className="w-2.5 h-2.5 text-cyan-400" />
+                    <span>Dev</span>
+                  </button>
+                </>
               )}
-              <button
-                onClick={() => setMobileTab(mobileTab === 'developer' ? 'home' : 'developer')}
-                title="Developer Profile (Ashish Dey - Chief Executive Officer)"
-                className="px-2 py-0.5 rounded-full bg-slate-900 text-white text-[10px] font-bold flex items-center gap-1 shadow-2xs hover:bg-slate-800 cursor-pointer border border-cyan-500/40"
-              >
-                <CodeXml className="w-2.5 h-2.5 text-cyan-400" />
-                <span>Dev</span>
-              </button>
               {isMemberExpired ? (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
                   <Lock className="w-2.5 h-2.5 text-rose-600" />
@@ -653,29 +657,31 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                     </button>
                   </div>
 
-                  {/* Developer Profile Link Card in Mobile App */}
-                  <div className="mt-3 p-3 rounded-xl bg-gradient-to-r from-slate-900 via-slate-800 to-cyan-950 text-white border border-slate-700 shadow-xs space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded-lg bg-cyan-500/20 text-cyan-400">
-                          <CodeXml className="w-4 h-4" />
+                  {/* Developer Profile Link Card in Mobile App - Strictly DEVELOPER ONLY */}
+                  {isDeveloper && (
+                    <div className="mt-3 p-3 rounded-xl bg-gradient-to-r from-slate-900 via-slate-800 to-cyan-950 text-white border border-slate-700 shadow-xs space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 rounded-lg bg-cyan-500/20 text-cyan-400">
+                            <CodeXml className="w-4 h-4" />
+                          </div>
+                          <div className="text-left">
+                            <div className="text-xs font-black text-white">Ashish Dey</div>
+                            <div className="text-[10px] text-cyan-300 font-medium">Chief Executive Officer</div>
+                          </div>
                         </div>
-                        <div className="text-left">
-                          <div className="text-xs font-black text-white">Ashish Dey</div>
-                          <div className="text-[10px] text-cyan-300 font-medium">Chief Executive Officer</div>
-                        </div>
+                        <button
+                          onClick={() => setMobileTab('developer')}
+                          className="px-2.5 py-1 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-[10px] font-black cursor-pointer shadow-xs"
+                        >
+                          View Profile
+                        </button>
                       </div>
-                      <button
-                        onClick={() => setMobileTab('developer')}
-                        className="px-2.5 py-1 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-[10px] font-black cursor-pointer shadow-xs"
-                      >
-                        View Profile
-                      </button>
+                      <p className="text-[10px] text-slate-300 text-left">
+                        Janpad Panchayat Baderajpur, District Kondagaon (C.G.)
+                      </p>
                     </div>
-                    <p className="text-[10px] text-slate-300 text-left">
-                      Janpad Panchayat Baderajpur, District Kondagaon (C.G.)
-                    </p>
-                  </div>
+                  )}
 
                   {/* Member Logout Button */}
                   <div className="pt-2">
@@ -691,8 +697,8 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
               </div>
             )}
 
-            {/* TAB 8: DEVELOPER PROFILE (ASHISH DEY) */}
-            {mobileTab === 'developer' && (
+            {/* TAB 8: DEVELOPER PROFILE (ASHISH DEY) - Strictly DEVELOPER ONLY */}
+            {mobileTab === 'developer' && isDeveloper && (
               <div className="space-y-3.5 w-full max-w-full overflow-x-hidden animate-in fade-in">
                 <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-950 rounded-3xl p-5 text-white border border-slate-700 shadow-lg text-center space-y-3">
                   {/* Photo / Avatar */}

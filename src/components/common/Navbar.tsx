@@ -22,7 +22,7 @@ import {
 
 interface NavbarProps {
   isMobileView: boolean;
-  onToggleMobileView: () => void;
+  onToggleMobileView?: () => void;
   onOpenNotifications: () => void;
   onOpenLogin: () => void;
   onOpenDatabase?: () => void;
@@ -105,8 +105,8 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right: Quick Tools & Role Switcher */}
         <div className="flex items-center gap-1.5 sm:gap-2.5">
-          {/* Cloud Database Live Sync Button (Admin/Developer only) */}
-          {(role === 'admin' || isDeveloper) && onOpenCloudDatabase && (
+          {/* Cloud Database Live Sync Button (DEVELOPER ONLY) */}
+          {isDeveloper && onOpenCloudDatabase && (
             <button
               onClick={onOpenCloudDatabase}
               title={
@@ -138,12 +138,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
             >
               <Database className="w-3.5 h-3.5 text-cyan-600" />
-              <span className="hidden md:inline">Local DB</span>
+              <span className="hidden md:inline">SQL Schema</span>
             </button>
           )}
 
-          {/* Developer Page Quick Link - Visible to ALL (Admin, Developer, Staff, Member, Trainer) */}
-          {onOpenDeveloper && (
+          {/* Developer Page Quick Link - Strictly DEVELOPER ONLY */}
+          {isDeveloper && onOpenDeveloper && (
             <button
               onClick={onOpenDeveloper}
               title="Developer Profile (Ashish Dey - CEO Janpad Panchayat Baderajpur)"
@@ -180,8 +180,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {/* Mobile vs Desktop Viewport Switcher - Desktop Preview Only for Admin */}
-          {(role === 'admin' || isDeveloper) && (
+          {/* Mobile vs Desktop Viewport Switcher - Strictly DEVELOPER ONLY */}
+          {isDeveloper && onToggleMobileView && (
             <button
               onClick={onToggleMobileView}
               title={isMobileView ? 'Switch to Full Desktop Portal' : 'Preview Simulated Mobile App View'}

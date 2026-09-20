@@ -69,12 +69,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: 'reminders', label: 'Payment Reminders', icon: Bell, badge: expiringSoonMembers.length, alert: expiringSoonMembers.length > 0 },
       ];
 
-      // ONLY DEVELOPER gets Database Schema & Tables
+      // ONLY DEVELOPER gets Database Schema & Developer profile
       if (isDeveloper) {
         items.push({ id: 'database', label: 'Database Schema & Tables', icon: Database });
+        items.push({ id: 'developer', label: '👨‍💻 Developer (Ashish Dey)', icon: CodeXml, badge: 'CEO', highlight: true });
       }
-
-      items.push({ id: 'developer', label: '👨‍💻 Developer (Ashish Dey)', icon: CodeXml, badge: 'CEO', highlight: true });
 
       return items;
     }
@@ -175,23 +174,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       )}
 
-      {/* Quick Developer Profile Link - Visible to ALL (Admin, Developer, Staff, Member, Trainer) */}
-      <button
-        onClick={() => handleTabClick('developer')}
-        className={`w-full py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
-          activeTab === 'developer'
-            ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-            : 'bg-gradient-to-r from-cyan-50 to-amber-50 text-slate-800 border-cyan-200/80 hover:border-cyan-400'
-        }`}
-      >
-        <div className="flex items-center gap-2">
-          <CodeXml className="w-4 h-4 text-cyan-600" />
-          <span>👨‍💻 Developer (Ashish Dey)</span>
-        </div>
-        <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-200 text-amber-900">
-          CEO
-        </span>
-      </button>
+      {/* Quick Developer Profile Link - Strictly DEVELOPER ONLY */}
+      {isDeveloper && (
+        <button
+          onClick={() => handleTabClick('developer')}
+          className={`w-full py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
+            activeTab === 'developer'
+              ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+              : 'bg-gradient-to-r from-cyan-50 to-amber-50 text-slate-800 border-cyan-200/80 hover:border-cyan-400'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <CodeXml className="w-4 h-4 text-cyan-600" />
+            <span>👨‍💻 Developer (Ashish Dey)</span>
+          </div>
+          <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-200 text-amber-900">
+            CEO
+          </span>
+        </button>
+      )}
 
       {/* User Badge & Logout */}
       <div className="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200">

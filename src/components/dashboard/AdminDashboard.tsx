@@ -136,7 +136,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           {/* Quick Action Buttons */}
           <div className="flex flex-wrap items-center gap-2.5">
-            {onOpenCloudDatabase && (
+            {isDeveloper && onOpenCloudDatabase && (
               <button
                 onClick={onOpenCloudDatabase}
                 className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer border ${
@@ -150,13 +150,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <span>{isCloudSynced ? '🟢 Firebase Live' : '☁️ Cloud Setup'}</span>
               </button>
             )}
-            <button
-              onClick={() => onNavigate('developer')}
-              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-slate-900 via-slate-800 to-cyan-900 hover:brightness-110 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer border border-cyan-500/30"
-            >
-              <CodeXml className="w-3.5 h-3.5 text-cyan-300" />
-              👨‍💻 Developer (Ashish Dey)
-            </button>
+            {isDeveloper && (
+              <button
+                onClick={() => onNavigate('developer')}
+                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-slate-900 via-slate-800 to-cyan-900 hover:brightness-110 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer border border-cyan-500/30"
+              >
+                <CodeXml className="w-3.5 h-3.5 text-cyan-300" />
+                👨‍💻 Developer (Ashish Dey)
+              </button>
+            )}
             <button
               onClick={onOpenRegister}
               className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer"
