@@ -25,7 +25,7 @@ interface NavbarProps {
   onToggleMobileView: () => void;
   onOpenNotifications: () => void;
   onOpenLogin: () => void;
-  onOpenDatabase: () => void;
+  onOpenDatabase?: () => void;
   onOpenCloudDatabase?: () => void;
   onOpenEnquiry?: () => void;
   onNavigateToStaffLogs?: () => void;
@@ -43,10 +43,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   onNavigateToStaffLogs,
   onOpenDeveloper,
 }) => {
-  const { currentUser, role, switchRole, logout } = useAuth();
+  const { currentUser, role, logout } = useAuth();
   const { expiringSoonMembers, resetToDemoData, isCloudSynced } = useGymData();
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  const isDeveloper = currentUser?.id === 'usr-dev' || currentUser?.phone === '9244249975';
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -54,13 +56,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, []);
 
   const roleLabels: Record<UserRole, { label: string; color: string; icon: any }> = {
-    admin: { label: 'Admin (Vaibhav Kaushik)', color: 'bg-amber-50 text-amber-900 border-amber-200', icon: Shield },
-    trainer: { label: 'Trainer (Vikram Sahu)', color: 'bg-cyan-50 text-cyan-900 border-cyan-200', icon: Award },
-    staff: { label: 'Staff (Ramesh Verma)', color: 'bg-orange-50 text-orange-900 border-orange-200', icon: CreditCard },
-    member: { label: 'Member (Rahul Sharma)', color: 'bg-emerald-50 text-emerald-900 border-emerald-200', icon: User },
+    admin: { label: 'Admin', color: 'bg-amber-50 text-amber-900 border-amber-200', icon: Shield },
+    trainer: { label: 'Trainer', color: 'bg-cyan-50 text-cyan-900 border-cyan-200', icon: Award },
+    staff: { label: 'Staff', color: 'bg-orange-50 text-orange-900 border-orange-200', icon: CreditCard },
+    member: { label: 'Member', color: 'bg-emerald-50 text-emerald-900 border-emerald-200', icon: User },
   };
 
-  const currentRoleConfig = roleLabels[role];
+  const currentRoleConfig = roleLabels[role] || roleLabels.member;
   const CurrentIcon = currentRoleConfig.icon;
 
   return (
@@ -123,11 +125,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {/* Database Inspector Quick Access (Admin only) */}
-          {role === 'admin' && (
+          {/* Database Inspector Quick Access (Developer only) */}
+          {role === 'admin' && isDeveloper && onOpenDatabase && (
             <button
               onClick={onOpenDatabase}
-              title="Inspect Local Database Schema & Tables"
+              title="Inspect Local Database Schema & Tables (Developer)"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
             >
               <Database className="w-3.5 h-3.5 text-cyan-600" />
@@ -153,7 +155,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={onOpenEnquiry}
               title="Gym Admission & PT Enquiry Form"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 hover:bg-amber-100 text-xs font-bold transition-all shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 hover:bg-amber-100 text-xs font-bold transition-all shadow-sm cursor-pointer"
             >
               <MessageSquare className="w-3.5 h-3.5 text-amber-600" />
               <span className="hidden sm:inline">Enquiry (पूछताछ)</span>
@@ -164,7 +166,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={onToggleMobileView}
             title={isMobileView ? 'Switch to Full Desktop Portal' : 'Switch to Simulated Mobile App View'}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
               isMobileView
                 ? 'bg-cyan-100 border-cyan-300 text-cyan-900 shadow-sm'
                 : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
@@ -187,7 +189,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={onOpenNotifications}
             title="Membership Expiration Alerts"
-            className="relative p-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200 transition-colors"
+            className="relative p-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
           >
             <Bell className="w-4 h-4" />
             {expiringSoonMembers.length > 0 && (
@@ -197,11 +199,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </button>
 
-          {/* Role Quick-Switcher Dropdown */}
+          {/* User Profile Badge & Dropdown */}
           <div className="relative">
             <button
               onClick={() => setIsRoleMenuOpen(!isRoleMenuOpen)}
-              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all ${currentRoleConfig.color}`}
+              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${currentRoleConfig.color}`}
             >
               {currentUser?.avatarUrl ? (
                 <img
@@ -218,76 +220,29 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Dropdown Menu */}
             {isRoleMenuOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl p-2 shadow-xl z-50 space-y-1">
-                <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  Switch Active Role Test
+              <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl p-3 shadow-xl z-50 space-y-3">
+                <div className="flex items-center gap-3 pb-2.5 border-b border-slate-100">
+                  {currentUser?.avatarUrl ? (
+                    <img
+                      src={currentUser.avatarUrl}
+                      alt={currentUser.name}
+                      className="w-10 h-10 rounded-xl object-cover border border-slate-200"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-900 font-bold flex items-center justify-center text-sm border border-amber-200">
+                      {(currentUser?.name || 'U').slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-xs text-slate-900 truncate">{currentUser?.name || 'Active User'}</div>
+                    <div className="text-[10px] text-slate-500 capitalize">{role} Account</div>
+                    {currentUser?.phone && (
+                      <div className="text-[10px] font-mono text-slate-400">{currentUser.phone}</div>
+                    )}
+                  </div>
                 </div>
 
-                <button
-                  onClick={() => {
-                    switchRole('admin');
-                    setIsRoleMenuOpen(false);
-                  }}
-                  className={`w-full text-left p-2.5 rounded-xl text-xs flex items-center gap-2.5 transition-colors ${
-                    role === 'admin' ? 'bg-amber-100 text-amber-900 font-bold border border-amber-300' : 'text-slate-700 hover:bg-slate-100'
-                  }`}
-                >
-                  <Shield className="w-4 h-4 text-amber-600" />
-                  <div>
-                    <div className="font-bold">Admin Portal</div>
-                    <div className="text-[10px] text-slate-500">Vaibhav Kaushik (Full Control)</div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => {
-                    switchRole('trainer');
-                    setIsRoleMenuOpen(false);
-                  }}
-                  className={`w-full text-left p-2.5 rounded-xl text-xs flex items-center gap-2.5 transition-colors ${
-                    role === 'trainer' ? 'bg-cyan-100 text-cyan-900 font-bold border border-cyan-300' : 'text-slate-700 hover:bg-slate-100'
-                  }`}
-                >
-                  <Award className="w-4 h-4 text-cyan-600" />
-                  <div>
-                    <div className="font-bold">Trainer Portal</div>
-                    <div className="text-[10px] text-slate-500">Vikram Sahu (PT & Diet Plans)</div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => {
-                    switchRole('staff');
-                    setIsRoleMenuOpen(false);
-                  }}
-                  className={`w-full text-left p-2.5 rounded-xl text-xs flex items-center gap-2.5 transition-colors ${
-                    role === 'staff' ? 'bg-amber-100 text-amber-900 font-bold border border-amber-300' : 'text-slate-700 hover:bg-slate-100'
-                  }`}
-                >
-                  <CreditCard className="w-4 h-4 text-amber-600" />
-                  <div>
-                    <div className="font-bold">Staff Portal (Front Desk)</div>
-                    <div className="text-[10px] text-slate-500">Ramesh Verma (Fee Entry & Desks)</div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => {
-                    switchRole('member');
-                    setIsRoleMenuOpen(false);
-                  }}
-                  className={`w-full text-left p-2.5 rounded-xl text-xs flex items-center gap-2.5 transition-colors ${
-                    role === 'member' ? 'bg-emerald-100 text-emerald-900 font-bold border border-emerald-300' : 'text-slate-700 hover:bg-slate-100'
-                  }`}
-                >
-                  <User className="w-4 h-4 text-emerald-600" />
-                  <div>
-                    <div className="font-bold">Member Portal</div>
-                    <div className="text-[10px] text-slate-500">Rahul Sharma (Workout, Diet, Pass)</div>
-                  </div>
-                </button>
-
-                <div className="pt-2 border-t border-slate-100">
+                {isDeveloper && (
                   <button
                     onClick={() => {
                       if (confirm('Reset local database back to blueprint defaults?')) {
@@ -295,12 +250,23 @@ export const Navbar: React.FC<NavbarProps> = ({
                         setIsRoleMenuOpen(false);
                       }
                     }}
-                    className="w-full text-left p-2 rounded-lg text-[11px] text-slate-500 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-2"
+                    className="w-full text-left p-2 rounded-lg text-[11px] text-slate-500 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-2 cursor-pointer"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
                     Reset Blueprint Database
                   </button>
-                </div>
+                )}
+
+                <button
+                  onClick={() => {
+                    setIsRoleMenuOpen(false);
+                    logout();
+                  }}
+                  className="w-full py-2 px-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Logout (लॉगआउट)</span>
+                </button>
               </div>
             )}
           </div>
@@ -309,7 +275,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={logout}
             title="Sign out and return to login page"
-            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold transition-all"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold transition-all cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Logout</span>

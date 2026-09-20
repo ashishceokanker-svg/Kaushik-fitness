@@ -44,6 +44,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onOpenCloudDatabase,
 }) => {
   const { currentUser } = useAuth();
+  const isDeveloper = currentUser?.id === 'usr-dev' || currentUser?.phone === '9244249975';
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const {
     isCloudSynced,
@@ -177,13 +178,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <DollarSign className="w-4 h-4" />
               वेतन भुगतान (Salary)
             </button>
-            <button
-              onClick={() => onNavigate('database')}
-              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer"
-            >
-              <Database className="w-3.5 h-3.5 text-cyan-600" />
-              SQL Database
-            </button>
+            {isDeveloper && (
+              <button
+                onClick={() => onNavigate('database')}
+                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer"
+              >
+                <Database className="w-3.5 h-3.5 text-cyan-600" />
+                SQL Database
+              </button>
+            )}
             <button
               onClick={() => onNavigate('attendance')}
               className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer"

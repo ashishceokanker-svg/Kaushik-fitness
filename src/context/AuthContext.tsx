@@ -69,22 +69,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (saved) {
       try {
         const u = JSON.parse(saved);
-        if (u.id === 'usr-1' && (u.name === 'Koushik Patel' || !u.address)) {
-          u.name = 'Vaibhav Kaushik';
-          if (!u.address) u.address = 'मेन रोड, नया बस स्टैंड के पास, कांकेर (छ.ग.) - 494334';
-          localStorage.setItem('kf_current_user', JSON.stringify(u));
+        if (u && u.id) {
+          if (u.id === 'usr-1' && (u.name === 'Koushik Patel' || !u.address)) {
+            u.name = 'Vaibhav Kaushik';
+            if (!u.address) u.address = 'मेन रोड, नया बस स्टैंड के पास, कांकेर (छ.ग.) - 494334';
+            localStorage.setItem('kf_current_user', JSON.stringify(u));
+          }
+          return u;
         }
-        return u;
       } catch {
-        return DEMO_USERS.admin;
+        return null;
       }
     }
-    return DEMO_USERS.admin;
+    return null;
   });
 
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem('kf_jwt_token') || 'jwt_mock_session_active');
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('kf_jwt_token') || null);
 
-  const role: UserRole = currentUser?.role || 'admin';
+  const role: UserRole = currentUser?.role || 'member';
 
   useEffect(() => {
     if (currentUser) {

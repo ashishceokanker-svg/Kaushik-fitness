@@ -35,6 +35,7 @@ const MainAppContent: React.FC = () => {
   const { currentUser, role, isAuthenticated } = useAuth();
   const { members } = useGymData();
   const activeMember = members.find((m) => m.id === currentUser?.memberId) || members[0];
+  const isDeveloper = currentUser?.id === 'usr-dev' || currentUser?.phone === '9244249975';
 
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [isMobileSimulator, setIsMobileSimulator] = useState<boolean>(() => {
@@ -156,6 +157,14 @@ const MainAppContent: React.FC = () => {
         return <ProgressTracker />;
 
       case 'database':
+        if (!isDeveloper) {
+          return (
+            <AdminDashboard
+              onNavigate={(tab) => setActiveTab(tab)}
+              onOpenRegister={() => setIsRegisterOpen(true)}
+            />
+          );
+        }
         return <DatabaseInspector />;
 
       case 'developer':
@@ -188,7 +197,7 @@ const MainAppContent: React.FC = () => {
         onToggleMobileView={() => setIsMobileSimulator(!isMobileSimulator)}
         onOpenNotifications={() => setActiveTab('reminders')}
         onOpenLogin={() => setActiveTab('dashboard')}
-        onOpenDatabase={() => setActiveTab('database')}
+        onOpenDatabase={isDeveloper ? () => setActiveTab('database') : undefined}
         onOpenCloudDatabase={() => setIsCloudModalOpen(true)}
         onOpenEnquiry={role === 'admin' || role === 'staff' ? () => setIsEnquiryModalOpen(true) : undefined}
         onNavigateToStaffLogs={() => setActiveTab('staff_logs')}

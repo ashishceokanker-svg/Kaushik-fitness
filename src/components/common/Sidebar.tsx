@@ -47,7 +47,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab, onOpen
   const getNavItems = (): NavItem[] => {
     // ADMIN: Athlete Progress and Smart Fitness removed as per instructions
     if (role === 'admin') {
-      return [
+      const isDeveloper = currentUser?.id === 'usr-dev' || currentUser?.phone === '9244249975';
+      const items: NavItem[] = [
         { id: 'dashboard', label: 'Admin Dashboard', icon: LayoutDashboard },
         { id: 'staff_calendar', label: 'Staff Attendance Calendar', icon: CalendarCheck, badge: 'P/A/L', highlight: true },
         { id: 'staff_logs', label: 'Staff & Trainer Login Logs', icon: KeyRound, badge: 'Auto Report', alert: true },
@@ -59,9 +60,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab, onOpen
         { id: 'attendance', label: 'PIN Attendance Kiosk', icon: CalendarCheck, badge: `${liveGymCount} on floor` },
         { id: 'finance', label: 'Financial Reports', icon: TrendingUp },
         { id: 'reminders', label: 'Payment Reminders', icon: Bell, badge: expiringSoonMembers.length, alert: expiringSoonMembers.length > 0 },
-        { id: 'database', label: 'Database Schema & Tables', icon: Database },
-        { id: 'developer', label: '👨‍💻 Developer (Ashish Dey)', icon: CodeXml, badge: 'CEO', highlight: true },
       ];
+
+      if (isDeveloper) {
+        items.push({ id: 'database', label: 'Database Schema & Tables', icon: Database });
+      }
+
+      items.push({ id: 'developer', label: '👨‍💻 Developer (Ashish Dey)', icon: CodeXml, badge: 'CEO', highlight: true });
+
+      return items;
     }
 
     // STAFF: Front desk, fee collection, enquiries & leads, supplement sale/stock
