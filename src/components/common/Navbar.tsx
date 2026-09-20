@@ -18,6 +18,7 @@ import {
   CreditCard,
   CodeXml,
   Cloud,
+  Menu,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -30,6 +31,7 @@ interface NavbarProps {
   onOpenEnquiry?: () => void;
   onNavigateToStaffLogs?: () => void;
   onOpenDeveloper?: () => void;
+  onToggleMobileMenu?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -42,6 +44,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenEnquiry,
   onNavigateToStaffLogs,
   onOpenDeveloper,
+  onToggleMobileMenu,
 }) => {
   const { currentUser, role, logout } = useAuth();
   const { expiringSoonMembers, resetToDemoData, isCloudSynced } = useGymData();
@@ -66,16 +69,27 @@ export const Navbar: React.FC<NavbarProps> = ({
   const CurrentIcon = currentRoleConfig.icon;
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 sm:px-6 py-2.5 shadow-sm">
-      <div className="flex items-center justify-between gap-3">
-        {/* Left: Brand Identity */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center text-slate-950 font-black shadow-md shadow-amber-500/20">
-            <Dumbbell className="w-5 h-5 text-slate-950" />
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 px-3 sm:px-6 py-2.5 shadow-sm">
+      <div className="flex items-center justify-between gap-2 sm:gap-3">
+        {/* Left: Hamburger (on mobile) + Brand Identity */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {onToggleMobileMenu && (
+            <button
+              onClick={onToggleMobileMenu}
+              className="p-2 -ml-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 md:hidden cursor-pointer"
+              title="Open Navigation Menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          )}
+
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-500 flex items-center justify-center text-slate-950 font-black shadow-md shadow-amber-500/20 shrink-0">
+            <Dumbbell className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950" />
           </div>
+
           <div>
-            <div className="flex items-center gap-2">
-              <span className="font-black text-base sm:text-lg tracking-wider text-slate-900 uppercase">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="font-black text-sm sm:text-lg tracking-wider text-slate-900 uppercase truncate">
                 KAUSHIK FITNESS
               </span>
               <span className="hidden sm:inline-block px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-amber-500 text-slate-950">
@@ -99,9 +113,9 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Right: Quick Tools & Role Switcher */}
-        <div className="flex items-center gap-2 sm:gap-2.5">
-          {/* Cloud Database Live Sync Button */}
-          {onOpenCloudDatabase && (
+        <div className="flex items-center gap-1.5 sm:gap-2.5">
+          {/* Cloud Database Live Sync Button (Admin/Developer only) */}
+          {(role === 'admin' || isDeveloper) && onOpenCloudDatabase && (
             <button
               onClick={onOpenCloudDatabase}
               title={
@@ -125,7 +139,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {/* Database Inspector Quick Access (Developer only) */}
+          {/* Database Inspector Quick Access (DEVELOPER ONLY) */}
           {role === 'admin' && isDeveloper && onOpenDatabase && (
             <button
               onClick={onOpenDatabase}
@@ -137,8 +151,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {/* Developer Page Quick Link */}
-          {onOpenDeveloper && (
+          {/* Developer Page Quick Link (DEVELOPER ONLY) */}
+          {role === 'admin' && isDeveloper && onOpenDeveloper && (
             <button
               onClick={onOpenDeveloper}
               title="Developer Profile (Ashish Dey - CEO Janpad Panchayat Baderajpur)"
@@ -162,42 +176,46 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {/* Mobile vs Desktop Viewport Switcher */}
-          <button
-            onClick={onToggleMobileView}
-            title={isMobileView ? 'Switch to Full Desktop Portal' : 'Switch to Simulated Mobile App View'}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-              isMobileView
-                ? 'bg-cyan-100 border-cyan-300 text-cyan-900 shadow-sm'
-                : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            {isMobileView ? (
-              <>
-                <Monitor className="w-3.5 h-3.5 text-cyan-700" />
-                <span className="hidden sm:inline">Desktop</span>
-              </>
-            ) : (
-              <>
-                <Smartphone className="w-3.5 h-3.5 text-slate-600" />
-                <span className="hidden sm:inline">Mobile App</span>
-              </>
-            )}
-          </button>
+          {/* Mobile vs Desktop Viewport Switcher - Desktop Preview Only for Admin */}
+          {(role === 'admin' || isDeveloper) && (
+            <button
+              onClick={onToggleMobileView}
+              title={isMobileView ? 'Switch to Full Desktop Portal' : 'Preview Simulated Mobile App View'}
+              className={`hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                isMobileView
+                  ? 'bg-cyan-100 border-cyan-300 text-cyan-900 shadow-sm'
+                  : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              {isMobileView ? (
+                <>
+                  <Monitor className="w-3.5 h-3.5 text-cyan-700" />
+                  <span>Desktop</span>
+                </>
+              ) : (
+                <>
+                  <Smartphone className="w-3.5 h-3.5 text-slate-600" />
+                  <span>App Preview</span>
+                </>
+              )}
+            </button>
+          )}
 
-          {/* Expiration Notification Bell */}
-          <button
-            onClick={onOpenNotifications}
-            title="Membership Expiration Alerts"
-            className="relative p-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
-          >
-            <Bell className="w-4 h-4" />
-            {expiringSoonMembers.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black flex items-center justify-center animate-pulse shadow-sm">
-                {expiringSoonMembers.length}
-              </span>
-            )}
-          </button>
+          {/* Expiration Notification Bell (Admin/Staff only) */}
+          {(role === 'admin' || role === 'staff') && (
+            <button
+              onClick={onOpenNotifications}
+              title="Membership Expiration Alerts"
+              className="relative p-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
+            >
+              <Bell className="w-4 h-4" />
+              {expiringSoonMembers.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black flex items-center justify-center animate-pulse shadow-sm">
+                  {expiringSoonMembers.length}
+                </span>
+              )}
+            </button>
+          )}
 
           {/* User Profile Badge & Dropdown */}
           <div className="relative">

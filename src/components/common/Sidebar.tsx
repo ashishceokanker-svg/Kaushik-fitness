@@ -20,12 +20,15 @@ import {
   DollarSign,
   ShoppingBag,
   CodeXml,
+  X,
 } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
   onSelectTab: (tab: string) => void;
   onOpenRegister?: () => void;
+  isOpenOnMobile?: boolean;
+  onCloseMobile?: () => void;
 }
 
 interface NavItem {
@@ -37,17 +40,29 @@ interface NavItem {
   alert?: boolean;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab, onOpenRegister }) => {
+export const Sidebar: React.FC<SidebarProps> = ({
+  activeTab,
+  onSelectTab,
+  onOpenRegister,
+  isOpenOnMobile = false,
+  onCloseMobile,
+}) => {
   const { role, logout, currentUser } = useAuth();
   const { members, expiringSoonMembers, liveGymCount, enquiries } = useGymData();
 
+  const isDeveloper = currentUser?.id === 'usr-dev' || currentUser?.phone === '9244249975';
   const newEnquiriesCount = enquiries.filter((e) => e.status === 'new').length;
+
+  const handleTabClick = (tabId: string) => {
+    onSelectTab(tabId);
+    if (onCloseMobile) {
+      onCloseMobile();
+    }
+  };
 
   // Navigation items per role
   const getNavItems = (): NavItem[] => {
-    // ADMIN: Athlete Progress and Smart Fitness removed as per instructions
     if (role === 'admin') {
-      const isDeveloper = currentUser?.id === 'usr-dev' || currentUser?.phone === '9244249975';
       const items: NavItem[] = [
         { id: 'dashboard', label: 'Admin Dashboard', icon: LayoutDashboard },
         { id: 'staff_calendar', label: 'Staff Attendance Calendar', icon: CalendarCheck, badge: 'P/A/L', highlight: true },
@@ -62,11 +77,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab, onOpen
         { id: 'reminders', label: 'Payment Reminders', icon: Bell, badge: expiringSoonMembers.length, alert: expiringSoonMembers.length > 0 },
       ];
 
+      // ONLY DEVELOPER gets Database and Developer links
       if (isDeveloper) {
         items.push({ id: 'database', label: 'Database Schema & Tables', icon: Database });
+        items.push({ id: 'developer', label: '👨‍💻 Developer (Ashish Dey)', icon: CodeXml, badge: 'CEO', highlight: true });
       }
-
-      items.push({ id: 'developer', label: '👨‍💻 Developer (Ashish Dey)', icon: CodeXml, badge: 'CEO', highlight: true });
 
       return items;
     }
@@ -107,69 +122,73 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab, onOpen
 
   const navItems = getNavItems();
 
-  return (
-    <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between shrink-0 hidden md:flex h-[calc(100vh-65px)] sticky top-[65px] shadow-sm">
-      <div className="p-3.5 space-y-1 overflow-y-auto">
-        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1.5 flex items-center justify-between">
-          <span>Navigation Menu</span>
-          <span className="capitalize font-mono text-[9px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 font-semibold">
-            {role}
-          </span>
-        </div>
-
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
-
-          return (
-            <button
-              key={item.id}
-              onClick={() => onSelectTab(item.id)}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                isActive
-                  ? 'bg-amber-500 text-slate-950 shadow-sm'
-                  : item.highlight
-                  ? 'text-cyan-800 bg-cyan-50/70 hover:bg-cyan-100 hover:text-cyan-900 border border-cyan-200/50'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-slate-950' : item.highlight ? 'text-cyan-700' : 'text-slate-400'}`} />
-                <span className="truncate">{item.label}</span>
-              </div>
-
-              {item.badge !== undefined && (
-                <span
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold shrink-0 ${
-                    isActive
-                      ? 'bg-black/20 text-slate-950'
-                      : item.alert
-                      ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                      : 'bg-slate-100 text-slate-600'
-                  }`}
-                >
-                  {item.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
+  const renderNavList = () => (
+    <div className="p-3.5 space-y-1 overflow-y-auto flex-1">
+      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1.5 flex items-center justify-between">
+        <span>Navigation Menu</span>
+        <span className="capitalize font-mono text-[9px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 font-semibold">
+          {role}
+        </span>
       </div>
 
-      {/* Bottom Area: Register Button & Quick Logout */}
-      <div className="p-3.5 border-t border-slate-200 space-y-2 bg-slate-50/60">
-        {role === 'admin' && onOpenRegister && (
-          <button
-            onClick={onOpenRegister}
-            className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
-          >
-            + Register Member
-          </button>
-        )}
+      {navItems.map((item) => {
+        const Icon = item.icon;
+        const isActive = activeTab === item.id;
 
-        {/* Quick Developer Profile Link */}
+        return (
+          <button
+            key={item.id}
+            onClick={() => handleTabClick(item.id)}
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              isActive
+                ? 'bg-amber-500 text-slate-950 shadow-sm'
+                : item.highlight
+                ? 'text-cyan-800 bg-cyan-50/70 hover:bg-cyan-100 hover:text-cyan-900 border border-cyan-200/50'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-slate-950' : item.highlight ? 'text-cyan-700' : 'text-slate-400'}`} />
+              <span className="truncate">{item.label}</span>
+            </div>
+
+            {item.badge !== undefined && (
+              <span
+                className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold shrink-0 ${
+                  isActive
+                    ? 'bg-black/20 text-slate-950'
+                    : item.alert
+                    ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                    : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                {item.badge}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const renderFooter = () => (
+    <div className="p-3.5 border-t border-slate-200 space-y-2 bg-slate-50/60">
+      {role === 'admin' && onOpenRegister && (
         <button
-          onClick={() => onSelectTab('developer')}
+          onClick={() => {
+            onOpenRegister();
+            if (onCloseMobile) onCloseMobile();
+          }}
+          className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
+        >
+          + Register Member
+        </button>
+      )}
+
+      {/* Quick Developer Profile Link - ONLY for Developer */}
+      {isDeveloper && (
+        <button
+          onClick={() => handleTabClick('developer')}
           className={`w-full py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
             activeTab === 'developer'
               ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
@@ -184,40 +203,85 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab, onOpen
             CEO
           </span>
         </button>
+      )}
 
-        {/* User Badge & Logout */}
-        <div className="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200">
-          <div className="flex items-center gap-2.5 min-w-0 pr-2">
-            {currentUser?.avatarUrl ? (
-              <img
-                src={currentUser.avatarUrl}
-                alt={currentUser.name}
-                className="w-8 h-8 rounded-xl object-cover border border-slate-200 shadow-xs shrink-0"
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center text-xs font-black text-amber-900 shrink-0">
-                {(currentUser?.name || 'User').slice(0, 2).toUpperCase()}
-              </div>
-            )}
-            <div className="truncate text-left">
-              <div className="text-xs font-bold text-slate-900 truncate">
-                {currentUser?.name || 'Active User'}
-              </div>
-              <div className="text-[10px] text-slate-500 capitalize">
-                Role: {role}
-              </div>
+      {/* User Badge & Logout */}
+      <div className="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200">
+        <div className="flex items-center gap-2.5 min-w-0 pr-2">
+          {currentUser?.avatarUrl ? (
+            <img
+              src={currentUser.avatarUrl}
+              alt={currentUser.name}
+              className="w-8 h-8 rounded-xl object-cover border border-slate-200 shadow-xs shrink-0"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center text-xs font-black text-amber-900 shrink-0">
+              {(currentUser?.name || 'User').slice(0, 2).toUpperCase()}
+            </div>
+          )}
+          <div className="truncate text-left">
+            <div className="text-xs font-bold text-slate-900 truncate">
+              {currentUser?.name || 'Active User'}
+            </div>
+            <div className="text-[10px] text-slate-500 capitalize">
+              Role: {role}
             </div>
           </div>
-
-          <button
-            onClick={logout}
-            title="Logout & return to login screen"
-            className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs transition-colors shrink-0 cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
         </div>
+
+        <button
+          onClick={logout}
+          title="Logout & return to login screen"
+          className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs transition-colors shrink-0 cursor-pointer"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* 1. Desktop Sticky Sidebar */}
+      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between shrink-0 hidden md:flex h-[calc(100vh-65px)] sticky top-[65px] shadow-sm">
+        {renderNavList()}
+        {renderFooter()}
+      </aside>
+
+      {/* 2. Mobile Drawer Overlay */}
+      {isOpenOnMobile && (
+        <div className="fixed inset-0 z-50 md:hidden flex animate-in fade-in duration-200">
+          {/* Backdrop */}
+          <div
+            onClick={onCloseMobile}
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs"
+          />
+
+          {/* Drawer Body */}
+          <aside className="relative w-72 max-w-[85vw] bg-white h-full shadow-2xl flex flex-col justify-between z-10 animate-in slide-in-from-left duration-300">
+            {/* Drawer Header */}
+            <div className="p-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center text-slate-950 font-black text-xs">
+                  KF
+                </div>
+                <span className="font-black text-xs uppercase tracking-wider text-slate-900">
+                  Kaushik Fitness
+                </span>
+              </div>
+              <button
+                onClick={onCloseMobile}
+                className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {renderNavList()}
+            {renderFooter()}
+          </aside>
+        </div>
+      )}
+    </>
   );
 };

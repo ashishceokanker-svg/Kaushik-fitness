@@ -38,9 +38,8 @@ const MainAppContent: React.FC = () => {
   const isDeveloper = currentUser?.id === 'usr-dev' || currentUser?.phone === '9244249975';
 
   const [activeTab, setActiveTab] = useState<string>('dashboard');
-  const [isMobileSimulator, setIsMobileSimulator] = useState<boolean>(() => {
-    return window.matchMedia('(display-mode: standalone)').matches || window.innerWidth < 768;
-  });
+  const [isMobileSimulator, setIsMobileSimulator] = useState<boolean>(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState<boolean>(false);
   const [isCloudModalOpen, setIsCloudModalOpen] = useState<boolean>(false);
   const [isEnquiryModalOpen, setIsEnquiryModalOpen] = useState<boolean>(false);
@@ -69,8 +68,8 @@ const MainAppContent: React.FC = () => {
     );
   }
 
-  // If mobile simulator mode is turned on
-  if (isMobileSimulator) {
+  // If mobile simulator mode is manually turned on via Desktop toggle
+  if (isMobileSimulator && (role === 'admin' || isDeveloper)) {
     return <MobileAppSimulator onExitMobileView={() => setIsMobileSimulator(false)} />;
   }
 
@@ -108,10 +107,7 @@ const MainAppContent: React.FC = () => {
         return <StaffLoginReport />;
 
       case 'clients':
-        if (role === 'trainer') {
-          return <TrainerDashboard onNavigate={(tab) => setActiveTab(tab)} />;
-        }
-        return <MemberList />;
+        return <TrainerDashboard onNavigate={(tab) => setActiveTab(tab)} />;
 
       case 'members':
         if (role === 'trainer') {
@@ -125,24 +121,24 @@ const MainAppContent: React.FC = () => {
         }
         return <StaffManagement />;
 
-      case 'enquiries':
-        if (role !== 'admin' && role !== 'staff') {
-          if (role === 'trainer') return <TrainerDashboard onNavigate={(tab) => setActiveTab(tab)} />;
-          if (role === 'member') return <MemberDashboard onNavigate={(tab) => setActiveTab(tab)} />;
-        }
-        return <EnquiryManagement />;
+      case 'fitness':
+        return <SmartFitnessEngine />;
 
       case 'body_index':
         return <BodyIndexTracker member={activeMember} />;
-
-      case 'fitness':
-        return <SmartFitnessEngine />;
 
       case 'attendance':
         return <AttendanceScanner />;
 
       case 'finance':
         return <FinancialReports />;
+
+      case 'enquiries':
+        if (role !== 'admin' && role !== 'staff') {
+          if (role === 'trainer') return <TrainerDashboard onNavigate={(tab) => setActiveTab(tab)} />;
+          if (role === 'member') return <MemberDashboard onNavigate={(tab) => setActiveTab(tab)} />;
+        }
+        return <EnquiryManagement />;
 
       case 'supplements':
         return <SupplementManagement />;
@@ -168,6 +164,14 @@ const MainAppContent: React.FC = () => {
         return <DatabaseInspector />;
 
       case 'developer':
+        if (!isDeveloper) {
+          return (
+            <AdminDashboard
+              onNavigate={(tab) => setActiveTab(tab)}
+              onOpenRegister={() => setIsRegisterOpen(true)}
+            />
+          );
+        }
         return <DeveloperPage onBack={() => setActiveTab('dashboard')} />;
 
       default:
@@ -201,16 +205,22 @@ const MainAppContent: React.FC = () => {
         onOpenCloudDatabase={() => setIsCloudModalOpen(true)}
         onOpenEnquiry={role === 'admin' || role === 'staff' ? () => setIsEnquiryModalOpen(true) : undefined}
         onNavigateToStaffLogs={() => setActiveTab('staff_logs')}
-        onOpenDeveloper={() => setActiveTab('developer')}
+        onOpenDeveloper={isDeveloper ? () => setActiveTab('developer') : undefined}
+        onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
       />
 
       {/* Main Layout Body */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Desktop Sidebar Navigation */}
+        {/* Desktop Sidebar + Mobile Drawer Navigation */}
         <Sidebar
           activeTab={activeTab}
-          onSelectTab={(tab) => setActiveTab(tab)}
+          onSelectTab={(tab) => {
+            setActiveTab(tab);
+            setIsMobileMenuOpen(false);
+          }}
           onOpenRegister={() => setIsRegisterOpen(true)}
+          isOpenOnMobile={isMobileMenuOpen}
+          onCloseMobile={() => setIsMobileMenuOpen(false)}
         />
 
         {/* Scrollable Center Content Area */}
@@ -238,25 +248,29 @@ const MainAppContent: React.FC = () => {
         />
       )}
 
-      {/* Global Gym Admission / Upgrade Enquiry Modal */}
+      {/* Global Admission / Upgrade Enquiry Modal */}
       <EnquiryModal
         isOpen={isEnquiryModalOpen}
-        onClose={() => setIsEnquiryModalOpen(false)}
+        prefillGoal={enquiryGoal}
+        onClose={() => {
+          setIsEnquiryModalOpen(false);
+          setEnquiryGoal(undefined);
+        }}
       />
 
-      {/* Firebase Cloud Database Sync Modal */}
+      {/* Cloud Firestore Live Sync Modal */}
       <CloudDatabaseModal
         isOpen={isCloudModalOpen}
         onClose={() => setIsCloudModalOpen(false)}
       />
 
-      {/* Install App Banner for Mobile / PWA */}
+      {/* Floating Install App Banner */}
       <InstallPwaBanner />
     </div>
   );
 };
 
-export function App() {
+export const App: React.FC = () => {
   return (
     <AuthProvider>
       <GymDataProvider>
@@ -264,6 +278,6 @@ export function App() {
       </GymDataProvider>
     </AuthProvider>
   );
-}
+};
 
 export default App;

@@ -54,7 +54,7 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
     return window.innerWidth < 768 || window.matchMedia('(display-mode: standalone)').matches;
   });
 
-  const [mobileTab, setMobileTab] = useState<'home' | 'pass' | 'photos' | 'body_index' | 'workout' | 'diet' | 'profile' | 'developer'>('home');
+  const [mobileTab, setMobileTab] = useState<'home' | 'pass' | 'photos' | 'body_index' | 'workout' | 'diet' | 'profile'>('home');
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedInvoice, setSelectedInvoice] = useState(false);
   const [completedExercises, setCompletedExercises] = useState<Record<string, boolean>>({});
@@ -150,14 +150,6 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                   <span>Local</span>
                 </span>
               )}
-              <button
-                onClick={() => setMobileTab(mobileTab === 'developer' ? 'home' : 'developer')}
-                title="Developer Profile (Ashish Dey - Chief Executive Officer)"
-                className="px-2 py-0.5 rounded-full bg-slate-900 text-white text-[10px] font-bold flex items-center gap-1 shadow-2xs hover:bg-slate-800 cursor-pointer border border-cyan-500/40"
-              >
-                <CodeXml className="w-2.5 h-2.5 text-cyan-400" />
-                <span>Dev</span>
-              </button>
               {isMemberExpired ? (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
                   <Lock className="w-2.5 h-2.5 text-rose-600" />
@@ -572,100 +564,6 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                   >
                     <Receipt className="w-3.5 h-3.5" />
                     Tax Receipt / Bill Download
-                  </button>
-
-                  {/* Developer Profile Link Card in Mobile App */}
-                  <div className="mt-3 p-3 rounded-xl bg-gradient-to-r from-slate-900 via-slate-800 to-cyan-950 text-white border border-slate-700 shadow-xs space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded-lg bg-cyan-500/20 text-cyan-400">
-                          <CodeXml className="w-4 h-4" />
-                        </div>
-                        <div className="text-left">
-                          <div className="text-xs font-black text-white">Ashish Dey</div>
-                          <div className="text-[10px] text-cyan-300 font-medium">Chief Executive Officer</div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setMobileTab('developer')}
-                        className="px-2.5 py-1 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-[10px] font-black cursor-pointer shadow-xs"
-                      >
-                        View Profile
-                      </button>
-                    </div>
-                    <p className="text-[10px] text-slate-300 text-left">
-                      Janpad Panchayat Baderajpur, District Kondagaon (C.G.)
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 8: DEVELOPER PROFILE (ASHISH DEY) */}
-            {mobileTab === 'developer' && (
-              <div className="space-y-3.5 w-full max-w-full overflow-x-hidden animate-in fade-in">
-                <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-950 rounded-3xl p-5 text-white border border-slate-700 shadow-lg text-center space-y-3">
-                  {/* Photo / Avatar */}
-                  <div className="mx-auto w-24 h-24 rounded-2xl bg-gradient-to-tr from-cyan-600 to-amber-500 p-0.5 shadow-md">
-                    {localStorage.getItem('kf_developer_photo') ? (
-                      <img
-                        src={localStorage.getItem('kf_developer_photo')!}
-                        alt="Ashish Dey"
-                        className="w-full h-full rounded-2xl object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-slate-900 rounded-2xl flex flex-col items-center justify-center p-2">
-                        <Building2 className="w-8 h-8 text-cyan-400 mb-0.5" />
-                        <span className="text-[10px] font-black text-amber-300">Ashish Dey</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <div className="inline-block px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/30 text-cyan-300 text-[10px] font-bold uppercase tracking-wider mb-1">
-                      Developer & Leadership Profile
-                    </div>
-                    <h3 className="text-xl font-black text-white">Ashish Dey</h3>
-                    <div className="text-xs font-bold text-amber-400 mt-0.5">
-                      Chief Executive Officer
-                    </div>
-                    <div className="text-[11px] text-slate-300 font-medium">
-                      Janpad Panchayat Baderajpur
-                    </div>
-                    <div className="text-[10px] text-cyan-200 mt-1 flex items-center justify-center gap-1">
-                      <MapPin className="w-3 h-3 text-rose-400 shrink-0" />
-                      <span>District Kondagaon (C.G.)</span>
-                    </div>
-                  </div>
-
-                  <p className="text-[11px] text-slate-300 leading-relaxed bg-white/5 p-2.5 rounded-xl border border-white/10 text-left">
-                    Dedicated administrative leadership driven by modern digital governance, technological innovation, and public service. Committed to empowering communities and fostering an enduring culture of discipline and excellence.
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <a
-                      href="tel:9244249975"
-                      className="py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[11px] uppercase flex items-center justify-center gap-1.5 shadow-xs"
-                    >
-                      <Phone className="w-3 h-3" />
-                      <span>Call</span>
-                    </a>
-                    <a
-                      href="https://wa.me/919244249975?text=Hello%20Sir,%20contacting%20regarding%20Kaushik%20Fitness%20mobile%20app."
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="py-2 px-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-black text-[11px] uppercase flex items-center justify-center gap-1.5 shadow-xs"
-                    >
-                      <MessageCircle className="w-3 h-3" />
-                      <span>WhatsApp</span>
-                    </a>
-                  </div>
-
-                  <button
-                    onClick={() => setMobileTab('home')}
-                    className="w-full py-2 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 text-xs font-bold transition-all cursor-pointer"
-                  >
-                    ← Back to Home
                   </button>
                 </div>
               </div>

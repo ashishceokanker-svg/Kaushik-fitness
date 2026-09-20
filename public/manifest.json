@@ -1,19 +1,31 @@
 {
-  "short_name": "Koushik Gym",
+  "short_name": "Kaushik Gym",
   "name": "Kaushik Fitness Kanker - Gym Management",
   "description": "Official Fitness & Gym Management Portal - Kaushik Fitness Kanker",
+  "id": "/",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "scope": "/",
   "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    },
     {
       "src": "/dumbbell.svg",
       "type": "image/svg+xml",
-      "sizes": "192x192 512x512",
-      "purpose": "any maskable"
+      "sizes": "any"
     }
-  ],
-  "start_url": "/",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
-  "display": "standalone",
-  "orientation": "portrait-primary",
-  "scope": "/"
+  ]
 }
