@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useGymData } from '../../context/GymDataContext';
 import { StaffType } from '../../types';
 import {
@@ -16,7 +16,10 @@ import {
   Briefcase,
   CheckCircle2,
   Camera,
+  Upload,
 } from 'lucide-react';
+import { LiveCameraModal } from '../common/LiveCameraModal';
+import { compressImageFile } from '../../utils/imageCompressor';
 
 interface AddStaffModalProps {
   onClose: () => void;
@@ -88,20 +91,29 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose }) => {
     reader.readAsDataURL(file);
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 3 * 1024 * 1024) {
-      alert('फ़ोटो का आकार 3MB से कम होना चाहिए।');
-      return;
+
+    try {
+      const compressed = await compressImageFile(file, {
+        maxWidth: 720,
+        maxHeight: 720,
+        quality: 0.75,
+      });
+      setAvatarUrl(compressed);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          setAvatarUrl(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setAvatarUrl(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -199,7 +211,7 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose }) => {
               <p className="text-[11px] text-slate-500">
                 फ़ोटो अपलोड करें जो ट्रेनर/स्टाफ लॉगिन करने पर डैशबोर्ड, प्रोफाइल कार्ड व आईडी में दिखाई देगी।
               </p>
-              <div className="flex items-center justify-center sm:justify-start gap-2 pt-1">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
                 <input
                   type="file"
                   ref={photoInputRef}
@@ -207,14 +219,33 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose }) => {
                   onChange={handlePhotoUpload}
                   className="hidden"
                 />
+                <input
+                  type="file"
+                  ref={cameraInputRef}
+                  accept="image/*"
+                  capture="user"
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowCameraModal(true)}
+                  className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold text-xs shadow-xs cursor-pointer flex items-center gap-1.5 transition-all"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  <span>कैमरा से फोटो लें</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => photoInputRef.current?.click()}
                   className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 transition-all"
                 >
-                  <Camera className="w-3.5 h-3.5 text-amber-600" />
-                  <span>{avatarUrl ? 'फ़ोटो बदलें (Change Photo)' : 'फ़ोटो चुनें / खींचें (Upload Photo)'}</span>
+                  <Upload className="w-3.5 h-3.5 text-slate-600" />
+                  <span>गैलरी से चुनें</span>
                 </button>
+
                 {avatarUrl && (
                   <button
                     type="button"
@@ -538,6 +569,17 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose }) => {
           </div>
         </form>
       </div>
+
+      <LiveCameraModal
+        isOpen={showCameraModal}
+        onClose={() => setShowCameraModal(false)}
+        onCapture={(compressed) => {
+          setAvatarUrl(compressed);
+          setShowCameraModal(false);
+        }}
+        title="स्टाफ / ट्रेनर फोटो (Live Camera)"
+        guideType="face"
+      />
     </div>
   );
 };

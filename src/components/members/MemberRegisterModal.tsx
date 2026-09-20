@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useGymData } from '../../context/GymDataContext';
 import { Gender, FitnessGoal, MembershipDuration, PTPackageDuration, PaymentMethod, Member } from '../../types';
 import { MEMBERSHIP_PRICING, PT_PRICING, formatINR, calculateExpiryDate } from '../../utils/formatters';
-import { X, UserPlus, Sparkles, Dumbbell, ShieldCheck, Tag, Camera } from 'lucide-react';
+import { X, UserPlus, Sparkles, Dumbbell, ShieldCheck, Tag, Camera, Upload, Smartphone } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { LiveCameraModal } from '../common/LiveCameraModal';
+import { compressImageFile } from '../../utils/imageCompressor';
 
 interface MemberRegisterModalProps {
   onClose: () => void;
@@ -83,20 +85,28 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({ onClos
     };
   }, [onClose]);
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 3 * 1024 * 1024) {
-      alert('फ़ोटो का आकार 3MB से कम होना चाहिए।');
-      return;
+    try {
+      const compressed = await compressImageFile(file, {
+        maxWidth: 720,
+        maxHeight: 720,
+        quality: 0.75,
+      });
+      setAvatarUrl(compressed);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          setAvatarUrl(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setAvatarUrl(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -222,7 +232,8 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({ onClos
               <p className="text-[11px] text-slate-500">
                 फ़ोटो अपलोड करें जो लॉगिन करने पर डैशबोर्ड, आईडी कार्ड व मोबाइल ऐप में दिखाई देगी।
               </p>
-              <div className="flex items-center justify-center sm:justify-start gap-2 pt-1">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
+                {/* File picker input */}
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -230,14 +241,34 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({ onClos
                   onChange={handlePhotoUpload}
                   className="hidden"
                 />
+                {/* Direct mobile camera fallback input */}
+                <input
+                  type="file"
+                  ref={cameraInputRef}
+                  accept="image/*"
+                  capture="user"
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowCameraModal(true)}
+                  className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 transition-all"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  <span>कैमरा से लाइव खींचें</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 transition-all"
                 >
-                  <Camera className="w-3.5 h-3.5 text-amber-600" />
-                  <span>{avatarUrl ? 'फ़ोटो बदलें (Change)' : 'फ़ोटो चुनें / खींचें (Upload Photo)'}</span>
+                  <Upload className="w-3.5 h-3.5 text-slate-600" />
+                  <span>गैलरी से चुनें</span>
                 </button>
+
                 {avatarUrl && (
                   <button
                     type="button"
@@ -697,6 +728,18 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({ onClos
           </div>
         </form>
       </div>
+
+      {/* Live Camera Modal */}
+      <LiveCameraModal
+        isOpen={showCameraModal}
+        onClose={() => setShowCameraModal(false)}
+        onCapture={(compressed) => {
+          setAvatarUrl(compressed);
+          setShowCameraModal(false);
+        }}
+        title="सदस्य प्रोफाइल फोटो (Live Camera)"
+        guideType="face"
+      />
     </div>
   );
 };

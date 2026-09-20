@@ -12,7 +12,10 @@ import {
   Save,
   Mail,
   Sparkles,
+  Upload,
 } from 'lucide-react';
+import { LiveCameraModal } from '../common/LiveCameraModal';
+import { compressImageFile } from '../../utils/imageCompressor';
 
 interface AdminProfileModalProps {
   isOpen: boolean;
@@ -29,21 +32,32 @@ export const AdminProfileModal: React.FC<AdminProfileModalProps> = ({ isOpen, on
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [showCameraModal, setShowCameraModal] = useState(false);
 
   if (!isOpen) return null;
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (uploadEvent) => {
-      const base64 = uploadEvent.target?.result as string;
-      if (base64) {
-        setAvatarUrl(base64);
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressed = await compressImageFile(file, {
+        maxWidth: 720,
+        maxHeight: 720,
+        quality: 0.75,
+      });
+      setAvatarUrl(compressed);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = (uploadEvent) => {
+        const base64 = uploadEvent.target?.result as string;
+        if (base64) {
+          setAvatarUrl(base64);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleRemovePhoto = () => {
@@ -136,15 +150,33 @@ export const AdminProfileModal: React.FC<AdminProfileModalProps> = ({ isOpen, on
                   accept="image/*"
                   onChange={handlePhotoUpload}
                   className="hidden"
-                  id="admin-photo-upload"
                 />
-                <label
-                  htmlFor="admin-photo-upload"
-                  className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer transition-all"
+                <input
+                  type="file"
+                  ref={cameraInputRef}
+                  accept="image/*"
+                  capture="user"
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowCameraModal(true)}
+                  className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
                 >
                   <Camera className="w-3.5 h-3.5" />
-                  <span>फोटो बदलें / अपलोड करें</span>
-                </label>
+                  <span>कैमरा से फोटो लें</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-bold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                >
+                  <Upload className="w-3.5 h-3.5 text-slate-600" />
+                  <span>गैलरी से चुनें</span>
+                </button>
 
                 {avatarUrl && (
                   <button
@@ -242,6 +274,17 @@ export const AdminProfileModal: React.FC<AdminProfileModalProps> = ({ isOpen, on
           </div>
         </form>
       </div>
+
+      <LiveCameraModal
+        isOpen={showCameraModal}
+        onClose={() => setShowCameraModal(false)}
+        onCapture={(compressed) => {
+          setAvatarUrl(compressed);
+          setShowCameraModal(false);
+        }}
+        title="व्यवस्थापक फोटो (Live Camera)"
+        guideType="face"
+      />
     </div>
   );
 };

@@ -29,6 +29,7 @@ export const FIRESTORE_COLLECTIONS = {
   SALARY_PAYMENTS: 'kf_salary_payments',
   MEMBERSHIP_PLANS: 'kf_membership_plans',
   PT_PLANS: 'kf_pt_plans',
+  BODY_PHOTOS: 'kf_body_photos',
 } as const;
 
 /**

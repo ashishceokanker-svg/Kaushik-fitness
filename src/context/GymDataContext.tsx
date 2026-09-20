@@ -51,6 +51,7 @@ interface GymDataContextType {
   transactions: FinancialTransaction[];
   progressLogs: ProgressLog[];
   bodyIndexLogs: BodyIndexLog[];
+  bodyPhotoLogs: BodyPhotoLog[];
   enquiries: GymEnquiry[];
   
   // Member actions
@@ -160,6 +161,8 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return profs.flatMap((p) => localDb.getBodyIndexLogs(p.id));
   });
 
+  const [bodyPhotoLogs, setBodyPhotoLogs] = useState<BodyPhotoLog[]>(() => localDb.getAllBodyPhotoLogs());
+
   const [enquiries, setEnquiries] = useState<GymEnquiry[]>(() => localDb.getEnquiries());
 
   // Supplement inventory and sales states
@@ -218,7 +221,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (!db) return;
 
         // Fetch all primary collections in parallel
-        const [usersSnap, membersSnap, profSnap, attSnap, txSnap, mPlansSnap, ptPlansSnap] = await Promise.allSettled([
+        const [usersSnap, membersSnap, profSnap, attSnap, txSnap, mPlansSnap, ptPlansSnap, bpSnap] = await Promise.allSettled([
           getDocs(collection(db, FIRESTORE_COLLECTIONS.USERS)),
           getDocs(collection(db, FIRESTORE_COLLECTIONS.MEMBERSHIPS)),
           getDocs(collection(db, FIRESTORE_COLLECTIONS.MEMBER_PROFILES)),
@@ -226,6 +229,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
           getDocs(collection(db, FIRESTORE_COLLECTIONS.TRANSACTIONS)),
           getDocs(collection(db, FIRESTORE_COLLECTIONS.MEMBERSHIP_PLANS)),
           getDocs(collection(db, FIRESTORE_COLLECTIONS.PT_PLANS)),
+          getDocs(collection(db, FIRESTORE_COLLECTIONS.BODY_PHOTOS)),
         ]);
 
         // 1. Process Users (All logins, PINs, Staff, Trainers, Members)
@@ -301,6 +305,17 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
             setPtPlans(list);
             localStorage.setItem('kf_pt_plans', JSON.stringify(list));
           }
+        }
+
+        // 8. Process Body Photos
+        if (bpSnap.status === 'fulfilled' && !bpSnap.value.empty) {
+          bpSnap.value.forEach((d) => {
+            const data = d.data() as BodyPhotoLog;
+            if (data && d.id) {
+              localDb.saveBodyPhotoLog({ ...data, id: d.id });
+            }
+          });
+          setBodyPhotoLogs(localDb.getAllBodyPhotoLogs());
         }
       } catch (err) {
         console.warn('Initial cloud fetch error:', err);
@@ -380,6 +395,17 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     });
 
+    const unsubBodyPhotos = subscribeToLiveCollection(FIRESTORE_COLLECTIONS.BODY_PHOTOS, (items: BodyPhotoLog[]) => {
+      if (items && items.length > 0) {
+        items.forEach((item) => {
+          if (item && item.id) {
+            localDb.saveBodyPhotoLog(item);
+          }
+        });
+        setBodyPhotoLogs(localDb.getAllBodyPhotoLogs());
+      }
+    });
+
     // Auto sync heartbeat & screen wakeup listeners for mobile browsers
     const handleWakeup = () => {
       if (document.visibilityState === 'visible') {
@@ -403,6 +429,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (unsubSales) unsubSales();
       if (unsubMPlans) unsubMPlans();
       if (unsubPTPlans) unsubPTPlans();
+      if (unsubBodyPhotos) unsubBodyPhotos();
     };
   }, []);
 
@@ -770,11 +797,17 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const saveBodyPhotoLog = (log: Omit<BodyPhotoLog, 'id' | 'createdAt'> & { id?: string }): BodyPhotoLog => {
-    return localDb.saveBodyPhotoLog(log);
+    const saved = localDb.saveBodyPhotoLog(log);
+    setBodyPhotoLogs(localDb.getAllBodyPhotoLogs());
+    // Cloud sync to Firestore
+    syncDocToFirestore(FIRESTORE_COLLECTIONS.BODY_PHOTOS, saved.id, saved);
+    return saved;
   };
 
   const deleteBodyPhotoLog = (id: string): void => {
     localDb.deleteBodyPhotoLog(id);
+    setBodyPhotoLogs(localDb.getAllBodyPhotoLogs());
+    deleteDocFromFirestore(FIRESTORE_COLLECTIONS.BODY_PHOTOS, id);
   };
 
   // Gym Enquiries / Leads
@@ -977,6 +1010,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         addProgressLog,
         getBodyIndexLogs,
         addBodyIndexLog,
+        bodyPhotoLogs,
         getBodyPhotoLogs,
         saveBodyPhotoLog,
         deleteBodyPhotoLog,

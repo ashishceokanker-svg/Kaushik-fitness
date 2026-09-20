@@ -10,7 +10,10 @@ import {
   ArrowLeft,
   Camera,
   Trash2,
+  Upload,
 } from 'lucide-react';
+import { LiveCameraModal } from '../common/LiveCameraModal';
+import { compressImageFile } from '../../utils/imageCompressor';
 
 interface DeveloperPageProps {
   onBack?: () => void;
@@ -25,20 +28,33 @@ export const DeveloperPage: React.FC<DeveloperPageProps> = ({ onBack }) => {
   });
 
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string;
-      if (base64) {
-        setDeveloperPhoto(base64);
-        localStorage.setItem('kf_developer_photo', base64);
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressed = await compressImageFile(file, {
+        maxWidth: 720,
+        maxHeight: 720,
+        quality: 0.75,
+      });
+      setDeveloperPhoto(compressed);
+      localStorage.setItem('kf_developer_photo', compressed);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        if (base64) {
+          setDeveloperPhoto(base64);
+          localStorage.setItem('kf_developer_photo', base64);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleRemovePhoto = () => {
@@ -117,23 +133,59 @@ export const DeveloperPage: React.FC<DeveloperPageProps> = ({ onBack }) => {
 
               {/* Upload Photo Button - DEVELOPER ONLY */}
               {isDeveloper ? (
-                <>
+                <div className="relative">
                   <input
                     type="file"
                     ref={photoInputRef}
                     accept="image/*"
                     onChange={handlePhotoUpload}
                     className="hidden"
-                    id="developer-photo-upload"
                   />
-                  <label
-                    htmlFor="developer-photo-upload"
+                  <input
+                    type="file"
+                    ref={cameraInputRef}
+                    accept="image/*"
+                    capture="user"
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowOptions(!showOptions)}
                     title="Upload or Change Profile Photo"
                     className="absolute -bottom-2 -right-2 p-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-lg cursor-pointer transition-all hover:scale-105 active:scale-95"
                   >
                     <Camera className="w-4 h-4" />
-                  </label>
-                </>
+                  </button>
+
+                  {/* Options Menu */}
+                  {showOptions && (
+                    <div className="absolute bottom-10 right-0 w-44 bg-slate-900 border border-slate-700 rounded-2xl p-1.5 shadow-2xl z-20 space-y-1 animate-in fade-in">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowOptions(false);
+                          setShowCameraModal(true);
+                        }}
+                        className="w-full px-3 py-2 rounded-xl text-left text-xs font-bold text-white hover:bg-cyan-600 flex items-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <Camera className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>कैमरा से लाइव खींचें</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowOptions(false);
+                          photoInputRef.current?.click();
+                        }}
+                        className="w-full px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-300 hover:bg-slate-800 flex items-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <Upload className="w-3.5 h-3.5 text-slate-400" />
+                        <span>गैलरी से चुनें</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div
                   title="फोटो बदलने की अनुमति केवल डेवलपर लॉगिन (Ashish Dey) में है"
@@ -213,6 +265,18 @@ export const DeveloperPage: React.FC<DeveloperPageProps> = ({ onBack }) => {
           </div>
         </div>
       </div>
+
+      <LiveCameraModal
+        isOpen={showCameraModal}
+        onClose={() => setShowCameraModal(false)}
+        onCapture={(compressed) => {
+          setDeveloperPhoto(compressed);
+          localStorage.setItem('kf_developer_photo', compressed);
+          setShowCameraModal(false);
+        }}
+        title="डेवलपर प्रोफाइल फोटो (Live Camera)"
+        guideType="face"
+      />
     </div>
   );
 };

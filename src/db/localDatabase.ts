@@ -1002,7 +1002,11 @@ class LocalGymDatabase {
   }
 
   private setTable<T>(key: string, data: T[]) {
-    localStorage.setItem(key, JSON.stringify(data));
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch (err) {
+      console.warn(`[LocalDatabase] Failed to setTable for ${key}:`, err);
+    }
   }
 
   // Users
@@ -1113,16 +1117,27 @@ class LocalGymDatabase {
   // ===============================================================
   // 4-SIDE BODY PHOTO PROGRESS & COMPARISON
   // ===============================================================
+  // 4-SIDE BODY PHOTO TRACKER & COMPARISON
+  // ===============================================================
+
+  getAllBodyPhotoLogs(): BodyPhotoLog[] {
+    return this.getTable<BodyPhotoLog>(DB_KEYS.BODY_PHOTOS, SEED_BODY_PHOTO_LOGS);
+  }
 
   getBodyPhotoLogs(memberId: string): BodyPhotoLog[] {
     const all = this.getTable<BodyPhotoLog>(DB_KEYS.BODY_PHOTOS, SEED_BODY_PHOTO_LOGS);
-    const cleanId = (memberId || '').replace('mem-', '').replace('prof-', '');
+    const cleanId = (memberId || '').replace('mem-', '').replace('prof-', '').replace('usr-', '');
     return all
-      .filter((l) => l.memberId === memberId || (cleanId && l.memberId.replace('mem-', '').replace('prof-', '') === cleanId))
+      .filter((l) => {
+        if (!l) return false;
+        if (l.memberId === memberId) return true;
+        const lClean = (l.memberId || '').replace('mem-', '').replace('prof-', '').replace('usr-', '');
+        return cleanId && lClean && cleanId === lClean;
+      })
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }
 
-  saveBodyPhotoLog(log: Omit<BodyPhotoLog, 'id' | 'createdAt'> & { id?: string }): BodyPhotoLog {
+  saveBodyPhotoLog(log: Omit<BodyPhotoLog, 'id' | 'createdAt'> & { id?: string; createdAt?: string }): BodyPhotoLog {
     const all = this.getTable<BodyPhotoLog>(DB_KEYS.BODY_PHOTOS, SEED_BODY_PHOTO_LOGS);
     let savedEntry: BodyPhotoLog;
     if (log.id) {
@@ -1138,7 +1153,7 @@ class LocalGymDatabase {
         savedEntry = {
           ...log,
           id: log.id,
-          createdAt: new Date().toISOString(),
+          createdAt: log.createdAt || new Date().toISOString(),
         };
         all.push(savedEntry);
       }

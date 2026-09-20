@@ -10,6 +10,7 @@ import { BodyIndexTracker } from '../members/BodyIndexTracker';
 import { BodyPhotoTracker } from '../members/BodyPhotoTracker';
 import { generateWorkoutRoutine, generateDietPlan } from '../../utils/fitnessCalculator';
 import { localDb } from '../../db/localDatabase';
+import { compressImageFile } from '../../utils/imageCompressor';
 import {
   Home,
   KeyRound,
@@ -60,18 +61,28 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
   });
   const mobilePhotoInputRef = React.useRef<HTMLInputElement>(null);
 
-  const handleMobilePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMobilePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string;
-      if (base64) {
-        setDeveloperPhoto(base64);
-        localStorage.setItem('kf_developer_photo', base64);
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressed = await compressImageFile(file, {
+        maxWidth: 720,
+        maxHeight: 720,
+        quality: 0.75,
+      });
+      setDeveloperPhoto(compressed);
+      localStorage.setItem('kf_developer_photo', compressed);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        if (base64) {
+          setDeveloperPhoto(base64);
+          localStorage.setItem('kf_developer_photo', base64);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleMobileRemovePhoto = () => {
