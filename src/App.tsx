@@ -164,14 +164,6 @@ const MainAppContent: React.FC = () => {
         return <DatabaseInspector />;
 
       case 'developer':
-        if (!isDeveloper) {
-          return (
-            <AdminDashboard
-              onNavigate={(tab) => setActiveTab(tab)}
-              onOpenRegister={() => setIsRegisterOpen(true)}
-            />
-          );
-        }
         return <DeveloperPage onBack={() => setActiveTab('dashboard')} />;
 
       default:
@@ -205,7 +197,7 @@ const MainAppContent: React.FC = () => {
         onOpenCloudDatabase={() => setIsCloudModalOpen(true)}
         onOpenEnquiry={role === 'admin' || role === 'staff' ? () => setIsEnquiryModalOpen(true) : undefined}
         onNavigateToStaffLogs={() => setActiveTab('staff_logs')}
-        onOpenDeveloper={isDeveloper ? () => setActiveTab('developer') : undefined}
+        onOpenDeveloper={() => setActiveTab('developer')}
         onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
       />
 
