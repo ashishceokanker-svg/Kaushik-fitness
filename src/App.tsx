@@ -28,6 +28,7 @@ import { BodyIndexTracker } from './components/members/BodyIndexTracker';
 import { SupplementManagement } from './components/supplements/SupplementManagement';
 import { DeveloperPage } from './components/developer/DeveloperPage';
 import { CloudDatabaseModal } from './components/admin/CloudDatabaseModal';
+import { PlanManagement } from './components/plans/PlanManagement';
 import { InstallPwaBanner } from './components/common/InstallPwaBanner';
 import { AppInstallModal } from './components/common/AppInstallModal';
 import { Member, FitnessGoal } from './types';
@@ -44,6 +45,7 @@ import {
   Database,
   LogOut,
   ShoppingBag,
+  Package,
 } from 'lucide-react';
 
 const MainAppContent: React.FC = () => {
@@ -129,6 +131,7 @@ const MainAppContent: React.FC = () => {
     if (isDeveloper) {
       return [
         { id: 'developer', label: 'Dev', icon: CodeXml },
+        { id: 'plans', label: 'Plans', icon: Package },
         { id: 'database', label: 'Local DB', icon: Database },
         { id: 'dashboard', label: 'Admin', icon: LayoutDashboard },
         { id: 'members', label: 'Members', icon: Users },
@@ -139,9 +142,10 @@ const MainAppContent: React.FC = () => {
       return [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'members', label: 'Members', icon: Users },
+        { id: 'plans', label: 'Plans', icon: Package },
         { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
         { id: 'supplements', label: 'Store', icon: ShoppingBag },
-        { id: 'finance', label: 'Finance', icon: CreditCard },
+        { id: 'developer', label: 'Dev', icon: CodeXml },
         { id: 'logout', label: 'Logout', icon: LogOut, isAction: true },
       ];
     }
@@ -151,6 +155,7 @@ const MainAppContent: React.FC = () => {
         { id: 'clients', label: 'Clients', icon: Users },
         { id: 'fitness', label: 'Fitness', icon: Dumbbell },
         { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
+        { id: 'developer', label: 'Dev', icon: CodeXml },
         { id: 'logout', label: 'Logout', icon: LogOut, isAction: true },
       ];
     }
@@ -158,15 +163,16 @@ const MainAppContent: React.FC = () => {
       return [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'fees', label: 'Fees', icon: CreditCard },
+        { id: 'plans', label: 'Plans', icon: Package },
         { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
-        { id: 'supplements', label: 'Store', icon: ShoppingBag },
-        { id: 'members', label: 'Members', icon: Users },
+        { id: 'developer', label: 'Dev', icon: CodeXml },
         { id: 'logout', label: 'Logout', icon: LogOut, isAction: true },
       ];
     }
     return [
       { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
       { id: 'fitness', label: 'Fitness', icon: Dumbbell },
+      { id: 'developer', label: 'Dev', icon: CodeXml },
       { id: 'logout', label: 'Logout', icon: LogOut, isAction: true },
     ];
   };
@@ -263,9 +269,8 @@ const MainAppContent: React.FC = () => {
         }
         return <DatabaseInspector />;
 
-      case 'developer':
-        if (!isDeveloper) {
-          if (role === 'staff') return <StaffDashboard onNavigate={(tab) => setActiveTab(tab)} />;
+      case 'plans':
+        if (role !== 'admin' && role !== 'staff' && !isDeveloper) {
           if (role === 'trainer') return <TrainerDashboard onNavigate={(tab) => setActiveTab(tab)} />;
           if (role === 'member') return <MemberDashboard onNavigate={(tab) => setActiveTab(tab)} />;
           return (
@@ -275,6 +280,9 @@ const MainAppContent: React.FC = () => {
             />
           );
         }
+        return <PlanManagement onBack={() => setActiveTab('dashboard')} />;
+
+      case 'developer':
         return <DeveloperPage onBack={() => setActiveTab('dashboard')} />;
 
       default:
@@ -308,7 +316,7 @@ const MainAppContent: React.FC = () => {
         onOpenCloudDatabase={isDeveloper ? () => setIsCloudModalOpen(true) : undefined}
         onOpenEnquiry={role === 'admin' || role === 'staff' ? () => setIsEnquiryModalOpen(true) : undefined}
         onNavigateToStaffLogs={() => setActiveTab('staff_logs')}
-        onOpenDeveloper={isDeveloper ? () => setActiveTab('developer') : undefined}
+        onOpenDeveloper={() => setActiveTab('developer')}
         onOpenAppInstall={() => setIsAppInstallOpen(true)}
       />
 

@@ -20,6 +20,7 @@ import {
   DollarSign,
   ShoppingBag,
   CodeXml,
+  Package,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -62,6 +63,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: 'salary', label: 'Staff Salary & Payroll', icon: DollarSign, badge: 'वेतन' },
         { id: 'members', label: 'Members Directory', icon: Users, badge: members.length },
         { id: 'supplements', label: 'सप्लीमेंट्स स्टॉक व सेल', icon: ShoppingBag, badge: 'स्टॉक/POS' },
+        { id: 'plans', label: '📦 सदस्यता व PT प्लान्स', icon: Package, highlight: true },
         { id: 'enquiries', label: 'Enquiries / Leads', icon: MessageSquare, badge: newEnquiriesCount > 0 ? `${newEnquiriesCount} new` : undefined, alert: newEnquiriesCount > 0 },
         { id: 'staff', label: 'Staff & PT Trainers', icon: Award },
         { id: 'attendance', label: 'PIN Attendance Kiosk', icon: CalendarCheck, badge: `${liveGymCount} on floor` },
@@ -69,20 +71,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: 'reminders', label: 'Payment Reminders', icon: Bell, badge: expiringSoonMembers.length, alert: expiringSoonMembers.length > 0 },
       ];
 
-      // ONLY DEVELOPER gets Database Schema & Developer profile
+      // ONLY DEVELOPER gets Database Schema & Tables
       if (isDeveloper) {
         items.push({ id: 'database', label: 'Database Schema & Tables', icon: Database });
-        items.push({ id: 'developer', label: '👨‍💻 Developer (Ashish Dey)', icon: CodeXml, badge: 'CEO', highlight: true });
       }
+
+      // Developer profile is visible to all
+      items.push({ id: 'developer', label: '👨‍💻 Developer (Ashish Dey)', icon: CodeXml, badge: 'CEO', highlight: true });
 
       return items;
     }
 
-    // STAFF: Front desk, fee collection, enquiries & leads, supplement sale/stock
+    // STAFF: Front desk, fee collection, enquiries & leads, supplement sale/stock, plans
     if (role === 'staff') {
       return [
         { id: 'dashboard', label: 'Staff Fee Desk', icon: LayoutDashboard },
         { id: 'fees', label: 'Member Fee Collection', icon: CreditCard, highlight: true },
+        { id: 'plans', label: '📦 सदस्यता व PT प्लान्स', icon: Package, highlight: true },
         { id: 'supplements', label: 'सप्लीमेंट सेल व स्टॉक', icon: ShoppingBag, badge: 'स्टॉक/सेल', highlight: true },
         { id: 'enquiries', label: 'Gym Enquiries / Leads', icon: MessageSquare, badge: newEnquiriesCount > 0 ? `${newEnquiriesCount} new` : undefined, alert: newEnquiriesCount > 0 },
         { id: 'members', label: 'Members Directory', icon: Users, badge: members.length },
@@ -174,25 +179,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       )}
 
-      {/* Quick Developer Profile Link - Strictly DEVELOPER ONLY */}
-      {isDeveloper && (
-        <button
-          onClick={() => handleTabClick('developer')}
-          className={`w-full py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
-            activeTab === 'developer'
-              ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-              : 'bg-gradient-to-r from-cyan-50 to-amber-50 text-slate-800 border-cyan-200/80 hover:border-cyan-400'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <CodeXml className="w-4 h-4 text-cyan-600" />
-            <span>👨‍💻 Developer (Ashish Dey)</span>
-          </div>
-          <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-200 text-amber-900">
-            CEO
-          </span>
-        </button>
-      )}
+      {/* Quick Developer Profile Link - Visible to ALL (Admin, Developer, Staff, Member, Trainer) */}
+      <button
+        onClick={() => handleTabClick('developer')}
+        className={`w-full py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
+          activeTab === 'developer'
+            ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+            : 'bg-gradient-to-r from-cyan-50 to-amber-50 text-slate-800 border-cyan-200/80 hover:border-cyan-400'
+        }`}
+      >
+        <div className="flex items-center gap-2">
+          <CodeXml className="w-4 h-4 text-cyan-600" />
+          <span>👨‍💻 Developer (Ashish Dey)</span>
+        </div>
+        <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-200 text-amber-900">
+          CEO
+        </span>
+      </button>
 
       {/* User Badge & Logout */}
       <div className="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200">

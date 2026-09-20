@@ -22,6 +22,7 @@ import {
   LogOut,
   MessageSquare,
   ShoppingBag,
+  Package,
 } from 'lucide-react';
 
 interface StaffDashboardProps {
@@ -170,6 +171,13 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({ onNavigate }) =>
                 >
                   <ShoppingBag className="w-4 h-4 text-purple-600" />
                   सप्लीमेंट्स सेल व स्टॉक (Supplements POS)
+                </button>
+                <button
+                  onClick={() => onNavigate('plans')}
+                  className="flex items-center gap-2 px-4 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm transition-all cursor-pointer shadow-xs"
+                >
+                  <Package className="w-4 h-4 text-slate-950" />
+                  📦 प्लान्स व पैकेज (Plans)
                 </button>
               </>
             )}

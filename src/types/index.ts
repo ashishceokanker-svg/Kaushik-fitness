@@ -5,9 +5,9 @@ export type UserRole = 'admin' | 'trainer' | 'staff' | 'member';
 
 export type StaffType = 'instructor' | 'regular';
 
-export type MembershipDuration = '1_month' | '3_months' | '6_months' | '1_year';
+export type MembershipDuration = '1_month' | '3_months' | '6_months' | '1_year' | (string & {});
 
-export type PTPackageDuration = '1_month' | '3_months' | '6_months' | 'none';
+export type PTPackageDuration = '1_month' | '3_months' | '6_months' | 'none' | (string & {});
 
 export type PaymentStatus = 'paid' | 'pending' | 'partial' | 'due';
 
@@ -94,6 +94,37 @@ export interface DbFitnessPlan {
   description: string;
   workout_chart: WorkoutDay[];
   diet_chart: MealItem[];
+}
+
+// ===============================================================
+// GYM MEMBERSHIP PLANS & PERSONAL TRAINING PACKAGES (CRUD)
+// ===============================================================
+
+export interface MembershipPlan {
+  id: string;
+  name: string;
+  durationMonths: number;
+  price: number;
+  badge?: string;
+  description?: string;
+  features?: string[];
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PTPlan {
+  id: string;
+  name: string;
+  durationMonths: number;
+  price: number;
+  badge?: string;
+  sessionsPerWeek?: number;
+  description?: string;
+  features?: string[];
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // ===============================================================

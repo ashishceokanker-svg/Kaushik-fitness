@@ -470,9 +470,13 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({ onClos
                       onChange={(e) => setPtDuration(e.target.value as PTPackageDuration)}
                       className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500"
                     >
-                      <option value="1_month">1 Month PT ({formatINR(2500)})</option>
-                      <option value="3_months">3 Months PT ({formatINR(6500)})</option>
-                      <option value="6_months">6 Months PT ({formatINR(12000)})</option>
+                      {Object.entries(PT_PRICING)
+                        .filter(([k]) => k !== 'none')
+                        .map(([k, pkg]) => (
+                          <option key={k} value={k}>
+                            {pkg.label} ({formatINR(pkg.price)})
+                          </option>
+                        ))}
                     </select>
                   </div>
 

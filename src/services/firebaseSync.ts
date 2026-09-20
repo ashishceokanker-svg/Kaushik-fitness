@@ -10,6 +10,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseInstance, isFirebaseConfigured } from './firebase';
 import { localDb } from '../db/localDatabase';
+import { getSavedMembershipPlans, getSavedPTPlans } from '../utils/formatters';
 
 export const FIRESTORE_COLLECTIONS = {
   USERS: 'kf_users',
@@ -26,6 +27,8 @@ export const FIRESTORE_COLLECTIONS = {
   SUPPLEMENT_SALES: 'kf_supplement_sales',
   STAFF_DAILY_ATTENDANCE: 'kf_staff_daily_attendance',
   SALARY_PAYMENTS: 'kf_salary_payments',
+  MEMBERSHIP_PLANS: 'kf_membership_plans',
+  PT_PLANS: 'kf_pt_plans',
 } as const;
 
 /**
@@ -142,6 +145,8 @@ export async function pushAllLocalDataToFirestore(
       { colName: FIRESTORE_COLLECTIONS.SUPPLEMENT_SALES, localData: localDb.getSupplementSales(), label: 'POS Sales' },
       { colName: FIRESTORE_COLLECTIONS.STAFF_DAILY_ATTENDANCE, localData: localDb.getStaffDailyAttendance(), label: 'Staff Attendance' },
       { colName: FIRESTORE_COLLECTIONS.SALARY_PAYMENTS, localData: localDb.getSalaryPayments(), label: 'Salary Payments' },
+      { colName: FIRESTORE_COLLECTIONS.MEMBERSHIP_PLANS, localData: getSavedMembershipPlans(), label: 'Membership Plans' },
+      { colName: FIRESTORE_COLLECTIONS.PT_PLANS, localData: getSavedPTPlans(), label: 'PT Packages' },
     ];
 
     const totalSteps = collectionsToSync.length;
@@ -212,6 +217,8 @@ export async function pullAllFirestoreDataToLocal(
       { colName: FIRESTORE_COLLECTIONS.SUPPLEMENT_SALES, storageKey: 'kf_db_supplement_sales', label: 'Sales' },
       { colName: FIRESTORE_COLLECTIONS.STAFF_DAILY_ATTENDANCE, storageKey: 'kf_db_staff_daily_attendance', label: 'Staff Attendance' },
       { colName: FIRESTORE_COLLECTIONS.SALARY_PAYMENTS, storageKey: 'kf_db_salary_payments', label: 'Salary Payments' },
+      { colName: FIRESTORE_COLLECTIONS.MEMBERSHIP_PLANS, storageKey: 'kf_membership_plans', label: 'Membership Plans' },
+      { colName: FIRESTORE_COLLECTIONS.PT_PLANS, storageKey: 'kf_pt_plans', label: 'PT Packages' },
     ];
 
     const totalSteps = collectionsToPull.length;

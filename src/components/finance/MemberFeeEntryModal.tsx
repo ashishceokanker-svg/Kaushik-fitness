@@ -382,10 +382,11 @@ export const MemberFeeEntryModal: React.FC<MemberFeeEntryModalProps> = ({
                     onChange={(e) => setPtDuration(e.target.value as PTPackageDuration)}
                     className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900"
                   >
-                    <option value="none">No PT (केवल जिम)</option>
-                    <option value="1_month">1 Month PT (+₹3,000)</option>
-                    <option value="3_months">3 Months PT (+₹8,000)</option>
-                    <option value="6_months">6 Months PT (+₹15,000)</option>
+                    {Object.entries(PT_PRICING).map(([key, val]) => (
+                      <option key={key} value={key}>
+                        {val.label} {val.price > 0 ? `(+₹${val.price})` : ''}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

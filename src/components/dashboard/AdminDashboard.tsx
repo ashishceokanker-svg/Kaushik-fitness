@@ -30,6 +30,7 @@ import {
   Edit,
   CodeXml,
   Cloud,
+  Package,
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -150,15 +151,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <span>{isCloudSynced ? '🟢 Firebase Live' : '☁️ Cloud Setup'}</span>
               </button>
             )}
-            {isDeveloper && (
-              <button
-                onClick={() => onNavigate('developer')}
-                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-slate-900 via-slate-800 to-cyan-900 hover:brightness-110 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer border border-cyan-500/30"
-              >
-                <CodeXml className="w-3.5 h-3.5 text-cyan-300" />
-                👨‍💻 Developer (Ashish Dey)
-              </button>
-            )}
+            <button
+              onClick={() => onNavigate('developer')}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-slate-900 via-slate-800 to-cyan-900 hover:brightness-110 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer border border-cyan-500/30"
+            >
+              <CodeXml className="w-3.5 h-3.5 text-cyan-300" />
+              👨‍💻 Developer (Ashish Dey)
+            </button>
             <button
               onClick={onOpenRegister}
               className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer"
@@ -224,7 +223,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
           <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-black text-[10px]">
-            10 Tools Available
+            11 Tools Available
           </span>
         </div>
 
@@ -388,6 +387,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="mt-2">
               <div className="font-black text-xs text-slate-900">फीस रिमाइंडर्स</div>
               <div className="text-[10px] text-slate-500">Due Expirations</div>
+            </div>
+          </button>
+
+          {/* 11. Membership & PT Plans Management */}
+          <button
+            onClick={() => onNavigate('plans')}
+            className="p-3 rounded-xl bg-slate-50 hover:bg-amber-50 hover:border-amber-300 border border-slate-200 text-left transition-all cursor-pointer group shadow-2xs flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between w-full">
+              <div className="p-2 rounded-lg bg-amber-100 text-amber-900 group-hover:scale-105 transition-transform">
+                <Package className="w-4 h-4" />
+              </div>
+              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-200 text-amber-950">
+                CRUD
+              </span>
+            </div>
+            <div className="mt-2">
+              <div className="font-black text-xs text-slate-900">प्लान्स व दरें</div>
+              <div className="text-[10px] text-slate-500">Membership & PT Plans</div>
             </div>
           </button>
         </div>

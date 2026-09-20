@@ -13,6 +13,8 @@ import {
   GymEnquiry,
   SupplementItem,
   SupplementSaleTransaction,
+  MembershipPlan,
+  PTPlan,
 } from '../types';
 import { localDb } from '../db/localDatabase';
 import {
@@ -20,7 +22,16 @@ import {
   INITIAL_TRANSACTIONS,
   INITIAL_PROGRESS_LOGS,
 } from '../data/initialData';
-import { calculateCountdown, calculateExpiryDate, MEMBERSHIP_PRICING, PT_PRICING } from '../utils/formatters';
+import {
+  calculateCountdown,
+  calculateExpiryDate,
+  MEMBERSHIP_PRICING,
+  PT_PRICING,
+  getSavedMembershipPlans,
+  getSavedPTPlans,
+  DEFAULT_MEMBERSHIP_PLANS,
+  DEFAULT_PT_PLANS,
+} from '../utils/formatters';
 import { isFirebaseConfigured, getFirebaseInstance } from '../services/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import {
@@ -95,6 +106,15 @@ interface GymDataContextType {
   // Member Activation / Renewal
   activateMember: (memberId: string, duration?: MembershipDuration, customExpiryDate?: string) => void;
   
+  // Membership & PT Plans Management (CRUD)
+  membershipPlans: MembershipPlan[];
+  ptPlans: PTPlan[];
+  saveMembershipPlan: (plan: MembershipPlan) => void;
+  deleteMembershipPlan: (id: string) => void;
+  savePTPlan: (plan: PTPlan) => void;
+  deletePTPlan: (id: string) => void;
+  resetPlansToDefault: () => void;
+
   // Reset & Database Export
   resetToDemoData: () => void;
   exportSqlDump: () => string;
@@ -145,6 +165,18 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Supplement inventory and sales states
   const [supplements, setSupplements] = useState<SupplementItem[]>(() => localDb.getSupplements());
   const [supplementSales, setSupplementSales] = useState<SupplementSaleTransaction[]>(() => localDb.getSupplementSales());
+
+  // Membership & PT Plans Management (CRUD)
+  const [membershipPlans, setMembershipPlans] = useState<MembershipPlan[]>(() => getSavedMembershipPlans());
+  const [ptPlans, setPtPlans] = useState<PTPlan[]>(() => getSavedPTPlans());
+
+  useEffect(() => {
+    localStorage.setItem('kf_membership_plans', JSON.stringify(membershipPlans));
+  }, [membershipPlans]);
+
+  useEffect(() => {
+    localStorage.setItem('kf_pt_plans', JSON.stringify(ptPlans));
+  }, [ptPlans]);
 
   // Sync to local storage
   useEffect(() => {
@@ -232,6 +264,28 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
             localStorage.setItem('kf_db_transactions', JSON.stringify(txItems));
           }
         }
+
+        // Fetch cloud membership plans
+        const mPlansSnap = await getDocs(collection(db, FIRESTORE_COLLECTIONS.MEMBERSHIP_PLANS));
+        if (!mPlansSnap.empty) {
+          const list: MembershipPlan[] = [];
+          mPlansSnap.forEach((d) => list.push({ id: d.id, ...d.data() } as MembershipPlan));
+          if (list.length > 0) {
+            setMembershipPlans(list);
+            localStorage.setItem('kf_membership_plans', JSON.stringify(list));
+          }
+        }
+
+        // Fetch cloud PT plans
+        const ptPlansSnap = await getDocs(collection(db, FIRESTORE_COLLECTIONS.PT_PLANS));
+        if (!ptPlansSnap.empty) {
+          const list: PTPlan[] = [];
+          ptPlansSnap.forEach((d) => list.push({ id: d.id, ...d.data() } as PTPlan));
+          if (list.length > 0) {
+            setPtPlans(list);
+            localStorage.setItem('kf_pt_plans', JSON.stringify(list));
+          }
+        }
       } catch (err) {
         console.warn('Initial cloud fetch error:', err);
       }
@@ -283,6 +337,20 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     });
 
+    const unsubMPlans = subscribeToLiveCollection(FIRESTORE_COLLECTIONS.MEMBERSHIP_PLANS, (items: MembershipPlan[]) => {
+      if (items && items.length > 0) {
+        setMembershipPlans(items);
+        localStorage.setItem('kf_membership_plans', JSON.stringify(items));
+      }
+    });
+
+    const unsubPTPlans = subscribeToLiveCollection(FIRESTORE_COLLECTIONS.PT_PLANS, (items: PTPlan[]) => {
+      if (items && items.length > 0) {
+        setPtPlans(items);
+        localStorage.setItem('kf_pt_plans', JSON.stringify(items));
+      }
+    });
+
     return () => {
       if (unsubMembers) unsubMembers();
       if (unsubProfiles) unsubProfiles();
@@ -290,6 +358,8 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (unsubTx) unsubTx();
       if (unsubSupplements) unsubSupplements();
       if (unsubSales) unsubSales();
+      if (unsubMPlans) unsubMPlans();
+      if (unsubPTPlans) unsubPTPlans();
     };
   }, []);
 
@@ -673,6 +743,70 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setMembers(localDb.getJoinedMembers());
   };
 
+  // Membership & PT Plans Management (CRUD)
+  const saveMembershipPlan = (plan: MembershipPlan) => {
+    setMembershipPlans((prev) => {
+      const idx = prev.findIndex((p) => p.id === plan.id);
+      let updated: MembershipPlan[];
+      if (idx >= 0) {
+        updated = [...prev];
+        updated[idx] = { ...plan, updatedAt: new Date().toISOString() };
+      } else {
+        updated = [...prev, { ...plan, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }];
+      }
+      localStorage.setItem('kf_membership_plans', JSON.stringify(updated));
+      syncDocToFirestore(FIRESTORE_COLLECTIONS.MEMBERSHIPS, plan.id, plan);
+      return updated;
+    });
+  };
+
+  const deleteMembershipPlan = (id: string) => {
+    setMembershipPlans((prev) => {
+      const updated = prev.filter((p) => p.id !== id);
+      localStorage.setItem('kf_membership_plans', JSON.stringify(updated));
+      deleteDocFromFirestore(FIRESTORE_COLLECTIONS.MEMBERSHIPS, id);
+      return updated;
+    });
+  };
+
+  const savePTPlan = (plan: PTPlan) => {
+    setPtPlans((prev) => {
+      const idx = prev.findIndex((p) => p.id === plan.id);
+      let updated: PTPlan[];
+      if (idx >= 0) {
+        updated = [...prev];
+        updated[idx] = { ...plan, updatedAt: new Date().toISOString() };
+      } else {
+        updated = [...prev, { ...plan, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }];
+      }
+      localStorage.setItem('kf_pt_plans', JSON.stringify(updated));
+      syncDocToFirestore(FIRESTORE_COLLECTIONS.PT_PLANS, plan.id, plan);
+      return updated;
+    });
+  };
+
+  const deletePTPlan = (id: string) => {
+    setPtPlans((prev) => {
+      const updated = prev.filter((p) => p.id !== id);
+      localStorage.setItem('kf_pt_plans', JSON.stringify(updated));
+      deleteDocFromFirestore(FIRESTORE_COLLECTIONS.PT_PLANS, id);
+      return updated;
+    });
+  };
+
+  const resetPlansToDefault = () => {
+    setMembershipPlans(DEFAULT_MEMBERSHIP_PLANS);
+    setPtPlans(DEFAULT_PT_PLANS);
+    localStorage.setItem('kf_membership_plans', JSON.stringify(DEFAULT_MEMBERSHIP_PLANS));
+    localStorage.setItem('kf_pt_plans', JSON.stringify(DEFAULT_PT_PLANS));
+    for (const p of DEFAULT_MEMBERSHIP_PLANS) {
+      syncDocToFirestore(FIRESTORE_COLLECTIONS.MEMBERSHIP_PLANS, p.id, p);
+    }
+    for (const p of DEFAULT_PT_PLANS) {
+      syncDocToFirestore(FIRESTORE_COLLECTIONS.PT_PLANS, p.id, p);
+    }
+  };
+
   const resetToDemoData = () => {
     localDb.resetDatabase();
     setMembers(localDb.getJoinedMembers());
@@ -755,6 +889,13 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         saveSupplementProduct,
         changeUserPin,
         activateMember,
+        membershipPlans,
+        ptPlans,
+        saveMembershipPlan,
+        deleteMembershipPlan,
+        savePTPlan,
+        deletePTPlan,
+        resetPlansToDefault,
         resetToDemoData,
         exportSqlDump: () => localDb.exportSqlDump(),
         exportJsonDump: () => localDb.exportJsonDump(),

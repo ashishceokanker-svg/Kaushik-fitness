@@ -142,8 +142,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {/* Developer Page Quick Link - Strictly DEVELOPER ONLY */}
-          {isDeveloper && onOpenDeveloper && (
+          {/* Developer Page Quick Link - Visible to ALL (Admin, Developer, Staff, Member, Trainer) */}
+          {onOpenDeveloper && (
             <button
               onClick={onOpenDeveloper}
               title="Developer Profile (Ashish Dey - CEO Janpad Panchayat Baderajpur)"
