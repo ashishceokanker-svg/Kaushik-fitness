@@ -1,13 +1,16 @@
-// Service Worker for Kaushik Fitness PWA
-const CACHE_NAME = 'koushik-fitness-v1';
+// Service Worker for Kaushik Fitness PWA - Fresh Cache v3
+const CACHE_NAME = 'koushik-fitness-v3-fresh';
 const PRECACHE_ASSETS = [
-  '/',
-  '/index.html',
-  '/dumbbell.svg',
-  '/manifest.json'
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/apple-touch-icon.png',
+  '/app-logo.png',
+  '/dumbbell.svg'
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(PRECACHE_ASSETS).catch((err) => {
@@ -15,7 +18,6 @@ self.addEventListener('install', (event) => {
       });
     })
   );
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
@@ -24,46 +26,44 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
+            console.log('Purging old cache:', key);
             return caches.delete(key);
           }
         })
       );
+    }).then(() => {
+      return self.clients.claim();
     })
   );
-  self.clients.claim();
 });
 
-// Network first, falling back to cache
+// Network-First strategy: Always fetch live from server so user gets fresh deploy
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
-  // Ignore chrome-extension and non-http schemes
   if (!event.request.url.startsWith('http')) return;
 
+  // For HTML navigation: Network-first, fallback to cache only if offline
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match('/index.html');
+        })
+    );
+    return;
+  }
+
+  // For assets: Network-first with cache fallback
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => {
-        // Cache valid responses for static assets
-        if (
-          networkResponse &&
-          networkResponse.status === 200 &&
-          (event.request.url.includes('/assets/') || event.request.url.includes('.svg') || event.request.url.includes('.css'))
-        ) {
-          const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
-        }
         return networkResponse;
       })
       .catch(() => {
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) return cachedResponse;
-          // Fallback to index.html for navigation requests
-          if (event.request.mode === 'navigate') {
-            return caches.match('/index.html');
-          }
-          return new Response('Offline', { status: 503, statusText: 'Service Offline' });
-        });
+        return caches.match(event.request);
       })
   );
 });

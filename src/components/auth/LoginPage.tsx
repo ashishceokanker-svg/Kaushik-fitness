@@ -44,7 +44,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
     try {
       const res = loginWithCredentials(pin);
       if (!res.success) {
-        setLocalError(res.message || 'गलत पिन दर्ज किया गया। कृपया सही 4-अंकीय सुरक्षा पिन का उपयोग करें।');
+        // Strict Validation Message: Never expose or show demo PINs under any circumstances
+        setLocalError('❌ अमान्य पिन! कृपया अपना सही 4-अंकीय सुरक्षा पिन दर्ज करें। (Invalid PIN. Please try again.)');
+        setPin('');
       } else if (res.geofenceResult) {
         setGeofenceFeedback({
           status: res.geofenceResult.status,
@@ -53,79 +55,105 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
         });
       }
     } catch (err: any) {
-      setLocalError(err.message || 'Login error occurred');
+      setLocalError('अमान्य पिन। कृपया पुनः प्रयास करें।');
+      setPin('');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-slate-100 via-amber-50/50 to-slate-200/70 flex flex-col justify-between text-slate-800 selection:bg-amber-400 selection:text-slate-900 overflow-x-hidden">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-100 via-amber-50/70 to-slate-200/80 flex flex-col justify-between text-slate-800 selection:bg-amber-400 selection:text-slate-900 overflow-x-hidden">
       {/* Decorative Gym Vector Art & Light Ambient Background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 select-none">
         {/* Soft Ambient Light Glows */}
-        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-amber-400/20 blur-3xl animate-pulse" />
-        <div className="absolute top-1/3 -right-32 w-96 h-96 rounded-full bg-amber-300/20 blur-3xl" />
-        <div className="absolute -bottom-32 left-1/4 w-96 h-96 rounded-full bg-slate-300/35 blur-3xl" />
+        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-amber-400/25 blur-3xl animate-pulse" />
+        <div className="absolute top-1/3 -right-32 w-96 h-96 rounded-full bg-amber-300/25 blur-3xl" />
+        <div className="absolute -bottom-32 left-1/4 w-96 h-96 rounded-full bg-slate-400/25 blur-3xl" />
 
-        {/* Subtle Gym Vector Graphics (Watermarked in subtle athletic tones) */}
+        {/* High-Definition Responsive Gym Vector Artwork */}
         <svg
-          className="absolute inset-0 w-full h-full text-slate-500/20"
+          className="absolute inset-0 w-full h-full"
+          viewBox="0 0 1440 900"
+          preserveAspectRatio="xMidYMid slice"
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
         >
-          {/* Top Left Heavy Dumbbell Vector */}
-          <g transform="translate(60, 90) rotate(-25) scale(1.35)" stroke="currentColor" strokeWidth="1.5">
-            <rect x="0" y="30" width="80" height="12" rx="4" fill="currentColor" fillOpacity="0.08" />
-            <rect x="-14" y="10" width="14" height="52" rx="4" fill="currentColor" fillOpacity="0.12" />
-            <rect x="-24" y="18" width="10" height="36" rx="3" fill="currentColor" fillOpacity="0.15" />
-            <rect x="80" y="10" width="14" height="52" rx="4" fill="currentColor" fillOpacity="0.12" />
-            <rect x="94" y="18" width="10" height="36" rx="3" fill="currentColor" fillOpacity="0.15" />
+          {/* Top-Left Olympic Barbell with Loaded Heavy Plates */}
+          <g transform="translate(60, 60) rotate(-18)">
+            {/* Barbell shaft */}
+            <rect x="0" y="70" width="340" height="12" rx="6" fill="#475569" stroke="#1e293b" strokeWidth="2" opacity="0.6" />
+            <rect x="60" y="68" width="50" height="16" fill="#f59e0b" opacity="0.35" />
+            <rect x="230" y="68" width="50" height="16" fill="#f59e0b" opacity="0.35" />
+            {/* Left Plates (45lb / 20kg) */}
+            <rect x="10" y="10" width="16" height="132" rx="6" fill="#334155" stroke="#f59e0b" strokeWidth="2.5" opacity="0.55" />
+            <rect x="30" y="22" width="14" height="108" rx="5" fill="#475569" stroke="#f59e0b" strokeWidth="2" opacity="0.55" />
+            <rect x="48" y="34" width="10" height="84" rx="4" fill="#64748b" opacity="0.45" />
+            {/* Right Plates */}
+            <rect x="314" y="10" width="16" height="132" rx="6" fill="#334155" stroke="#f59e0b" strokeWidth="2.5" opacity="0.55" />
+            <rect x="296" y="22" width="14" height="108" rx="5" fill="#475569" stroke="#f59e0b" strokeWidth="2" opacity="0.55" />
+            <rect x="282" y="34" width="10" height="84" rx="4" fill="#64748b" opacity="0.45" />
           </g>
 
-          {/* Top Right Olympic Barbell Plates */}
-          <g transform="translate(920, 80) rotate(15) scale(1.25)" stroke="currentColor" strokeWidth="1.5">
-            <circle cx="60" cy="60" r="50" fill="currentColor" fillOpacity="0.06" />
-            <circle cx="60" cy="60" r="36" strokeDasharray="6 4" />
-            <circle cx="60" cy="60" r="14" fill="currentColor" fillOpacity="0.15" />
-            <line x1="60" y1="0" x2="60" y2="120" stroke="currentColor" strokeWidth="2" />
-            <line x1="0" y1="60" x2="120" y2="60" stroke="currentColor" strokeWidth="2" />
+          {/* Top-Right Large Olympic Plate Disc */}
+          <g transform="translate(1120, 60) rotate(22)">
+            <circle cx="100" cy="100" r="90" fill="#f8fafc" stroke="#d97706" strokeWidth="4" opacity="0.6" />
+            <circle cx="100" cy="100" r="75" fill="#fef3c7" stroke="#b45309" strokeWidth="2.5" strokeDasharray="8 6" opacity="0.5" />
+            <circle cx="100" cy="100" r="32" fill="#e2e8f0" stroke="#334155" strokeWidth="3" opacity="0.6" />
+            <circle cx="100" cy="100" r="16" fill="#0f172a" opacity="0.6" />
+            <text x="100" y="65" textAnchor="middle" fill="#d97706" fontSize="13" fontWeight="900" letterSpacing="2" opacity="0.7">25 KG</text>
+            <text x="100" y="150" textAnchor="middle" fill="#475569" fontSize="11" fontWeight="800" letterSpacing="1" opacity="0.6">KAUSHIK</text>
           </g>
 
-          {/* Bottom Left Cast Iron Kettlebell */}
-          <g transform="translate(80, 500) rotate(10) scale(1.3)" stroke="currentColor" strokeWidth="1.5">
-            <circle cx="45" cy="55" r="35" fill="currentColor" fillOpacity="0.08" />
-            <path d="M25 25 C25 5, 65 5, 65 25" fill="none" strokeWidth="5" stroke="currentColor" />
-            <circle cx="45" cy="55" r="12" fill="currentColor" fillOpacity="0.1" />
+          {/* Bottom-Left Cast Iron Kettlebell */}
+          <g transform="translate(80, 560) rotate(12)">
+            {/* Kettlebell Handle */}
+            <path d="M45 50 C45 10, 115 10, 115 50" fill="none" stroke="#d97706" strokeWidth="12" strokeLinecap="round" opacity="0.5" />
+            {/* Kettlebell Body */}
+            <circle cx="80" cy="110" r="62" fill="#fef3c7" stroke="#b45309" strokeWidth="3.5" opacity="0.5" />
+            <circle cx="80" cy="110" r="28" fill="#e2e8f0" stroke="#475569" strokeWidth="2.5" opacity="0.5" />
+            <text x="80" y="116" textAnchor="middle" fill="#d97706" fontSize="16" fontWeight="900" opacity="0.7">24KG</text>
           </g>
 
-          {/* Bottom Right Power Dumbbell */}
-          <g transform="translate(880, 470) rotate(-35) scale(1.4)" stroke="currentColor" strokeWidth="1.5">
-            <rect x="0" y="30" width="90" height="12" rx="4" fill="currentColor" fillOpacity="0.08" />
-            <rect x="-16" y="8" width="16" height="56" rx="4" fill="currentColor" fillOpacity="0.12" />
-            <rect x="-28" y="16" width="12" height="40" rx="3" fill="currentColor" fillOpacity="0.15" />
-            <rect x="90" y="8" width="16" height="56" rx="4" fill="currentColor" fillOpacity="0.12" />
-            <rect x="106" y="16" width="12" height="40" rx="3" fill="currentColor" fillOpacity="0.15" />
+          {/* Bottom-Right Heavy Hex Dumbbell */}
+          <g transform="translate(1080, 520) rotate(-28)">
+            {/* Steel knurled shaft */}
+            <rect x="40" y="55" width="130" height="16" rx="6" fill="#64748b" stroke="#334155" strokeWidth="2.5" opacity="0.65" />
+            <line x1="60" y1="55" x2="60" y2="71" stroke="#f59e0b" strokeWidth="2" opacity="0.6" />
+            <line x1="80" y1="55" x2="80" y2="71" stroke="#f59e0b" strokeWidth="2" opacity="0.6" />
+            <line x1="105" y1="55" x2="105" y2="71" stroke="#f59e0b" strokeWidth="2" opacity="0.6" />
+            <line x1="130" y1="55" x2="130" y2="71" stroke="#f59e0b" strokeWidth="2" opacity="0.6" />
+            <line x1="150" y1="55" x2="150" y2="71" stroke="#f59e0b" strokeWidth="2" opacity="0.6" />
+            {/* Left Hex Head */}
+            <path d="M40 20 L40 106 L15 125 L-10 106 L-10 20 L15 1 Z" fill="#fef3c7" stroke="#d97706" strokeWidth="3.5" opacity="0.6" />
+            {/* Right Hex Head */}
+            <path d="M170 20 L170 106 L195 125 L220 106 L220 20 L195 1 Z" fill="#fef3c7" stroke="#d97706" strokeWidth="3.5" opacity="0.6" />
+            <text x="15" y="70" textAnchor="middle" fill="#b45309" fontSize="14" fontWeight="900" opacity="0.7">30KG</text>
+            <text x="195" y="70" textAnchor="middle" fill="#b45309" fontSize="14" fontWeight="900" opacity="0.7">30KG</text>
           </g>
 
-          {/* Center Subtle Heartbeat / Pulse Cardio Wave */}
+          {/* Center Dynamic Heartbeat / ECG Athletic Pulse Wave */}
           <path
-            d="M0 380 L350 380 L380 340 L400 420 L430 310 L460 450 L490 360 L520 400 L540 380 L1400 380"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeOpacity="0.18"
-            strokeDasharray="8 6"
+            d="M0 450 L380 450 L410 400 L430 500 L460 360 L490 530 L520 420 L550 470 L570 450 L1440 450"
+            stroke="#f59e0b"
+            strokeWidth="3.5"
+            strokeOpacity="0.45"
+            strokeLinecap="round"
+            strokeLinejoin="round"
             fill="none"
           />
+          <circle cx="490" cy="530" r="5" fill="#d97706" opacity="0.6" />
 
-          {/* Background Motivational Typography Watermark */}
+          {/* Watermarked Big Typography */}
           <text
             x="50%"
-            y="260"
+            y="240"
             textAnchor="middle"
-            fill="currentColor"
-            fillOpacity="0.03"
-            fontSize="80"
+            fill="none"
+            stroke="#d97706"
+            strokeWidth="1.5"
+            strokeOpacity="0.16"
+            fontSize="84"
             fontWeight="900"
             letterSpacing="0.25em"
             className="font-black select-none uppercase tracking-widest"
@@ -134,26 +162,28 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
           </text>
           <text
             x="50%"
-            y="650"
+            y="700"
             textAnchor="middle"
-            fill="currentColor"
-            fillOpacity="0.035"
+            fill="none"
+            stroke="#334155"
+            strokeWidth="1.5"
+            strokeOpacity="0.14"
             fontSize="44"
             fontWeight="900"
             letterSpacing="0.3em"
             className="font-black select-none uppercase tracking-widest"
           >
-            STRENGTH • POWER • DISCIPLINE
+            STRENGTH • DISCIPLINE • TRANSFORMATION
           </text>
         </svg>
 
-        {/* Diagonal Athletic Mesh Grid */}
+        {/* Crisp Sport Geometric Dot Pattern Overlay */}
         <div
-          className="absolute inset-0 opacity-[0.04]"
+          className="absolute inset-0 opacity-[0.06]"
           style={{
-            backgroundImage: `radial-gradient(#d97706 1.5px, transparent 1.5px), radial-gradient(#0f172a 1px, transparent 1px)`,
-            backgroundSize: '32px 32px',
-            backgroundPosition: '0 0, 16px 16px',
+            backgroundImage: `radial-gradient(#d97706 2px, transparent 2px), radial-gradient(#334155 1.5px, transparent 1.5px)`,
+            backgroundSize: '40px 40px',
+            backgroundPosition: '0 0, 20px 20px',
           }}
         />
       </div>
@@ -209,7 +239,30 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
       </header>
 
       {/* Main Login Card Area */}
-      <main className="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-6 my-2">
+      <main className="relative z-10 flex-1 flex items-center justify-center gap-8 p-4 sm:p-6 my-2">
+        {/* Left Side Aesthetic Gym Showcase (Desktop) */}
+        <div className="hidden xl:flex flex-col gap-4 max-w-xs p-6 rounded-3xl bg-white/80 backdrop-blur-md border border-amber-200/80 shadow-xl text-slate-800">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-400 flex items-center justify-center text-slate-950 font-black shadow-md shadow-amber-500/30">
+            <Dumbbell className="w-6 h-6" />
+          </div>
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 font-mono">
+              Strength & Cardio Club
+            </span>
+            <h3 className="font-black text-lg text-slate-900 mt-0.5">
+              कौशिक फिटनेस कांकेर
+            </h3>
+            <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+              आधुनिक हैवी वेट्स, डंबल्स, ट्रेडमिल व व्यक्तिगत प्रशिक्षण (PT) के साथ अपनी फिटनेस क्षमता को निखारें।
+            </p>
+          </div>
+          <div className="pt-2 border-t border-slate-200/80 flex flex-wrap gap-1.5 text-[11px] font-bold text-amber-900">
+            <span className="px-2.5 py-1 rounded-lg bg-amber-100/80">💪 Heavy Weights</span>
+            <span className="px-2.5 py-1 rounded-lg bg-amber-100/80">🔥 Cardio Zone</span>
+            <span className="px-2.5 py-1 rounded-lg bg-amber-100/80">🏆 PT Training</span>
+          </div>
+        </div>
+
         <div className="w-full max-w-md bg-white/95 backdrop-blur-md border border-amber-200/70 rounded-3xl shadow-2xl shadow-slate-300/60 overflow-hidden">
           {/* Card Top Banner */}
           <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 py-6 text-white text-center">
@@ -344,6 +397,30 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
           <div className="bg-slate-50 border-t border-slate-200 px-6 py-3.5 flex items-center justify-between text-[11px] text-slate-500">
             <span>Kaushik Fitness Kanker © 2026</span>
             <span>Secure SHA-256 PIN</span>
+          </div>
+        </div>
+
+        {/* Right Side Smart Features Badge (Desktop) */}
+        <div className="hidden xl:flex flex-col gap-4 max-w-xs p-6 rounded-3xl bg-white/80 backdrop-blur-md border border-amber-200/80 shadow-xl text-slate-800">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-slate-900 to-slate-800 flex items-center justify-center text-amber-400 font-black shadow-md">
+            <MapPin className="w-6 h-6" />
+          </div>
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 font-mono flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+              Smart Geofence Active
+            </span>
+            <h3 className="font-black text-lg text-slate-900 mt-0.5">
+              डिजिटल उपस्थिति व ट्रैकिंग
+            </h3>
+            <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+              जिम परिसर में पहुंचते ही पिन द्वारा स्वचालित उपस्थिति दर्ज, मासिक बॉडी इंडेक्स और डिजिटल रसीद सुविधा।
+            </p>
+          </div>
+          <div className="pt-2 border-t border-slate-200/80 flex flex-wrap gap-1.5 text-[11px] font-bold text-slate-700">
+            <span className="px-2.5 py-1 rounded-lg bg-slate-100">📍 GPS Verify</span>
+            <span className="px-2.5 py-1 rounded-lg bg-slate-100">📊 Body BMI</span>
+            <span className="px-2.5 py-1 rounded-lg bg-slate-100">🧾 Instant Slip</span>
           </div>
         </div>
       </main>
