@@ -72,7 +72,7 @@ interface GymDataContextType {
   deleteStaff: (id: string) => void;
 
   // Attendance actions
-  markAttendance: (identifier: string, method?: 'pin') => { success: boolean; message: string; record?: AttendanceRecord; personName?: string };
+  markAttendance: (identifier: string, method?: 'pin') => Promise<{ success: boolean; message: string; record?: AttendanceRecord; personName?: string }>;
 
   // Financial actions
   addTransaction: (tx: Omit<FinancialTransaction, 'id' | 'transactionNumber' | 'date'>) => FinancialTransaction;
@@ -211,41 +211,60 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (!isFirebaseConfigured()) return;
     setIsCloudSynced(true);
 
-    // Initial immediate fetch from Cloud Firestore on mount (so laptop pulls phone additions instantly)
+    // Initial immediate parallel fetch from Cloud Firestore on mount
     const initialSyncFromCloud = async () => {
       try {
         const { db } = getFirebaseInstance();
         if (!db) return;
 
-        // Fetch cloud memberships / members
-        const membersSnap = await getDocs(collection(db, FIRESTORE_COLLECTIONS.MEMBERSHIPS));
-        if (!membersSnap.empty) {
-          membersSnap.forEach((docSnap) => {
+        // Fetch all primary collections in parallel
+        const [usersSnap, membersSnap, profSnap, attSnap, txSnap, mPlansSnap, ptPlansSnap] = await Promise.allSettled([
+          getDocs(collection(db, FIRESTORE_COLLECTIONS.USERS)),
+          getDocs(collection(db, FIRESTORE_COLLECTIONS.MEMBERSHIPS)),
+          getDocs(collection(db, FIRESTORE_COLLECTIONS.MEMBER_PROFILES)),
+          getDocs(collection(db, FIRESTORE_COLLECTIONS.ATTENDANCE)),
+          getDocs(collection(db, FIRESTORE_COLLECTIONS.TRANSACTIONS)),
+          getDocs(collection(db, FIRESTORE_COLLECTIONS.MEMBERSHIP_PLANS)),
+          getDocs(collection(db, FIRESTORE_COLLECTIONS.PT_PLANS)),
+        ]);
+
+        // 1. Process Users (All logins, PINs, Staff, Trainers, Members)
+        if (usersSnap.status === 'fulfilled' && !usersSnap.value.empty) {
+          usersSnap.value.forEach((d) => {
+            const data = d.data() as any;
+            if (data && d.id) {
+              localDb.upsertUserFromCloud({ id: d.id, ...data });
+            }
+          });
+        }
+
+        // 2. Process Memberships
+        if (membersSnap.status === 'fulfilled' && !membersSnap.value.empty) {
+          membersSnap.value.forEach((docSnap) => {
             const data = docSnap.data() as Partial<Member>;
-            if (data && docSnap.id && (data.name || data.phone || data.memberCode)) {
+            if (data && docSnap.id && (data.name || data.phone || data.memberCode || (data as any).pin)) {
               localDb.upsertMemberFromCloud({ id: docSnap.id, ...data } as Member);
             }
           });
-          setMembers(localDb.getJoinedMembers());
         }
 
-        // Fetch cloud member profiles too
-        const profSnap = await getDocs(collection(db, FIRESTORE_COLLECTIONS.MEMBER_PROFILES));
-        if (!profSnap.empty) {
-          profSnap.forEach((docSnap) => {
+        // 3. Process Member Profiles
+        if (profSnap.status === 'fulfilled' && !profSnap.value.empty) {
+          profSnap.value.forEach((docSnap) => {
             const data = docSnap.data() as Partial<Member>;
-            if (data && docSnap.id && (data.name || data.phone || data.memberCode)) {
+            if (data && docSnap.id && (data.name || data.phone || data.memberCode || (data as any).pin)) {
               localDb.upsertMemberFromCloud({ id: docSnap.id, ...data } as Member);
             }
           });
-          setMembers(localDb.getJoinedMembers());
         }
 
-        // Fetch cloud attendance
-        const attSnap = await getDocs(collection(db, FIRESTORE_COLLECTIONS.ATTENDANCE));
-        if (!attSnap.empty) {
+        setMembers(localDb.getJoinedMembers());
+        setStaff(localDb.getStaffMembers());
+
+        // 4. Process Attendance
+        if (attSnap.status === 'fulfilled' && !attSnap.value.empty) {
           const attItems: AttendanceRecord[] = [];
-          attSnap.forEach((d) => attItems.push({ id: d.id, ...d.data() } as AttendanceRecord));
+          attSnap.value.forEach((d) => attItems.push({ id: d.id, ...d.data() } as AttendanceRecord));
           if (attItems.length > 0) {
             setAttendance(attItems);
             localStorage.setItem('kf_attendance', JSON.stringify(attItems));
@@ -253,11 +272,10 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
           }
         }
 
-        // Fetch cloud transactions
-        const txSnap = await getDocs(collection(db, FIRESTORE_COLLECTIONS.TRANSACTIONS));
-        if (!txSnap.empty) {
+        // 5. Process Transactions
+        if (txSnap.status === 'fulfilled' && !txSnap.value.empty) {
           const txItems: FinancialTransaction[] = [];
-          txSnap.forEach((d) => txItems.push({ id: d.id, ...d.data() } as FinancialTransaction));
+          txSnap.value.forEach((d) => txItems.push({ id: d.id, ...d.data() } as FinancialTransaction));
           if (txItems.length > 0) {
             setTransactions(txItems);
             localStorage.setItem('kf_transactions', JSON.stringify(txItems));
@@ -265,22 +283,20 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
           }
         }
 
-        // Fetch cloud membership plans
-        const mPlansSnap = await getDocs(collection(db, FIRESTORE_COLLECTIONS.MEMBERSHIP_PLANS));
-        if (!mPlansSnap.empty) {
+        // 6. Process Membership Plans
+        if (mPlansSnap.status === 'fulfilled' && !mPlansSnap.value.empty) {
           const list: MembershipPlan[] = [];
-          mPlansSnap.forEach((d) => list.push({ id: d.id, ...d.data() } as MembershipPlan));
+          mPlansSnap.value.forEach((d) => list.push({ id: d.id, ...d.data() } as MembershipPlan));
           if (list.length > 0) {
             setMembershipPlans(list);
             localStorage.setItem('kf_membership_plans', JSON.stringify(list));
           }
         }
 
-        // Fetch cloud PT plans
-        const ptPlansSnap = await getDocs(collection(db, FIRESTORE_COLLECTIONS.PT_PLANS));
-        if (!ptPlansSnap.empty) {
+        // 7. Process PT Plans
+        if (ptPlansSnap.status === 'fulfilled' && !ptPlansSnap.value.empty) {
           const list: PTPlan[] = [];
-          ptPlansSnap.forEach((d) => list.push({ id: d.id, ...d.data() } as PTPlan));
+          ptPlansSnap.value.forEach((d) => list.push({ id: d.id, ...d.data() } as PTPlan));
           if (list.length > 0) {
             setPtPlans(list);
             localStorage.setItem('kf_pt_plans', JSON.stringify(list));
@@ -296,7 +312,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const handleIncomingMembers = (items: Array<Partial<Member> & { id?: string }>) => {
       if (items && items.length > 0) {
         items.forEach((item) => {
-          if (item && item.id && (item.name || item.phone || item.memberCode)) {
+          if (item && item.id && (item.name || item.phone || item.memberCode || (item as any).pin)) {
             localDb.upsertMemberFromCloud(item as Member);
           }
         });
@@ -306,6 +322,19 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     const unsubMembers = subscribeToLiveCollection(FIRESTORE_COLLECTIONS.MEMBERSHIPS, handleIncomingMembers);
     const unsubProfiles = subscribeToLiveCollection(FIRESTORE_COLLECTIONS.MEMBER_PROFILES, handleIncomingMembers);
+
+    // Live subscription for users & PINs
+    const unsubUsers = subscribeToLiveCollection(FIRESTORE_COLLECTIONS.USERS, (items: any[]) => {
+      if (items && items.length > 0) {
+        items.forEach((item) => {
+          if (item && item.id) {
+            localDb.upsertUserFromCloud(item);
+          }
+        });
+        setMembers(localDb.getJoinedMembers());
+        setStaff(localDb.getStaffMembers());
+      }
+    });
 
     const unsubAttendance = subscribeToLiveCollection(FIRESTORE_COLLECTIONS.ATTENDANCE, (items: AttendanceRecord[]) => {
       if (items && items.length > 0) {
@@ -351,9 +380,23 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     });
 
+    // Auto sync heartbeat & screen wakeup listeners for mobile browsers
+    const handleWakeup = () => {
+      if (document.visibilityState === 'visible') {
+        initialSyncFromCloud();
+      }
+    };
+    window.addEventListener('visibilitychange', handleWakeup);
+    window.addEventListener('focus', handleWakeup);
+    const syncInterval = setInterval(initialSyncFromCloud, 20000);
+
     return () => {
+      window.removeEventListener('visibilitychange', handleWakeup);
+      window.removeEventListener('focus', handleWakeup);
+      clearInterval(syncInterval);
       if (unsubMembers) unsubMembers();
       if (unsubProfiles) unsubProfiles();
+      if (unsubUsers) unsubUsers();
       if (unsubAttendance) unsubAttendance();
       if (unsubTx) unsubTx();
       if (unsubSupplements) unsubSupplements();
@@ -503,17 +546,60 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   // Attendance (PIN-based entry)
-  const markAttendance = (identifier: string, _method: 'pin' = 'pin') => {
+  const markAttendance = async (identifier: string, _method: 'pin' = 'pin'): Promise<{ success: boolean; message: string; record?: AttendanceRecord; personName?: string }> => {
     const trimmed = identifier.trim().toUpperCase();
 
-    // Look for matching member
-    const matchedMember = members.find(
+    // 1. Look in memory or fresh localDb
+    let currentMembers = members.length > 0 ? members : localDb.getJoinedMembers();
+    let matchedMember = currentMembers.find(
       (m) =>
         m.memberCode.toUpperCase() === trimmed ||
         m.pin === trimmed ||
         m.phone === trimmed ||
         m.id === identifier
     );
+
+    // 2. If not found locally, live query Cloud Firestore (for immediate cross-mobile recognition)
+    if (!matchedMember && isFirebaseConfigured()) {
+      try {
+        const { db } = getFirebaseInstance();
+        if (db) {
+          const mSnap = await getDocs(collection(db, FIRESTORE_COLLECTIONS.MEMBERSHIPS));
+          for (const d of mSnap.docs) {
+            const data = d.data() as any;
+            const pPin = String(data.pin || '').trim();
+            const pCode = String(data.memberCode || data.member_code || '').trim().toUpperCase();
+            const pPhone = String(data.phone || '').trim();
+
+            if (pPin === trimmed || pCode === trimmed || pPhone === trimmed || d.id === identifier) {
+              localDb.upsertMemberFromCloud({ id: d.id, ...data });
+              currentMembers = localDb.getJoinedMembers();
+              setMembers(currentMembers);
+              matchedMember = currentMembers.find((m) => m.id === d.id || m.pin === trimmed);
+              break;
+            }
+          }
+
+          if (!matchedMember) {
+            const uSnap = await getDocs(collection(db, FIRESTORE_COLLECTIONS.USERS));
+            for (const d of uSnap.docs) {
+              const data = d.data() as any;
+              const uPin = String(data.pin || '').trim();
+              const uPhone = String(data.phone || '').trim();
+              if (uPin === trimmed || uPhone === trimmed || d.id === identifier) {
+                localDb.upsertUserFromCloud({ id: d.id, ...data });
+                currentMembers = localDb.getJoinedMembers();
+                setMembers(currentMembers);
+                matchedMember = currentMembers.find((m) => m.pin === trimmed || m.userId === d.id);
+                break;
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Live attendance cloud lookup error:', e);
+      }
+    }
 
     if (matchedMember) {
       // Automatic PIN disable when membership is expired or inactive
@@ -541,6 +627,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setAttendance((prev) =>
           prev.map((a) => (a.id === existingToday.id ? { ...a, checkOutTime: nowTime } : a))
         );
+        syncDocToFirestore(FIRESTORE_COLLECTIONS.ATTENDANCE, existingToday.id, { checkOutTime: nowTime });
         return {
           success: true,
           message: `Checked out successfully! Have a great recovery, ${matchedMember.name}! 👋`,
@@ -562,6 +649,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       };
 
       setAttendance((prev) => [newRecord, ...prev]);
+      syncDocToFirestore(FIRESTORE_COLLECTIONS.ATTENDANCE, newRecord.id, newRecord);
 
       return {
         success: true,
@@ -592,6 +680,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setAttendance((prev) =>
           prev.map((a) => (a.id === existingToday.id ? { ...a, checkOutTime: nowTime } : a))
         );
+        syncDocToFirestore(FIRESTORE_COLLECTIONS.ATTENDANCE, existingToday.id, { checkOutTime: nowTime });
         return {
           success: true,
           message: `Staff shift completed! Clocked out: ${matchedStaff.name} (${matchedStaff.designation})`,
@@ -613,6 +702,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       };
 
       setAttendance((prev) => [newRecord, ...prev]);
+      syncDocToFirestore(FIRESTORE_COLLECTIONS.ATTENDANCE, newRecord.id, newRecord);
 
       return {
         success: true,

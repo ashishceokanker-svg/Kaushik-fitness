@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, UserRole } from '../types';
 import { localDb } from '../db/localDatabase';
+import { getFirebaseInstance, isFirebaseConfigured } from '../services/firebase';
+import { collection, getDocs } from 'firebase/firestore';
+import { FIRESTORE_COLLECTIONS } from '../services/firebaseSync';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -9,9 +12,9 @@ interface AuthContextType {
   token: string | null;
   error: string | null;
   switchRole: (role: UserRole, specificId?: string) => void;
-  loginWithCredentials: (emailOrPhoneOrCode: string, passwordOrPin?: string) => { success: boolean; message?: string; user?: User; geofenceResult?: any };
+  loginWithCredentials: (emailOrPhoneOrCode: string, passwordOrPin?: string) => Promise<{ success: boolean; message?: string; user?: User; geofenceResult?: any }>;
   loginAsSpecificMember: (memberId: string) => void;
-  login: (emailOrPhone: string, pinOrPass: string) => boolean;
+  login: (emailOrPhone: string, pinOrPass: string) => Promise<boolean>;
   logout: () => void;
   updateCurrentUserProfile: (data: Partial<User>) => void;
 }
@@ -164,9 +167,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
+  useEffect(() => {
+    if (!isFirebaseConfigured()) return;
+    const syncUsersFromCloud = async () => {
+      try {
+        const { db } = getFirebaseInstance();
+        if (!db) return;
+        const uSnap = await getDocs(collection(db, FIRESTORE_COLLECTIONS.USERS));
+        if (!uSnap.empty) {
+          uSnap.forEach((d) => {
+            const data = d.data() as any;
+            if (data && d.id) {
+              localDb.upsertUserFromCloud({ id: d.id, ...data });
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('Background users sync error:', e);
+      }
+    };
+    syncUsersFromCloud();
+  }, []);
+
   const [error, setError] = useState<string | null>(null);
 
-  const loginWithCredentials = (emailOrPhoneOrCode: string, passwordOrPin?: string) => {
+  const loginWithCredentials = async (emailOrPhoneOrCode: string, passwordOrPin?: string): Promise<{ success: boolean; message?: string; user?: User; geofenceResult?: any }> => {
     const cleanId = emailOrPhoneOrCode.trim().toLowerCase();
     const cleanPass = passwordOrPin ? passwordOrPin.trim() : '';
 
@@ -209,6 +234,112 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     }
 
+    // 3. If still not matched locally, query live Cloud Firestore in real time!
+    if (!matchedDbUser && isFirebaseConfigured()) {
+      try {
+        const { db } = getFirebaseInstance();
+        if (db) {
+          const cleanDigits = cleanId.replace(/[^0-9]/g, '');
+
+          // Check kf_users collection
+          const usersSnap = await getDocs(collection(db, FIRESTORE_COLLECTIONS.USERS));
+          for (const d of usersSnap.docs) {
+            const uData = d.data() as any;
+            const uPin = String(uData.pin || '').trim();
+            const uPhone = String(uData.phone || '').replace(/[^0-9]/g, '');
+            const uCode = String(uData.memberCode || uData.member_code || '').trim().toLowerCase();
+            const uEmail = String(uData.email || '').trim().toLowerCase();
+
+            if (
+              (uPin && uPin === cleanId) ||
+              (cleanDigits && uPhone && uPhone === cleanDigits) ||
+              (uCode && uCode === cleanId) ||
+              (uEmail && uEmail === cleanId) ||
+              (cleanPass && uPin && uPin === cleanPass)
+            ) {
+              matchedDbUser = {
+                id: uData.userId || uData.id || d.id,
+                name: uData.name || 'Athlete Member',
+                email: uData.email || `${uData.phone || 'member'}@kaushikfitness.com`,
+                phone: uData.phone || '',
+                password_hash: uData.password_hash || '$2a$12$defaultHashedPassword2024',
+                role: uData.role || 'member',
+                created_at: uData.created_at || uData.joiningDate || new Date().toISOString(),
+                pin: uPin || cleanId,
+                avatar_url: uData.avatarUrl || uData.avatar_url,
+                address: uData.address,
+              };
+              localDb.upsertUserFromCloud(matchedDbUser);
+              localDb.upsertMemberFromCloud({
+                id: uData.memberId || uData.id || d.id,
+                userId: matchedDbUser.id,
+                name: matchedDbUser.name,
+                phone: matchedDbUser.phone,
+                email: matchedDbUser.email,
+                pin: matchedDbUser.pin,
+                memberCode: uData.memberCode || uData.member_code,
+                role: matchedDbUser.role,
+                avatarUrl: matchedDbUser.avatar_url,
+                joiningDate: matchedDbUser.created_at,
+                expiryDate: uData.expiryDate,
+                membershipDuration: uData.membershipDuration,
+              });
+              break;
+            }
+          }
+
+          // Check kf_memberships collection
+          if (!matchedDbUser) {
+            const mshSnap = await getDocs(collection(db, FIRESTORE_COLLECTIONS.MEMBERSHIPS));
+            for (const d of mshSnap.docs) {
+              const mData = d.data() as any;
+              const mPin = String(mData.pin || '').trim();
+              const mPhone = String(mData.phone || '').replace(/[^0-9]/g, '');
+              const mCode = String(mData.memberCode || mData.member_code || '').trim().toLowerCase();
+
+              if (
+                (mPin && mPin === cleanId) ||
+                (cleanDigits && mPhone && mPhone === cleanDigits) ||
+                (mCode && mCode === cleanId) ||
+                (cleanPass && mPin && mPin === cleanPass)
+              ) {
+                const userId = mData.userId || `usr-${d.id.replace('prof-', '')}`;
+                matchedDbUser = {
+                  id: userId,
+                  name: mData.name || 'Athlete Member',
+                  email: mData.email || `${mData.phone || 'member'}@kaushikfitness.com`,
+                  phone: mData.phone || '',
+                  password_hash: '$2a$12$defaultHashedPassword2024',
+                  role: 'member',
+                  created_at: mData.joiningDate || new Date().toISOString(),
+                  pin: mPin || cleanId,
+                  avatar_url: mData.avatarUrl,
+                };
+                localDb.upsertUserFromCloud(matchedDbUser);
+                localDb.upsertMemberFromCloud({
+                  id: d.id,
+                  userId,
+                  name: mData.name,
+                  phone: mData.phone,
+                  email: mData.email,
+                  pin: mPin || cleanId,
+                  memberCode: mData.memberCode,
+                  membershipDuration: mData.membershipDuration || mData.package_type,
+                  expiryDate: mData.expiryDate || mData.expiry_date,
+                  joiningDate: mData.joiningDate || mData.joining_date,
+                  active: mData.active !== false,
+                  avatarUrl: mData.avatarUrl,
+                });
+                break;
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Live cloud PIN lookup error in AuthContext:', err);
+      }
+    }
+
     if (!matchedDbUser) {
       const errMsg = 'अमान्य 4-अंकीय पिन या उपयोगकर्ता नहीं मिला। कृपया पुनः प्रयास करें। (Invalid PIN. Please try again.)';
       setError(errMsg);
@@ -218,7 +349,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     }
 
-    // 3. Verify Password or PIN
+    // 4. Verify Password or PIN
     const isValidPasswordOrPin =
       !cleanPass || // direct PIN match
       matchedDbUser.pin === cleanPass ||
@@ -233,7 +364,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, message: errMsg };
     }
 
-    const linkedProfile = profiles.find((p) => p.user_id === matchedDbUser!.id);
+    const freshProfiles = localDb.getMemberProfiles();
+    const linkedProfile = freshProfiles.find(
+      (p) => p.user_id === matchedDbUser!.id || p.id === matchedDbUser!.id || ((matchedDbUser as any).memberId && p.id === (matchedDbUser as any).memberId)
+    );
     const mockJwt = `jwt_mock_${matchedDbUser.id}_${Date.now()}`;
 
     const userObj: User = {
@@ -243,7 +377,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       phone: matchedDbUser.phone,
       role: matchedDbUser.role,
       avatarUrl: matchedDbUser.avatar_url,
-      memberId: linkedProfile ? linkedProfile.id : (matchedDbUser.role === 'member' ? 'prof-1' : undefined),
+      memberId: linkedProfile ? linkedProfile.id : (matchedDbUser.id.startsWith('prof-') ? matchedDbUser.id : undefined),
       staffId: matchedDbUser.role !== 'member' ? matchedDbUser.id : undefined,
       token: mockJwt,
     };
@@ -278,8 +412,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { success: true, user: userObj, geofenceResult };
   };
 
-  const login = (emailOrPhone: string, pinOrPass: string): boolean => {
-    const res = loginWithCredentials(emailOrPhone, pinOrPass);
+  const login = async (emailOrPhone: string, pinOrPass: string): Promise<boolean> => {
+    const res = await loginWithCredentials(emailOrPhone, pinOrPass);
     return res.success;
   };
 

@@ -32,7 +32,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
 
   const geofenceSettings = localDb.getGeofenceSettings();
 
-  const handlePinSubmit = (e: React.FormEvent) => {
+  const handlePinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pin || pin.length < 4) {
       setLocalError('कृपया वैध 4-अंकीय पिन दर्ज करें (Please enter a valid 4-digit PIN)');
@@ -42,10 +42,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
     setLocalError(null);
     setGeofenceFeedback(null);
     try {
-      const res = loginWithCredentials(pin);
+      const res = await loginWithCredentials(pin);
       if (!res.success) {
         // Strict Validation Message: Never expose or show demo PINs under any circumstances
-        setLocalError('❌ अमान्य पिन! कृपया अपना सही 4-अंकीय सुरक्षा पिन दर्ज करें। (Invalid PIN. Please try again.)');
+        setLocalError(res.message || '❌ अमान्य पिन! कृपया अपना सही 4-अंकीय सुरक्षा पिन दर्ज करें। (Invalid PIN. Please try again.)');
         setPin('');
       } else if (res.geofenceResult) {
         setGeofenceFeedback({
@@ -55,7 +55,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
         });
       }
     } catch (err: any) {
-      setLocalError('अमान्य पिन। कृपया पुनः प्रयास करें।');
+      setLocalError('अमान्य पिन या नेटवर्क त्रुटि। कृपया पुनः प्रयास करें।');
       setPin('');
     } finally {
       setLoading(false);

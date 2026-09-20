@@ -1599,7 +1599,37 @@ class LocalGymDatabase {
     };
   }
 
-  upsertMemberFromCloud(cloudMember: Partial<Member> & { id: string; name?: string; phone?: string }): void {
+  upsertUserFromCloud(cloudUser: Partial<DbUser> & { id: string; name?: string; phone?: string; pin?: string; avatarUrl?: string }): void {
+    if (!cloudUser || !cloudUser.id) return;
+    const users = this.getUsers();
+    const existingIdx = users.findIndex(
+      (u) =>
+        u.id === cloudUser.id ||
+        (cloudUser.phone && u.phone === cloudUser.phone) ||
+        (cloudUser.pin && u.pin === cloudUser.pin && u.name.toLowerCase() === (cloudUser.name || '').toLowerCase())
+    );
+    const existing = existingIdx >= 0 ? users[existingIdx] : null;
+    const updatedUser: DbUser = {
+      id: cloudUser.id,
+      name: cloudUser.name || (existing ? existing.name : 'Gym User'),
+      email: cloudUser.email || (existing ? existing.email : `${cloudUser.phone || 'user'}@kaushikfitness.com`),
+      phone: cloudUser.phone || (existing ? existing.phone : ''),
+      password_hash: cloudUser.password_hash || (existing ? existing.password_hash : '$2a$12$defaultHashedPassword2024'),
+      role: (cloudUser.role as any) || (existing ? existing.role : 'member'),
+      created_at: cloudUser.created_at || (existing ? existing.created_at : new Date().toISOString()),
+      pin: cloudUser.pin || (existing?.pin ? existing.pin : '1111'),
+      avatar_url: cloudUser.avatar_url || cloudUser.avatarUrl || (existing ? existing.avatar_url : undefined),
+      address: cloudUser.address || (existing ? existing.address : undefined),
+    };
+    if (existingIdx >= 0) {
+      users[existingIdx] = { ...users[existingIdx], ...updatedUser };
+    } else {
+      users.unshift(updatedUser);
+    }
+    this.setTable(DB_KEYS.USERS, users);
+  }
+
+  upsertMemberFromCloud(cloudMember: Partial<Member> & { id: string; name?: string; phone?: string; role?: string }): void {
     if (!cloudMember || !cloudMember.id) return;
     if (!cloudMember.name && !cloudMember.phone && !cloudMember.memberCode) return;
 
@@ -1609,20 +1639,21 @@ class LocalGymDatabase {
 
     const profileId = cloudMember.id;
     const existingProfile = profiles.find((p) => p.id === profileId || (cloudMember.memberCode && p.member_code === cloudMember.memberCode));
-    const userId = cloudMember.userId || existingProfile?.user_id || `usr-${profileId.replace('prof-', '')}`;
+    const userId = cloudMember.userId || existingProfile?.user_id || (profileId.startsWith('usr-') ? profileId : `usr-${profileId.replace('prof-', '')}`);
 
     // 1. Upsert User
     const existingUserIdx = users.findIndex((u) => u.id === userId || (cloudMember.phone && u.phone === cloudMember.phone));
+    const existingUser = existingUserIdx >= 0 ? users[existingUserIdx] : null;
     const updatedUser: DbUser = {
       id: userId,
-      name: cloudMember.name || 'Athlete Member',
-      email: cloudMember.email || `${cloudMember.phone || 'member'}@kaushikfitness.com`,
-      phone: cloudMember.phone || '',
+      name: cloudMember.name || (existingUser ? existingUser.name : 'Athlete Member'),
+      email: cloudMember.email || (existingUser ? existingUser.email : `${cloudMember.phone || 'member'}@kaushikfitness.com`),
+      phone: cloudMember.phone || (existingUser ? existingUser.phone : ''),
       password_hash: '$2a$12$defaultHashedPassword2024',
-      role: 'member',
-      created_at: cloudMember.joiningDate || new Date().toISOString(),
-      pin: cloudMember.pin || '1111',
-      avatar_url: cloudMember.avatarUrl,
+      role: (cloudMember.role as any) || (existingUser ? existingUser.role : 'member'),
+      created_at: cloudMember.joiningDate || (existingUser ? existingUser.created_at : new Date().toISOString()),
+      pin: cloudMember.pin || (existingUser?.pin ? existingUser.pin : '1111'),
+      avatar_url: cloudMember.avatarUrl || (existingUser ? existingUser.avatar_url : undefined),
     };
     if (existingUserIdx >= 0) {
       users[existingUserIdx] = { ...users[existingUserIdx], ...updatedUser };

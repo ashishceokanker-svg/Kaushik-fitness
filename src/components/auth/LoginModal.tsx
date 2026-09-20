@@ -42,11 +42,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSuccess }) =>
     };
   }, [onClose]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
-    const res = loginWithCredentials(identifier.trim(), password.trim());
+    const res = await loginWithCredentials(identifier.trim(), password.trim());
     if (res.success) {
       setSuccessMsg(res.message || 'लॉगिन सफल!');
       setTimeout(() => {

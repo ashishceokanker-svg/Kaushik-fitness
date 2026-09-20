@@ -56,7 +56,7 @@ const MainAppContent: React.FC = () => {
     members.find(
       (m) =>
         (currentUser?.memberId && m.id === currentUser.memberId) ||
-        (currentUser?.id && m.userId === currentUser.id) ||
+        (currentUser?.id && (m.userId === currentUser.id || m.id === currentUser.id)) ||
         (currentUser?.phone && m.phone.replace(/\D/g, '') === currentUser.phone.replace(/\D/g, '')) ||
         (currentUser?.email && m.email.toLowerCase() === currentUser.email.toLowerCase())
     ) || members[0];

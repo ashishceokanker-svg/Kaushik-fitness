@@ -28,9 +28,9 @@ export const AttendanceScanner: React.FC = () => {
     setPinVal('');
   };
 
-  const submitPin = (pinToSubmit: string) => {
+  const submitPin = async (pinToSubmit: string) => {
     if (!pinToSubmit || pinToSubmit.length !== 4) return;
-    const result = markAttendance(pinToSubmit, 'pin');
+    const result = await markAttendance(pinToSubmit, 'pin');
     setFeedback(result);
     setPinVal('');
 
