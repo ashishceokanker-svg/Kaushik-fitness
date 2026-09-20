@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import {
   CodeXml,
   Phone,
@@ -16,6 +17,9 @@ interface DeveloperPageProps {
 }
 
 export const DeveloperPage: React.FC<DeveloperPageProps> = ({ onBack }) => {
+  const { currentUser } = useAuth();
+  const isDeveloper = currentUser?.id === 'usr-dev' || currentUser?.phone === '9244249975';
+
   const [developerPhoto, setDeveloperPhoto] = useState<string>(() => {
     return localStorage.getItem('kf_developer_photo') || '';
   });
@@ -111,25 +115,36 @@ export const DeveloperPage: React.FC<DeveloperPageProps> = ({ onBack }) => {
                 </div>
               )}
 
-              {/* Upload Photo Button */}
-              <input
-                type="file"
-                ref={photoInputRef}
-                accept="image/*"
-                onChange={handlePhotoUpload}
-                className="hidden"
-                id="developer-photo-upload"
-              />
-              <label
-                htmlFor="developer-photo-upload"
-                title="Upload or Change Profile Photo"
-                className="absolute -bottom-2 -right-2 p-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-lg cursor-pointer transition-all hover:scale-105"
-              >
-                <Camera className="w-4 h-4" />
-              </label>
+              {/* Upload Photo Button - DEVELOPER ONLY */}
+              {isDeveloper ? (
+                <>
+                  <input
+                    type="file"
+                    ref={photoInputRef}
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                    id="developer-photo-upload"
+                  />
+                  <label
+                    htmlFor="developer-photo-upload"
+                    title="Upload or Change Profile Photo"
+                    className="absolute -bottom-2 -right-2 p-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-lg cursor-pointer transition-all hover:scale-105 active:scale-95"
+                  >
+                    <Camera className="w-4 h-4" />
+                  </label>
+                </>
+              ) : (
+                <div
+                  title="फोटो बदलने की अनुमति केवल डेवलपर लॉगिन (Ashish Dey) में है"
+                  className="absolute -bottom-2 -right-2 p-2 rounded-xl bg-slate-800/90 border border-slate-700 text-slate-400 cursor-not-allowed opacity-75 flex items-center justify-center shadow"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+                </div>
+              )}
             </div>
 
-            {developerPhoto && (
+            {isDeveloper && developerPhoto && (
               <button
                 type="button"
                 onClick={handleRemovePhoto}
@@ -138,6 +153,12 @@ export const DeveloperPage: React.FC<DeveloperPageProps> = ({ onBack }) => {
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Remove Photo</span>
               </button>
+            )}
+
+            {!isDeveloper && (
+              <span className="text-[10px] text-slate-400 pt-0.5">
+                (फोटो संपादन केवल डेवलपर के लिए उपलब्ध)
+              </span>
             )}
           </div>
 

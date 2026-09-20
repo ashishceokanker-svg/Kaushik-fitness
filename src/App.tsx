@@ -39,8 +39,9 @@ const MainAppContent: React.FC = () => {
   const isDeveloper = currentUser?.id === 'usr-dev' || currentUser?.phone === '9244249975';
 
   const [activeTab, setActiveTab] = useState<string>('dashboard');
-  const [isMobileSimulator, setIsMobileSimulator] = useState<boolean>(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  const [isMobileSimulator, setIsMobileSimulator] = useState<boolean>(() => {
+    return typeof window !== 'undefined' && (window.matchMedia('(display-mode: standalone)').matches || window.innerWidth < 768);
+  });
   const [isRegisterOpen, setIsRegisterOpen] = useState<boolean>(false);
   const [isCloudModalOpen, setIsCloudModalOpen] = useState<boolean>(false);
   const [isEnquiryModalOpen, setIsEnquiryModalOpen] = useState<boolean>(false);
@@ -79,8 +80,8 @@ const MainAppContent: React.FC = () => {
     );
   }
 
-  // If mobile simulator mode is manually turned on via Desktop toggle
-  if (isMobileSimulator && (role === 'admin' || isDeveloper)) {
+  // If mobile app view is active (default on mobile / PWA install, or toggled on desktop)
+  if (isMobileSimulator) {
     return <MobileAppSimulator onExitMobileView={() => setIsMobileSimulator(false)} />;
   }
 
@@ -197,7 +198,7 @@ const MainAppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-amber-400 selection:text-slate-900">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-amber-400 selection:text-slate-900 max-w-full overflow-x-hidden">
       {/* Top Navigation Bar */}
       <Navbar
         isMobileView={isMobileSimulator}
@@ -210,25 +211,19 @@ const MainAppContent: React.FC = () => {
         onNavigateToStaffLogs={() => setActiveTab('staff_logs')}
         onOpenDeveloper={() => setActiveTab('developer')}
         onOpenAppInstall={() => setIsAppInstallOpen(true)}
-        onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
       />
 
       {/* Main Layout Body */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Desktop Sidebar + Mobile Drawer Navigation */}
+      <div className="flex-1 flex overflow-x-hidden overflow-y-auto max-w-full">
+        {/* Desktop Sidebar Navigation */}
         <Sidebar
           activeTab={activeTab}
-          onSelectTab={(tab) => {
-            setActiveTab(tab);
-            setIsMobileMenuOpen(false);
-          }}
+          onSelectTab={(tab) => setActiveTab(tab)}
           onOpenRegister={() => setIsRegisterOpen(true)}
-          isOpenOnMobile={isMobileMenuOpen}
-          onCloseMobile={() => setIsMobileMenuOpen(false)}
         />
 
         {/* Scrollable Center Content Area */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
           {renderContent()}
         </main>
       </div>

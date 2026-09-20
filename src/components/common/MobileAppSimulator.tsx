@@ -40,6 +40,7 @@ import {
   MapPin,
   MessageCircle,
   Cloud,
+  Trash2,
 } from 'lucide-react';
 
 interface MobileAppSimulatorProps {
@@ -49,6 +50,34 @@ interface MobileAppSimulatorProps {
 export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMobileView }) => {
   const { currentUser, role, switchRole } = useAuth();
   const { members, staff, isCloudSynced } = useGymData();
+
+  const isDeveloper = currentUser?.id === 'usr-dev' || currentUser?.phone === '9244249975';
+  const [developerPhoto, setDeveloperPhoto] = useState<string>(() => {
+    return localStorage.getItem('kf_developer_photo') || '';
+  });
+  const mobilePhotoInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleMobilePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      if (base64) {
+        setDeveloperPhoto(base64);
+        localStorage.setItem('kf_developer_photo', base64);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleMobileRemovePhoto = () => {
+    setDeveloperPhoto('');
+    localStorage.removeItem('kf_developer_photo');
+    if (mobilePhotoInputRef.current) {
+      mobilePhotoInputRef.current.value = '';
+    }
+  };
 
   const [isRealMobile, setIsRealMobile] = useState<boolean>(() => {
     return window.innerWidth < 768 || window.matchMedia('(display-mode: standalone)').matches;
@@ -86,29 +115,29 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
 
   const screenContent = (
     <div
-      className={`w-full ${
+      className={`w-full max-w-full ${
         isRealMobile ? 'min-h-screen' : 'h-full rounded-[40px] border border-slate-200'
-      } bg-slate-100 overflow-hidden flex flex-col justify-between relative text-slate-900`}
+      } bg-slate-100 overflow-x-hidden flex flex-col justify-between relative text-slate-900`}
     >
       {/* iOS Status Bar & Dynamic Island */}
-      <div className="pt-3 px-6 pb-2 flex items-center justify-between text-[12px] font-bold text-slate-700 z-30 shrink-0 bg-white/95 backdrop-blur-sm border-b border-slate-100">
-        <span>
+      <div className="pt-2.5 px-3 sm:px-6 pb-2 flex items-center justify-between text-[12px] font-bold text-slate-700 z-30 shrink-0 bg-white/95 backdrop-blur-sm border-b border-slate-100 w-full max-w-full overflow-x-hidden">
+        <span className="font-mono text-[11px] sm:text-[12px]">
           {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
         </span>
 
         {/* Dynamic Island Pill */}
-        <div className="w-24 h-5 bg-slate-900 rounded-full flex items-center justify-center gap-1.5 shadow-sm">
-          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-          <span className="text-[9px] font-mono text-white font-bold tracking-tight">Kaushik Gym</span>
+        <div className="w-20 sm:w-24 h-5 bg-slate-900 rounded-full flex items-center justify-center gap-1.5 shadow-sm shrink-0">
+          <span className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-amber-400 animate-pulse" />
+          <span className="text-[8px] sm:text-[9px] font-mono text-white font-bold tracking-tight">Kaushik Gym</span>
         </div>
 
         {/* Status Icons */}
-        <div className="flex items-center gap-1.5 text-slate-600">
+        <div className="flex items-center gap-1 sm:gap-1.5 text-slate-600 shrink-0">
           {isRealMobile && (
             <button
               onClick={onExitMobileView}
               title="Switch to Desktop Portal"
-              className="text-[10px] font-bold text-slate-600 hover:text-slate-950 mr-1 px-2 py-0.5 rounded-lg bg-slate-200 cursor-pointer"
+              className="text-[10px] font-bold text-slate-600 hover:text-slate-950 mr-0.5 sm:mr-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-slate-200 cursor-pointer"
             >
               🖥️ Portal
             </button>
@@ -606,10 +635,10 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
               <div className="space-y-3.5 w-full max-w-full overflow-x-hidden animate-in fade-in">
                 <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-950 rounded-3xl p-5 text-white border border-slate-700 shadow-lg text-center space-y-3">
                   {/* Photo / Avatar */}
-                  <div className="mx-auto w-24 h-24 rounded-2xl bg-gradient-to-tr from-cyan-600 to-amber-500 p-0.5 shadow-md">
-                    {localStorage.getItem('kf_developer_photo') ? (
+                  <div className="relative mx-auto w-24 h-24 rounded-2xl bg-gradient-to-tr from-cyan-600 to-amber-500 p-0.5 shadow-md">
+                    {developerPhoto ? (
                       <img
-                        src={localStorage.getItem('kf_developer_photo')!}
+                        src={developerPhoto}
                         alt="Ashish Dey"
                         className="w-full h-full rounded-2xl object-cover"
                       />
@@ -619,7 +648,52 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                         <span className="text-[10px] font-black text-amber-300">Ashish Dey</span>
                       </div>
                     )}
+
+                    {/* Photo Upload Option - ONLY ACTIVE FOR DEVELOPER */}
+                    {isDeveloper ? (
+                      <>
+                        <input
+                          type="file"
+                          ref={mobilePhotoInputRef}
+                          accept="image/*"
+                          onChange={handleMobilePhotoUpload}
+                          className="hidden"
+                          id="mobile-dev-photo-upload"
+                        />
+                        <label
+                          htmlFor="mobile-dev-photo-upload"
+                          title="Upload Developer Photo"
+                          className="absolute -bottom-1.5 -right-1.5 p-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-md cursor-pointer transition-all active:scale-90"
+                        >
+                          <Camera className="w-3.5 h-3.5" />
+                        </label>
+                      </>
+                    ) : (
+                      <div
+                        title="केवल डेवलपर (Ashish Dey) फोटो बदल सकते हैं (Disabled)"
+                        className="absolute -bottom-1.5 -right-1.5 p-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 cursor-not-allowed opacity-80"
+                      >
+                        <ShieldCheck className="w-3 h-3 text-cyan-400" />
+                      </div>
+                    )}
                   </div>
+
+                  {isDeveloper && developerPhoto && (
+                    <button
+                      type="button"
+                      onClick={handleMobileRemovePhoto}
+                      className="text-[10px] text-rose-300 hover:text-rose-200 flex items-center justify-center gap-1 cursor-pointer transition-colors mx-auto pt-0.5"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Remove Photo</span>
+                    </button>
+                  )}
+
+                  {!isDeveloper && (
+                    <div className="text-[10px] text-slate-400">
+                      (फोटो संपादन केवल डेवलपर लॉगिन में उपलब्ध)
+                    </div>
+                  )}
 
                   <div>
                     <div className="inline-block px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/30 text-cyan-300 text-[10px] font-bold uppercase tracking-wider mb-1">

@@ -20,15 +20,12 @@ import {
   DollarSign,
   ShoppingBag,
   CodeXml,
-  X,
 } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
   onSelectTab: (tab: string) => void;
   onOpenRegister?: () => void;
-  isOpenOnMobile?: boolean;
-  onCloseMobile?: () => void;
 }
 
 interface NavItem {
@@ -44,8 +41,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onSelectTab,
   onOpenRegister,
-  isOpenOnMobile = false,
-  onCloseMobile,
 }) => {
   const { role, logout, currentUser } = useAuth();
   const { members, expiringSoonMembers, liveGymCount, enquiries } = useGymData();
@@ -55,9 +50,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const handleTabClick = (tabId: string) => {
     onSelectTab(tabId);
-    if (onCloseMobile) {
-      onCloseMobile();
-    }
   };
 
   // Navigation items per role
@@ -176,10 +168,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <div className="p-3.5 border-t border-slate-200 space-y-2 bg-slate-50/60">
       {role === 'admin' && onOpenRegister && (
         <button
-          onClick={() => {
-            onOpenRegister();
-            if (onCloseMobile) onCloseMobile();
-          }}
+          onClick={onOpenRegister}
           className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
         >
           + Register Member
@@ -240,47 +229,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   );
 
   return (
-    <>
-      {/* 1. Desktop Sticky Sidebar */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between shrink-0 hidden md:flex h-[calc(100vh-65px)] sticky top-[65px] shadow-sm">
-        {renderNavList()}
-        {renderFooter()}
-      </aside>
-
-      {/* 2. Mobile Drawer Overlay */}
-      {isOpenOnMobile && (
-        <div className="fixed inset-0 z-50 md:hidden flex animate-in fade-in duration-200">
-          {/* Backdrop */}
-          <div
-            onClick={onCloseMobile}
-            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs"
-          />
-
-          {/* Drawer Body */}
-          <aside className="relative w-72 max-w-[85vw] bg-white h-full shadow-2xl flex flex-col justify-between z-10 animate-in slide-in-from-left duration-300">
-            {/* Drawer Header */}
-            <div className="p-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center text-slate-950 font-black text-xs">
-                  KF
-                </div>
-                <span className="font-black text-xs uppercase tracking-wider text-slate-900">
-                  Kaushik Fitness
-                </span>
-              </div>
-              <button
-                onClick={onCloseMobile}
-                className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {renderNavList()}
-            {renderFooter()}
-          </aside>
-        </div>
-      )}
-    </>
+    <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between shrink-0 hidden md:flex h-[calc(100vh-65px)] sticky top-[65px] shadow-sm">
+      {renderNavList()}
+      {renderFooter()}
+    </aside>
   );
 };

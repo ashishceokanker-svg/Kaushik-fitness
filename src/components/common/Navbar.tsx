@@ -18,7 +18,6 @@ import {
   CreditCard,
   CodeXml,
   Cloud,
-  Menu,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -32,7 +31,6 @@ interface NavbarProps {
   onNavigateToStaffLogs?: () => void;
   onOpenDeveloper?: () => void;
   onOpenAppInstall?: () => void;
-  onToggleMobileMenu?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -46,7 +44,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onNavigateToStaffLogs,
   onOpenDeveloper,
   onOpenAppInstall,
-  onToggleMobileMenu,
 }) => {
   const { currentUser, role, logout } = useAuth();
   const { expiringSoonMembers, resetToDemoData, isCloudSynced } = useGymData();
@@ -71,20 +68,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   const CurrentIcon = currentRoleConfig.icon;
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 px-3 sm:px-6 py-2.5 shadow-sm">
-      <div className="flex items-center justify-between gap-2 sm:gap-3">
-        {/* Left: Hamburger (on mobile) + Brand Identity */}
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 px-3 sm:px-6 py-2.5 shadow-sm max-w-full overflow-x-hidden">
+      <div className="flex items-center justify-between gap-2 sm:gap-3 max-w-full">
+        {/* Left: Brand Identity */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {onToggleMobileMenu && (
-            <button
-              onClick={onToggleMobileMenu}
-              className="p-2 -ml-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 md:hidden cursor-pointer"
-              title="Open Navigation Menu"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-          )}
-
           <img
             src="/app-logo.png"
             alt="Kaushik Fitness Logo"
