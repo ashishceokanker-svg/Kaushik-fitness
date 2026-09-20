@@ -10,13 +10,15 @@ import {
   MessageSquare,
   MapPin,
   CheckCircle2,
+  Smartphone,
 } from 'lucide-react';
 
 interface LoginPageProps {
   onOpenEnquiry?: () => void;
+  onOpenAppInstall?: () => void;
 }
 
-export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry }) => {
+export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppInstall }) => {
   const { loginWithCredentials, error: authError } = useAuth();
   
   const [pin, setPin] = useState<string>('');
@@ -81,15 +83,29 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry }) => {
             </div>
           </div>
 
-          {onOpenEnquiry && (
-            <button
-              onClick={onOpenEnquiry}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold transition-all shadow-sm cursor-pointer"
-            >
-              <MessageSquare className="w-4 h-4 text-amber-600" />
-              <span>Admission / PT Enquiry (पूछताछ)</span>
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {onOpenAppInstall && (
+              <button
+                onClick={onOpenAppInstall}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition-all shadow-sm cursor-pointer"
+              >
+                <Smartphone className="w-4 h-4" />
+                <span className="hidden sm:inline">ऐप इंस्टॉल करें (Install App)</span>
+                <span className="sm:hidden">App</span>
+              </button>
+            )}
+
+            {onOpenEnquiry && (
+              <button
+                onClick={onOpenEnquiry}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold transition-all shadow-sm cursor-pointer"
+              >
+                <MessageSquare className="w-4 h-4 text-amber-600" />
+                <span className="hidden sm:inline">Admission / PT Enquiry (पूछताछ)</span>
+                <span className="sm:hidden">Enquiry</span>
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -207,6 +223,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry }) => {
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
+
+            {/* Mobile App Install & Unified Link Guide */}
+            {onOpenAppInstall && (
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={onOpenAppInstall}
+                  className="inline-flex items-center gap-1.5 text-xs text-amber-700 hover:text-amber-800 font-bold underline underline-offset-2 cursor-pointer transition-colors"
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>📱 मोबाइल में अलग से ऐप (APK) कैसे इंस्टॉल करें? यहाँ देखें</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Card Footer Bar */}

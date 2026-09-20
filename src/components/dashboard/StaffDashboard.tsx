@@ -548,7 +548,7 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({ onNavigate }) =>
       {/* Printable Receipt View Modal */}
       {selectedReceipt && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-6 space-y-5 animate-in fade-in zoom-in-95">
+          <div id="printable-fee-receipt" className="printable-content bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-6 space-y-5 animate-in fade-in zoom-in-95">
             <div className="flex justify-between items-start border-b border-slate-100 pb-3">
               <div>
                 <h3 className="font-black text-slate-900 text-lg">फीस भुगतान रसीद</h3>
@@ -556,7 +556,7 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({ onNavigate }) =>
               </div>
               <button
                 onClick={() => setSelectedReceipt(null)}
-                className="text-slate-400 hover:text-slate-600 text-sm font-bold"
+                className="text-slate-400 hover:text-slate-600 text-sm font-bold print:hidden"
               >
                 ✕
               </button>
@@ -585,7 +585,7 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({ onNavigate }) =>
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 print:hidden">
               <button
                 onClick={() => {
                   window.print();

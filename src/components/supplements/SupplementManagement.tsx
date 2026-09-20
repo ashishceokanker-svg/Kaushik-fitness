@@ -1150,7 +1150,7 @@ export const SupplementManagement: React.FC<SupplementManagementProps> = ({ onBa
             </div>
 
             {/* Printable Receipt Body */}
-            <div id="printable-supplement-receipt" className="border border-slate-200 rounded-xl p-5 space-y-4 text-xs font-sans bg-white">
+            <div id="printable-supplement-receipt" className="printable-content border border-slate-200 rounded-xl p-5 space-y-4 text-xs font-sans bg-white">
               <div className="text-center border-b border-slate-200 pb-3">
                 <h3 className="text-base font-black text-slate-900 uppercase tracking-wider">
                   KAUSHIK FITNESS GYM

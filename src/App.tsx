@@ -29,6 +29,7 @@ import { SupplementManagement } from './components/supplements/SupplementManagem
 import { DeveloperPage } from './components/developer/DeveloperPage';
 import { CloudDatabaseModal } from './components/admin/CloudDatabaseModal';
 import { InstallPwaBanner } from './components/common/InstallPwaBanner';
+import { AppInstallModal } from './components/common/AppInstallModal';
 import { Member, FitnessGoal } from './types';
 
 const MainAppContent: React.FC = () => {
@@ -43,6 +44,7 @@ const MainAppContent: React.FC = () => {
   const [isRegisterOpen, setIsRegisterOpen] = useState<boolean>(false);
   const [isCloudModalOpen, setIsCloudModalOpen] = useState<boolean>(false);
   const [isEnquiryModalOpen, setIsEnquiryModalOpen] = useState<boolean>(false);
+  const [isAppInstallOpen, setIsAppInstallOpen] = useState<boolean>(false);
   const [enquiryGoal, setEnquiryGoal] = useState<FitnessGoal | undefined>(undefined);
   const [newlyRegisteredMember, setNewlyRegisteredMember] = useState<Member | null>(null);
 
@@ -50,7 +52,10 @@ const MainAppContent: React.FC = () => {
   if (!isAuthenticated || !currentUser) {
     return (
       <div className="min-h-screen bg-slate-50 text-slate-900">
-        <LoginPage onOpenEnquiry={() => setIsEnquiryModalOpen(true)} />
+        <LoginPage
+          onOpenEnquiry={() => setIsEnquiryModalOpen(true)}
+          onOpenAppInstall={() => setIsAppInstallOpen(true)}
+        />
 
         {/* Global Admission / Upgrade Enquiry Modal */}
         <EnquiryModal
@@ -60,6 +65,12 @@ const MainAppContent: React.FC = () => {
             setIsEnquiryModalOpen(false);
             setEnquiryGoal(undefined);
           }}
+        />
+
+        {/* Mobile App Install & Link Guide Modal */}
+        <AppInstallModal
+          isOpen={isAppInstallOpen}
+          onClose={() => setIsAppInstallOpen(false)}
         />
 
         {/* Install App Banner for Mobile / PWA */}
@@ -198,6 +209,7 @@ const MainAppContent: React.FC = () => {
         onOpenEnquiry={role === 'admin' || role === 'staff' ? () => setIsEnquiryModalOpen(true) : undefined}
         onNavigateToStaffLogs={() => setActiveTab('staff_logs')}
         onOpenDeveloper={() => setActiveTab('developer')}
+        onOpenAppInstall={() => setIsAppInstallOpen(true)}
         onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
       />
 
@@ -254,6 +266,12 @@ const MainAppContent: React.FC = () => {
       <CloudDatabaseModal
         isOpen={isCloudModalOpen}
         onClose={() => setIsCloudModalOpen(false)}
+      />
+
+      {/* Mobile App Install & Link Guide Modal */}
+      <AppInstallModal
+        isOpen={isAppInstallOpen}
+        onClose={() => setIsAppInstallOpen(false)}
       />
 
       {/* Floating Install App Banner */}

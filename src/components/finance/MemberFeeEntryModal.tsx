@@ -176,7 +176,7 @@ export const MemberFeeEntryModal: React.FC<MemberFeeEntryModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
       <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden my-auto animate-fade-in">
         {/* Modal Top Header */}
-        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 py-4 text-white flex items-center justify-between">
+        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 py-4 text-white flex items-center justify-between print:hidden">
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-bold uppercase tracking-wider mb-1">
               <CreditCard className="w-3 h-3" />
@@ -200,8 +200,21 @@ export const MemberFeeEntryModal: React.FC<MemberFeeEntryModalProps> = ({
 
         {/* If Receipt is Ready, Show Printable Receipt View */}
         {receiptRecord ? (
-          <div className="p-6 space-y-5 text-slate-800" id="printable-fee-receipt">
+          <div className="printable-content p-6 space-y-5 text-slate-800" id="printable-fee-receipt">
             <div className="p-5 border-2 border-dashed border-emerald-300 bg-emerald-50/50 rounded-2xl space-y-4">
+              {/* Gym Brand Header for Print */}
+              <div className="text-center border-b border-emerald-200 pb-3">
+                <h3 className="text-base font-black text-slate-900 uppercase tracking-wider">
+                  KOUSHIK FITNESS GYM
+                </h3>
+                <p className="text-[11px] text-slate-600">
+                  Main Road, Opp. Stadium Ground, Kanker (C.G.) • Phone: +91 98261 89001
+                </p>
+                <div className="inline-block mt-1 px-2.5 py-0.5 rounded-full bg-emerald-100 font-mono text-[10px] font-bold text-emerald-800">
+                  OFFICIAL FEE PAYMENT RECEIPT
+                </div>
+              </div>
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-emerald-700 font-black text-sm">
                   <CheckCircle2 className="w-5 h-5" />

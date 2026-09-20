@@ -53,22 +53,95 @@
 
 /* Print Specific Rules for All Invoices, Receipts, and Slips */
 @media print {
+  /* 1. Reset root, html, and body to clean white page */
   html, body {
-    overflow: visible !important;
-    height: auto !important;
-    min-height: 100% !important;
-    background-color: #ffffff !important;
-    color: #000000 !important;
     margin: 0 !important;
     padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    overflow: visible !important;
   }
-  
-  /* Hide navigation, sidebars, banners, buttons, and screen overlays */
-  header, aside, nav, .print\:hidden, [role="navigation"] {
+
+  /* 2. Hide all non-printable chrome and buttons completely */
+  header,
+  aside,
+  nav,
+  footer,
+  [role="navigation"],
+  .print\:hidden,
+  button {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* 3. Hide all page contents by default */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* 4. Collapse non-receipt sections so they take ZERO height on paper */
+  main > *:not(:has(#printable-invoice, #printable-fee-receipt, #printable-salary-slip, #printable-supplement-receipt, .printable-content)) {
     display: none !important;
   }
 
-  /* Reset all modal backdrops so they don't clip or darken the printed page */
+  #root > div > *:not(:has(#printable-invoice, #printable-fee-receipt, #printable-salary-slip, #printable-supplement-receipt, .printable-content)) {
+    display: none !important;
+  }
+
+  #root,
+  #root > div,
+  main {
+    position: static !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    background: transparent !important;
+  }
+
+  /* 5. Target all printable receipt containers and their children to be visible */
+  #printable-invoice,
+  #printable-invoice *,
+  #printable-fee-receipt,
+  #printable-fee-receipt *,
+  #printable-salary-slip,
+  #printable-salary-slip *,
+  #printable-supplement-receipt,
+  #printable-supplement-receipt *,
+  .printable-content,
+  .printable-content * {
+    visibility: visible !important;
+  }
+
+  /* 6. Position the printable receipt card at the very top of page 1 */
+  #printable-invoice,
+  #printable-fee-receipt,
+  #printable-salary-slip,
+  #printable-supplement-receipt,
+  .printable-content {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 12px 16px !important;
+    box-sizing: border-box !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: none !important;
+    box-shadow: none !important;
+    display: block !important;
+    z-index: 999999 !important;
+  }
+
+  /* 7. Reset modal background overlays and containers */
   .fixed.inset-0 {
     position: static !important;
     display: block !important;
@@ -83,7 +156,6 @@
     border: none !important;
   }
 
-  /* Ensure card modal wrappers expand cleanly */
   .fixed.inset-0 > div,
   .relative.w-full {
     position: static !important;
@@ -94,28 +166,23 @@
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
-  }
-  
-  /* Target all printable containers */
-  #printable-invoice,
-  #printable-fee-receipt,
-  #printable-salary-slip,
-  #printable-supplement-receipt,
-  .printable-content {
-    display: block !important;
-    position: relative !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 auto !important;
-    padding: 15px !important;
-    background: #ffffff !important;
-    color: #000000 !important;
-    border: none !important;
-    box-shadow: none !important;
-    overflow: visible !important;
+    background: transparent !important;
   }
 
-  /* Force background colors and text colors in print */
+  /* 8. Extra insurance: Buttons, close controls & inputs stay hidden */
+  .print\:hidden,
+  .print\:hidden *,
+  button,
+  button * {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  @page {
+    size: auto;
+    margin: 8mm 10mm;
+  }
+
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;

@@ -93,7 +93,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ member, onClose }) =
         </div>
 
         {/* Printable Invoice Container */}
-        <div id="printable-invoice" className="p-8 bg-white text-slate-900 print:p-0 print:bg-white print:text-black">
+        <div id="printable-invoice" className="printable-content p-8 bg-white text-slate-900 print:p-0 print:bg-white print:text-black">
           {/* Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-6 border-b border-slate-200 print:border-black">
             <div>

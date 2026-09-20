@@ -881,7 +881,7 @@ export const StaffSalaryManagement: React.FC<StaffSalaryManagementProps> = ({ on
       {/* Salary Slip Modal (Printable) */}
       {viewSlip && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div id="printable-salary-slip" className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full p-6 space-y-4 animate-in fade-in zoom-in-95 my-6">
+          <div id="printable-salary-slip" className="printable-content bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full p-6 space-y-4 animate-in fade-in zoom-in-95 my-6">
             <div className="flex justify-between items-start border-b border-slate-200 pb-3">
               <div>
                 <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">

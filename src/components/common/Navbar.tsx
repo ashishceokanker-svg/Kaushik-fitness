@@ -31,6 +31,7 @@ interface NavbarProps {
   onOpenEnquiry?: () => void;
   onNavigateToStaffLogs?: () => void;
   onOpenDeveloper?: () => void;
+  onOpenAppInstall?: () => void;
   onToggleMobileMenu?: () => void;
 }
 
@@ -44,6 +45,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenEnquiry,
   onNavigateToStaffLogs,
   onOpenDeveloper,
+  onOpenAppInstall,
   onToggleMobileMenu,
 }) => {
   const { currentUser, role, logout } = useAuth();
@@ -161,6 +163,19 @@ export const Navbar: React.FC<NavbarProps> = ({
               <CodeXml className="w-3.5 h-3.5 text-cyan-400" />
               <span className="hidden sm:inline">Developer</span>
               <span className="text-[9px] px-1 py-0.2 bg-amber-400 text-slate-950 font-black rounded">CEO</span>
+            </button>
+          )}
+
+          {/* Mobile App Install & Link Guide Button */}
+          {onOpenAppInstall && (
+            <button
+              onClick={onOpenAppInstall}
+              title="Kaushik Fitness Mobile App (PWA WebAPK) Install & Link Guide"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition-all shadow-xs cursor-pointer"
+            >
+              <Smartphone className="w-3.5 h-3.5 text-slate-950" />
+              <span className="hidden sm:inline">App</span>
+              <span className="text-[9px] px-1 py-0.2 bg-slate-950 text-amber-400 font-bold rounded">APK</span>
             </button>
           )}
 
