@@ -43,6 +43,7 @@ import {
   MessageSquare,
   Database,
   LogOut,
+  ShoppingBag,
 } from 'lucide-react';
 
 const MainAppContent: React.FC = () => {
@@ -139,6 +140,7 @@ const MainAppContent: React.FC = () => {
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'members', label: 'Members', icon: Users },
         { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
+        { id: 'supplements', label: 'Store', icon: ShoppingBag },
         { id: 'finance', label: 'Finance', icon: CreditCard },
         { id: 'developer', label: 'Dev', icon: CodeXml },
         { id: 'logout', label: 'Logout', icon: LogOut, isAction: true },
@@ -159,6 +161,7 @@ const MainAppContent: React.FC = () => {
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'fees', label: 'Fees', icon: CreditCard },
         { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
+        { id: 'supplements', label: 'Store', icon: ShoppingBag },
         { id: 'members', label: 'Members', icon: Users },
         { id: 'developer', label: 'Dev', icon: CodeXml },
         { id: 'logout', label: 'Logout', icon: LogOut, isAction: true },

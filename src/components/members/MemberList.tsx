@@ -20,7 +20,9 @@ import {
   KeyRound,
   Lock,
   FileSpreadsheet,
+  Download,
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { ExcelImportModal } from '../common/ExcelImportModal';
 
 interface MemberListProps {
@@ -117,6 +119,43 @@ export const MemberList: React.FC<MemberListProps> = ({ onSelectMember }) => {
     });
   };
 
+  const handleExportMembersExcel = () => {
+    if (!members || members.length === 0) {
+      alert('एक्सपोर्ट के लिए कोई सदस्य उपलब्ध नहीं है।');
+      return;
+    }
+
+    const exportRows = members.map((m, idx) => ({
+      'क्र. (S.No.)': idx + 1,
+      'सदस्य कोड (Member Code)': m.memberCode,
+      'नाम (Member Name)': m.name,
+      'मोबाइल नंबर (Phone)': m.phone,
+      'लॉगिन पिन (PIN)': m.pin || '',
+      'आयु (Age)': m.age,
+      'लिंग (Gender)': m.gender === 'male' ? 'पुरुष (Male)' : m.gender === 'female' ? 'महिला (Female)' : 'अन्य',
+      'योजना (Membership Plan)': MEMBERSHIP_PRICING[m.membershipDuration]?.label || m.membershipDuration,
+      'पर्सनल ट्रेनिंग (PT)': m.personalTraining ? `हाँ (${m.assignedTrainerName || 'Trainer'})` : 'नहीं',
+      'बैच समय (Slot)': m.workoutSlot || '06:00 AM - 07:00 AM',
+      'जॉइनिंग तिथि (Join Date)': formatDate(m.joiningDate),
+      'वैधता समाप्ति तिथि (Expiry Date)': formatDate(m.expiryDate),
+      'कुल शुल्क (Total Fee)': m.totalPayable,
+      'जमा शुल्क (Paid Amount)': m.paidAmount,
+      'बकाया (Due Amount)': m.dueAmount,
+      'भुगतान स्थिति (Status)': m.paymentStatus === 'paid' ? 'Paid' : m.paymentStatus === 'partial' ? 'Partial' : 'Pending',
+      'भुगतान माध्यम (Mode)': m.paymentMethod?.toUpperCase() || 'CASH',
+      'फिटनेस लक्ष्य (Goal)': m.fitnessGoal,
+      'वजन (Weight kg)': m.weightKg,
+      'ऊंचाई (Height cm)': m.heightCm,
+      'बीएमआई (BMI)': m.bmi,
+      'इमरजेंसी संपर्क (Emergency)': m.emergencyContact || '-',
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportRows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Members');
+    XLSX.writeFile(workbook, `kaushik_fitness_members_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Header Bar */}
@@ -131,18 +170,19 @@ export const MemberList: React.FC<MemberListProps> = ({ onSelectMember }) => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => setIsImportOpen(true)}
-            className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer"
+            onClick={handleExportMembersExcel}
+            className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer active:scale-95"
+            title="सभी सदस्यों की सूची एक्सेल फाइल (.xlsx) में डाउनलोड करें"
           >
             <FileSpreadsheet className="w-4 h-4" />
-            <span>📥 एक्सेल इम्पोर्ट (Excel Import)</span>
+            <span>📤 एक्सेल एक्सपोर्ट (Excel Export)</span>
           </button>
 
           <button
             onClick={() => setIsRegisterOpen(true)}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer active:scale-95"
           >
             <UserPlus className="w-4 h-4" />
             + नया सदस्य जोड़ें (Register Member)

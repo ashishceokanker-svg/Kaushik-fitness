@@ -205,6 +205,192 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       </div>
 
+      {/* Admin All Tools Hub - Clean 1-Tap Access to ALL Features */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="font-black text-xs sm:text-sm text-slate-900 uppercase tracking-wide">
+                एडमिन कंट्रोल सेंटर • सभी विकल्प (Admin All Tools & Modules)
+              </h3>
+              <p className="text-[10.5px] text-slate-500">
+                1-टैप में सीधे किसी भी विभाग या फीचर पर पहुँचें
+              </p>
+            </div>
+          </div>
+          <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-black text-[10px]">
+            10 Tools Available
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
+          {/* 1. Members Directory */}
+          <button
+            onClick={() => onNavigate('members')}
+            className="p-3 rounded-xl bg-slate-50 hover:bg-amber-50 hover:border-amber-300 border border-slate-200 text-left transition-all cursor-pointer group shadow-2xs flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between w-full">
+              <div className="p-2 rounded-lg bg-amber-100 text-amber-900 group-hover:scale-105 transition-transform">
+                <Users className="w-4 h-4" />
+              </div>
+              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-200 text-amber-950">
+                {members.length}
+              </span>
+            </div>
+            <div className="mt-2">
+              <div className="font-black text-xs text-slate-900">सदस्य डायरेक्टरी</div>
+              <div className="text-[10px] text-slate-500">Members & Profiles</div>
+            </div>
+          </button>
+
+          {/* 2. New Registration */}
+          <button
+            onClick={onOpenRegister}
+            className="p-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-left transition-all cursor-pointer group shadow-2xs flex flex-col justify-between"
+          >
+            <div className="p-2 rounded-lg bg-slate-950 text-amber-400 group-hover:scale-105 transition-transform w-fit">
+              <UserPlus className="w-4 h-4" />
+            </div>
+            <div className="mt-2">
+              <div className="font-black text-xs text-slate-950">+ नया सदस्य</div>
+              <div className="text-[10px] text-slate-900 font-bold">Register Member</div>
+            </div>
+          </button>
+
+          {/* 3. PIN Attendance Kiosk */}
+          <button
+            onClick={() => onNavigate('attendance')}
+            className="p-3 rounded-xl bg-slate-50 hover:bg-cyan-50 hover:border-cyan-300 border border-slate-200 text-left transition-all cursor-pointer group shadow-2xs flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between w-full">
+              <div className="p-2 rounded-lg bg-cyan-100 text-cyan-900 group-hover:scale-105 transition-transform">
+                <CalendarCheck className="w-4 h-4" />
+              </div>
+              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-cyan-200 text-cyan-950">
+                {liveGymCount} live
+              </span>
+            </div>
+            <div className="mt-2">
+              <div className="font-black text-xs text-slate-900">अटेंडेंस कियोस्क</div>
+              <div className="text-[10px] text-slate-500">PIN Entry Floor</div>
+            </div>
+          </button>
+
+          {/* 4. Supplements & POS */}
+          <button
+            onClick={() => onNavigate('supplements')}
+            className="p-3 rounded-xl bg-slate-50 hover:bg-purple-50 hover:border-purple-300 border border-slate-200 text-left transition-all cursor-pointer group shadow-2xs flex flex-col justify-between"
+          >
+            <div className="p-2 rounded-lg bg-purple-100 text-purple-900 group-hover:scale-105 transition-transform w-fit">
+              <ShoppingBag className="w-4 h-4" />
+            </div>
+            <div className="mt-2">
+              <div className="font-black text-xs text-slate-900">सप्लीमेंट्स स्टोर</div>
+              <div className="text-[10px] text-slate-500">Stock & POS Sale</div>
+            </div>
+          </button>
+
+          {/* 5. Financial Reports & Fees */}
+          <button
+            onClick={() => onNavigate('finance')}
+            className="p-3 rounded-xl bg-slate-50 hover:bg-emerald-50 hover:border-emerald-300 border border-slate-200 text-left transition-all cursor-pointer group shadow-2xs flex flex-col justify-between"
+          >
+            <div className="p-2 rounded-lg bg-emerald-100 text-emerald-900 group-hover:scale-105 transition-transform w-fit">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+            <div className="mt-2">
+              <div className="font-black text-xs text-slate-900">वित्तीय रिपोर्ट</div>
+              <div className="text-[10px] text-slate-500">Fees & Accounts</div>
+            </div>
+          </button>
+
+          {/* 6. Gym Enquiries & Leads */}
+          <button
+            onClick={() => onNavigate('enquiries')}
+            className="p-3 rounded-xl bg-slate-50 hover:bg-blue-50 hover:border-blue-300 border border-slate-200 text-left transition-all cursor-pointer group shadow-2xs flex flex-col justify-between"
+          >
+            <div className="p-2 rounded-lg bg-blue-100 text-blue-900 group-hover:scale-105 transition-transform w-fit">
+              <MessageSquare className="w-4 h-4" />
+            </div>
+            <div className="mt-2">
+              <div className="font-black text-xs text-slate-900">जिम पूछताछ</div>
+              <div className="text-[10px] text-slate-500">Admission Leads</div>
+            </div>
+          </button>
+
+          {/* 7. Staff & PT Trainers */}
+          <button
+            onClick={() => onNavigate('staff')}
+            className="p-3 rounded-xl bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 border border-slate-200 text-left transition-all cursor-pointer group shadow-2xs flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between w-full">
+              <div className="p-2 rounded-lg bg-indigo-100 text-indigo-900 group-hover:scale-105 transition-transform">
+                <Award className="w-4 h-4" />
+              </div>
+              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-indigo-200 text-indigo-950">
+                {staff.length}
+              </span>
+            </div>
+            <div className="mt-2">
+              <div className="font-black text-xs text-slate-900">स्टाफ व ट्रेनर</div>
+              <div className="text-[10px] text-slate-500">Staff Management</div>
+            </div>
+          </button>
+
+          {/* 8. Staff Calendar P/A/L */}
+          <button
+            onClick={() => onNavigate('staff_calendar')}
+            className="p-3 rounded-xl bg-slate-50 hover:bg-teal-50 hover:border-teal-300 border border-slate-200 text-left transition-all cursor-pointer group shadow-2xs flex flex-col justify-between"
+          >
+            <div className="p-2 rounded-lg bg-teal-100 text-teal-900 group-hover:scale-105 transition-transform w-fit">
+              <CalendarCheck className="w-4 h-4" />
+            </div>
+            <div className="mt-2">
+              <div className="font-black text-xs text-slate-900">हाजिरी कैलेंडर</div>
+              <div className="text-[10px] text-slate-500">Staff P/A/L Calendar</div>
+            </div>
+          </button>
+
+          {/* 9. Salary Payroll */}
+          <button
+            onClick={() => onNavigate('salary')}
+            className="p-3 rounded-xl bg-slate-50 hover:bg-rose-50 hover:border-rose-300 border border-slate-200 text-left transition-all cursor-pointer group shadow-2xs flex flex-col justify-between"
+          >
+            <div className="p-2 rounded-lg bg-rose-100 text-rose-900 group-hover:scale-105 transition-transform w-fit">
+              <DollarSign className="w-4 h-4" />
+            </div>
+            <div className="mt-2">
+              <div className="font-black text-xs text-slate-900">वेतन भुगतान</div>
+              <div className="text-[10px] text-slate-500">Salary & Payroll</div>
+            </div>
+          </button>
+
+          {/* 10. Payment Reminders */}
+          <button
+            onClick={() => onNavigate('reminders')}
+            className="p-3 rounded-xl bg-slate-50 hover:bg-orange-50 hover:border-orange-300 border border-slate-200 text-left transition-all cursor-pointer group shadow-2xs flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between w-full">
+              <div className="p-2 rounded-lg bg-orange-100 text-orange-900 group-hover:scale-105 transition-transform">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
+              {expiringSoonMembers.length > 0 && (
+                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-orange-500 text-white animate-pulse">
+                  {expiringSoonMembers.length}
+                </span>
+              )}
+            </div>
+            <div className="mt-2">
+              <div className="font-black text-xs text-slate-900">फीस रिमाइंडर्स</div>
+              <div className="text-[10px] text-slate-500">Due Expirations</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Active Members */}

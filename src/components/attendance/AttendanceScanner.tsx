@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useGymData } from '../../context/GymDataContext';
-import { KeyRound, CheckCircle, AlertCircle, Users, Clock, ShieldCheck, Delete, ArrowRight } from 'lucide-react';
+import { KeyRound, CheckCircle, CheckCircle2, AlertCircle, Users, Clock, ShieldCheck, Delete, ArrowRight } from 'lucide-react';
 
 export const AttendanceScanner: React.FC = () => {
   const { attendance, markAttendance, liveGymCount } = useGymData();
@@ -211,86 +211,75 @@ export const AttendanceScanner: React.FC = () => {
           </div>
         </div>
 
-        {/* 1-Click Fast PIN Demo & Info */}
+        {/* Live Attendance Instructions & Status Guide (No Demo PINs Exposed) */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-600" />
-              1-क्लिक डेमो चेक-इन टेस्ट (Demo PIN Taps)
-            </h4>
-            <p className="text-xs text-slate-500 mb-4">
-              कांकेर जिम सदस्य, ट्रेनर और स्टाफ के पिन का परीक्षण करने के लिए क्लिक करें:
-            </p>
-
-            <div className="space-y-2.5">
-              {/* Member: Rahul */}
-              <button
-                onClick={() => submitPin('1111')}
-                className="w-full text-left p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-amber-400 hover:bg-white flex items-center justify-between text-xs transition-all cursor-pointer group shadow-sm"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span className="font-bold text-slate-900 group-hover:text-amber-600">Rahul Sharma (Member)</span>
-                  </div>
-                  <span className="font-mono text-[10px] text-slate-500 ml-4">Code: KF-2024-001</span>
-                </div>
-                <span className="font-mono text-xs font-bold text-amber-800 bg-amber-50 px-2 py-1 rounded border border-amber-200">
-                  PIN: 1111
-                </span>
-              </button>
-
-              {/* Trainer: Vikram */}
-              <button
-                onClick={() => submitPin('2002')}
-                className="w-full text-left p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-cyan-400 hover:bg-white flex items-center justify-between text-xs transition-all cursor-pointer group shadow-sm"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-cyan-500" />
-                    <span className="font-bold text-slate-900 group-hover:text-cyan-700">Coach Vikram Sahu (Trainer)</span>
-                  </div>
-                  <span className="font-mono text-[10px] text-slate-500 ml-4">Staff Code: STF-001</span>
-                </div>
-                <span className="font-mono text-xs font-bold text-cyan-800 bg-cyan-50 px-2 py-1 rounded border border-cyan-200">
-                  PIN: 2002
-                </span>
-              </button>
-
-              {/* Staff: Ramesh */}
-              <button
-                onClick={() => submitPin('3003')}
-                className="w-full text-left p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-amber-400 hover:bg-white flex items-center justify-between text-xs transition-all cursor-pointer group shadow-sm"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-amber-500" />
-                    <span className="font-bold text-slate-900 group-hover:text-amber-700">Ramesh Verma (Front Desk Staff)</span>
-                  </div>
-                  <span className="font-mono text-[10px] text-slate-500 ml-4">Staff Code: STF-2026-03</span>
-                </div>
-                <span className="font-mono text-xs font-bold text-amber-800 bg-amber-50 px-2 py-1 rounded border border-amber-200">
-                  PIN: 3003
-                </span>
-              </button>
-
-              {/* Admin: Koushik */}
-              <button
-                onClick={() => submitPin('1001')}
-                className="w-full text-left p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-slate-400 hover:bg-white flex items-center justify-between text-xs transition-all cursor-pointer group shadow-sm"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-slate-700" />
-                    <span className="font-bold text-slate-900">Vaibhav Kaushik (Admin)</span>
-                  </div>
-                  <span className="font-mono text-[10px] text-slate-500 ml-4">Gym Director</span>
-                </div>
-                <span className="font-mono text-xs font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded border border-slate-200">
-                  PIN: 1001
-                </span>
-              </button>
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+              <div className="p-2 rounded-xl bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-900">
+                  डिजिटल हाजिरी निर्देश (PIN Kiosk Guide)
+                </h4>
+                <p className="text-[11px] text-slate-500">
+                  कौशिक फिटनेस दैनिक बायोमेट्रिक/पिन उपस्थिति
+                </p>
+              </div>
             </div>
+
+            {/* Step by step guide */}
+            <div className="space-y-2 text-xs">
+              <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                <span className="w-5 h-5 rounded-full bg-amber-500 text-slate-950 font-black text-[10px] flex items-center justify-center shrink-0 mt-0.5">
+                  1
+                </span>
+                <p className="text-slate-700 leading-snug">
+                  <strong className="text-slate-900 font-bold">पिन दर्ज करें: </strong>
+                  कीपैड पर अपना 4-अंकों का व्यक्तिगत सदस्य या स्टाफ पिन टाइप करें।
+                </p>
+              </div>
+
+              <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                <span className="w-5 h-5 rounded-full bg-cyan-600 text-white font-black text-[10px] flex items-center justify-center shrink-0 mt-0.5">
+                  2
+                </span>
+                <p className="text-slate-700 leading-snug">
+                  <strong className="text-slate-900 font-bold">Submit दबाएं: </strong>
+                  पिन डालने के बाद 'Submit' बटन पर टैप करें।
+                </p>
+              </div>
+
+              <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-[10px] flex items-center justify-center shrink-0 mt-0.5">
+                  3
+                </span>
+                <p className="text-slate-700 leading-snug">
+                  <strong className="text-slate-900 font-bold">पुष्टि देखें: </strong>
+                  स्क्रीन पर आपका नाम, फोटो व हाजिरी दर्ज होने की पुष्टि तुरंत दिखेगी।
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Live Stats Pill */}
+            <div className="p-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] uppercase font-bold text-amber-900 block">
+                  आज की कुल उपस्थिति (Today Checked-in)
+                </span>
+                <span className="text-lg font-black text-slate-900 font-mono">
+                  {todayAttendance.length} <span className="text-xs font-normal text-slate-600">प्रवेश दर्ज</span>
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] uppercase font-bold text-slate-500 block">तारीख</span>
+                <span className="text-xs font-mono font-bold text-slate-800">{todayDate}</span>
+              </div>
+            </div>
+
+            <p className="text-[10.5px] text-slate-500 italic text-center pt-1">
+              सुरक्षा सूचना: अपना पिन किसी अन्य के साथ साझा न करें। पिन बदलने के लिए एडमिन से संपर्क करें।
+            </p>
           </div>
         </div>
       </div>
