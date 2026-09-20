@@ -85,9 +85,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-500 flex items-center justify-center text-slate-950 font-black shadow-md shadow-amber-500/20 shrink-0">
-            <Dumbbell className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950" />
-          </div>
+          <img
+            src="/app-logo.png"
+            alt="Kaushik Fitness Logo"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl shadow-md border border-amber-400/50 object-cover shrink-0"
+          />
 
           <div>
             <div className="flex items-center gap-1.5 sm:gap-2">

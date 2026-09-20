@@ -210,7 +210,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (!matchedDbUser) {
-      const errMsg = 'User or PIN not found. Use 1001 (Admin), 2002 (Trainer), 3003 (Staff), 1111 (Member), or 9975 (Developer)';
+      const errMsg = 'अमान्य 4-अंकीय पिन या उपयोगकर्ता नहीं मिला। कृपया पुनः प्रयास करें। (Invalid PIN. Please try again.)';
       setError(errMsg);
       return {
         success: false,
@@ -228,7 +228,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       cleanPass === 'member123';
 
     if (!isValidPasswordOrPin) {
-      const errMsg = 'Invalid Password or 4-digit PIN. Please try again.';
+      const errMsg = 'गलत पिन या पासवर्ड। कृपया सही पिन दर्ज करें। (Incorrect PIN. Please try again.)';
       setError(errMsg);
       return { success: false, message: errMsg };
     }

@@ -60,14 +60,113 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-between text-slate-800 selection:bg-amber-400 selection:text-slate-900">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-100 via-amber-50/50 to-slate-200/70 flex flex-col justify-between text-slate-800 selection:bg-amber-400 selection:text-slate-900 overflow-x-hidden">
+      {/* Decorative Gym Vector Art & Light Ambient Background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 select-none">
+        {/* Soft Ambient Light Glows */}
+        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-amber-400/20 blur-3xl animate-pulse" />
+        <div className="absolute top-1/3 -right-32 w-96 h-96 rounded-full bg-amber-300/20 blur-3xl" />
+        <div className="absolute -bottom-32 left-1/4 w-96 h-96 rounded-full bg-slate-300/35 blur-3xl" />
+
+        {/* Subtle Gym Vector Graphics (Watermarked in subtle athletic tones) */}
+        <svg
+          className="absolute inset-0 w-full h-full text-slate-500/20"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+        >
+          {/* Top Left Heavy Dumbbell Vector */}
+          <g transform="translate(60, 90) rotate(-25) scale(1.35)" stroke="currentColor" strokeWidth="1.5">
+            <rect x="0" y="30" width="80" height="12" rx="4" fill="currentColor" fillOpacity="0.08" />
+            <rect x="-14" y="10" width="14" height="52" rx="4" fill="currentColor" fillOpacity="0.12" />
+            <rect x="-24" y="18" width="10" height="36" rx="3" fill="currentColor" fillOpacity="0.15" />
+            <rect x="80" y="10" width="14" height="52" rx="4" fill="currentColor" fillOpacity="0.12" />
+            <rect x="94" y="18" width="10" height="36" rx="3" fill="currentColor" fillOpacity="0.15" />
+          </g>
+
+          {/* Top Right Olympic Barbell Plates */}
+          <g transform="translate(920, 80) rotate(15) scale(1.25)" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="60" cy="60" r="50" fill="currentColor" fillOpacity="0.06" />
+            <circle cx="60" cy="60" r="36" strokeDasharray="6 4" />
+            <circle cx="60" cy="60" r="14" fill="currentColor" fillOpacity="0.15" />
+            <line x1="60" y1="0" x2="60" y2="120" stroke="currentColor" strokeWidth="2" />
+            <line x1="0" y1="60" x2="120" y2="60" stroke="currentColor" strokeWidth="2" />
+          </g>
+
+          {/* Bottom Left Cast Iron Kettlebell */}
+          <g transform="translate(80, 500) rotate(10) scale(1.3)" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="45" cy="55" r="35" fill="currentColor" fillOpacity="0.08" />
+            <path d="M25 25 C25 5, 65 5, 65 25" fill="none" strokeWidth="5" stroke="currentColor" />
+            <circle cx="45" cy="55" r="12" fill="currentColor" fillOpacity="0.1" />
+          </g>
+
+          {/* Bottom Right Power Dumbbell */}
+          <g transform="translate(880, 470) rotate(-35) scale(1.4)" stroke="currentColor" strokeWidth="1.5">
+            <rect x="0" y="30" width="90" height="12" rx="4" fill="currentColor" fillOpacity="0.08" />
+            <rect x="-16" y="8" width="16" height="56" rx="4" fill="currentColor" fillOpacity="0.12" />
+            <rect x="-28" y="16" width="12" height="40" rx="3" fill="currentColor" fillOpacity="0.15" />
+            <rect x="90" y="8" width="16" height="56" rx="4" fill="currentColor" fillOpacity="0.12" />
+            <rect x="106" y="16" width="12" height="40" rx="3" fill="currentColor" fillOpacity="0.15" />
+          </g>
+
+          {/* Center Subtle Heartbeat / Pulse Cardio Wave */}
+          <path
+            d="M0 380 L350 380 L380 340 L400 420 L430 310 L460 450 L490 360 L520 400 L540 380 L1400 380"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeOpacity="0.18"
+            strokeDasharray="8 6"
+            fill="none"
+          />
+
+          {/* Background Motivational Typography Watermark */}
+          <text
+            x="50%"
+            y="260"
+            textAnchor="middle"
+            fill="currentColor"
+            fillOpacity="0.03"
+            fontSize="80"
+            fontWeight="900"
+            letterSpacing="0.25em"
+            className="font-black select-none uppercase tracking-widest"
+          >
+            KAUSHIK FITNESS
+          </text>
+          <text
+            x="50%"
+            y="650"
+            textAnchor="middle"
+            fill="currentColor"
+            fillOpacity="0.035"
+            fontSize="44"
+            fontWeight="900"
+            letterSpacing="0.3em"
+            className="font-black select-none uppercase tracking-widest"
+          >
+            STRENGTH • POWER • DISCIPLINE
+          </text>
+        </svg>
+
+        {/* Diagonal Athletic Mesh Grid */}
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage: `radial-gradient(#d97706 1.5px, transparent 1.5px), radial-gradient(#0f172a 1px, transparent 1px)`,
+            backgroundSize: '32px 32px',
+            backgroundPosition: '0 0, 16px 16px',
+          }}
+        />
+      </div>
+
       {/* Top Brand Header */}
-      <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 shadow-sm">
+      <header className="relative z-10 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-8 py-3.5 shadow-xs">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-amber-500 flex items-center justify-center text-slate-900 shadow-md shadow-amber-500/20 font-black">
-              <Dumbbell className="w-6 h-6 text-slate-950" />
-            </div>
+            <img
+              src="/app-logo.png"
+              alt="Kaushik Fitness Logo"
+              className="w-11 h-11 rounded-2xl shadow-md border border-amber-400/50 object-cover shrink-0"
+            />
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-black text-lg tracking-wider text-slate-900 uppercase">
@@ -110,8 +209,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
       </header>
 
       {/* Main Login Card Area */}
-      <main className="flex-1 flex items-center justify-center p-4 sm:p-6">
-        <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl shadow-xl overflow-hidden">
+      <main className="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-6 my-2">
+        <div className="w-full max-w-md bg-white/95 backdrop-blur-md border border-amber-200/70 rounded-3xl shadow-2xl shadow-slate-300/60 overflow-hidden">
           {/* Card Top Banner */}
           <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 py-6 text-white text-center">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 text-xs font-semibold uppercase tracking-wider mb-2">
@@ -168,9 +267,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
           {/* 4-DIGIT PIN LOGIN FORM */}
           <div className="p-6 sm:p-7 space-y-5">
             <div className="text-center">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-400 text-slate-950 flex items-center justify-center mx-auto mb-2 shadow-md shadow-amber-500/20">
-                <KeyRound className="w-6 h-6" />
-              </div>
+              <img
+                src="/app-logo.png"
+                alt="Kaushik Fitness Logo"
+                className="w-14 h-14 rounded-2xl shadow-lg border-2 border-amber-400/60 mx-auto mb-2.5 object-cover"
+              />
               <h3 className="font-black text-lg text-slate-900">4-Digit Security PIN</h3>
               <p className="text-slate-500 text-xs mt-0.5">
                 Staff, Trainer & Member Check-In
@@ -248,7 +349,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
       </main>
 
       {/* Page Bottom Footer */}
-      <footer className="text-center py-4 text-xs text-slate-500 border-t border-slate-200 bg-white">
+      <footer className="relative z-10 text-center py-3.5 text-xs text-slate-600 border-t border-slate-200/80 bg-white/75 backdrop-blur-xs">
         Kaushik Fitness Kanker, Chhattisgarh • Built for Strength, Body Index Tracking & Management
       </footer>
     </div>

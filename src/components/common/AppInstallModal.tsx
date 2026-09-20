@@ -59,9 +59,11 @@ export const AppInstallModal: React.FC<AppInstallModalProps> = ({ isOpen, onClos
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 px-5 sm:px-6 py-4 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-400 flex items-center justify-center text-slate-950 shadow-md font-black shrink-0">
-              <Smartphone className="w-5 h-5" />
-            </div>
+            <img
+              src="/app-logo.png"
+              alt="Kaushik Fitness App"
+              className="w-10 h-10 rounded-2xl shadow-md border border-amber-400/60 object-cover shrink-0"
+            />
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-black text-sm sm:text-base leading-tight">

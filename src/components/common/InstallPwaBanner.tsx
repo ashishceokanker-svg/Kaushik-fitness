@@ -71,9 +71,11 @@ export const InstallPwaBanner: React.FC = () => {
     <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-50 animate-in slide-in-from-bottom-5 duration-300">
       <div className="p-3.5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white shadow-2xl border border-amber-500/30 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center text-slate-950 font-black shrink-0 shadow-lg shadow-amber-500/20">
-            <Smartphone className="w-5 h-5" />
-          </div>
+          <img
+            src="/app-logo.png"
+            alt="Kaushik Fitness App"
+            className="w-10 h-10 rounded-xl shadow-md border border-amber-400/50 object-cover shrink-0"
+          />
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <span className="font-bold text-xs text-white truncate">Koushik Fitness App</span>
