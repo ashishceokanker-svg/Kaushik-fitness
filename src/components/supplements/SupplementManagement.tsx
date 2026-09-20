@@ -238,10 +238,10 @@ export const SupplementManagement: React.FC<SupplementManagementProps> = ({ onBa
           </div>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
             <Boxes className="w-7 h-7 text-amber-500" />
-            सप्लीमेंट स्टोर एवं स्टॉक प्रबंधन
+            Supplement Store & Stock Management
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            कौशिक फिटनेस कांकेर - न्यूट्रिशन स्टॉक एंट्री, काउंटर बिलिंग व बिक्री लेजर
+            सप्लीमेंट स्टोर एवं स्टॉक प्रबंधन • Nutrition Stock Entry, POS Counter & Sales Ledger
           </p>
         </div>
 

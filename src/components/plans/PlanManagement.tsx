@@ -269,7 +269,7 @@ export const PlanManagement: React.FC<PlanManagementProps> = ({ onBack }) => {
                   Admin • Staff • Developer Access
                 </span>
                 <h1 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight">
-                  जिम सदस्यता एवं PT प्लान प्रबंधन (Plans & Packages)
+                  Membership & PT Plans Management (सदस्यता एवं PT प्लान)
                 </h1>
               </div>
             </div>

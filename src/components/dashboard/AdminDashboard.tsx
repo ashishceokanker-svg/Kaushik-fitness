@@ -289,8 +289,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <ShoppingBag className="w-4 h-4" />
             </div>
             <div className="mt-2">
-              <div className="font-black text-xs text-slate-900">सप्लीमेंट्स स्टोर</div>
-              <div className="text-[10px] text-slate-500">Stock & POS Sale</div>
+              <div className="font-black text-xs text-slate-900">Supplement Store</div>
+              <div className="text-[10px] text-slate-500">Stock & Inventory POS</div>
             </div>
           </button>
 
@@ -404,8 +404,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </span>
             </div>
             <div className="mt-2">
-              <div className="font-black text-xs text-slate-900">प्लान्स व दरें</div>
-              <div className="text-[10px] text-slate-500">Membership & PT Plans</div>
+              <div className="font-black text-xs text-slate-900">Membership & PT Plans</div>
+              <div className="text-[10px] text-slate-500">Packages & Rates</div>
             </div>
           </button>
         </div>
