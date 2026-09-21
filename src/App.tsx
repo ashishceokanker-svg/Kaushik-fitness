@@ -84,7 +84,7 @@ const MainAppContent: React.FC = () => {
   // If user is not logged in, display the Light-Themed Login Portal
   if (!isAuthenticated || !currentUser) {
     return (
-      <div className="min-h-screen text-slate-900">
+      <div className="h-screen h-[100dvh] max-h-[100dvh] w-full overflow-hidden text-slate-900">
         <LoginPage
           onOpenEnquiry={() => setIsEnquiryModalOpen(true)}
           onOpenAppInstall={() => setIsAppInstallOpen(true)}

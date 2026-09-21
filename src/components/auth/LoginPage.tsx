@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { localDb } from '../../db/localDatabase';
 import {
@@ -30,7 +30,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
     distance: string;
   } | null>(null);
 
+  const inputRef = useRef<HTMLInputElement>(null);
+
   const geofenceSettings = localDb.getGeofenceSettings();
+
+  useEffect(() => {
+    // Only autofocus on laptop/desktop to avoid mobile virtual keyboard covering the screen
+    if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+      inputRef.current?.focus();
+    }
+  }, []);
 
   const handlePinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +72,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
   };
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-slate-200 via-amber-100/50 to-slate-300/80 flex flex-col justify-between text-slate-800 selection:bg-amber-400 selection:text-slate-900 overflow-x-hidden">
+    <div className="relative h-screen h-[100dvh] max-h-[100dvh] w-full bg-gradient-to-br from-slate-200 via-amber-100/50 to-slate-300/80 flex flex-col justify-between text-slate-800 selection:bg-amber-400 selection:text-slate-900 overflow-hidden">
       {/* Decorative Gym Vector Art & Light Ambient Background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 select-none">
         {/* Soft Ambient Light Glows */}
@@ -185,37 +194,37 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
       </div>
 
       {/* Top Brand Header */}
-      <header className="relative z-10 bg-slate-100/90 backdrop-blur-md border-b border-slate-300/80 px-4 sm:px-8 py-3.5 shadow-xs">
+      <header className="relative z-10 bg-slate-100/90 backdrop-blur-md border-b border-slate-300/80 px-3 sm:px-6 py-2 sm:py-2.5 shadow-xs shrink-0">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <img
               src="/app-logo.png"
               alt="Kaushik Fitness Logo"
-              className="w-11 h-11 rounded-2xl shadow-md border border-amber-400/50 object-cover shrink-0"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl shadow-md border border-amber-400/50 object-cover shrink-0"
             />
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-black text-lg tracking-wider text-slate-900 uppercase">
+              <div className="flex items-center gap-1.5">
+                <span className="font-black text-base sm:text-lg tracking-wider text-slate-900 uppercase">
                   KAUSHIK FITNESS
                 </span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-amber-500 text-slate-950">
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest bg-amber-500 text-slate-950">
                   Kanker
                 </span>
               </div>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-[11px] text-slate-500 font-medium hidden sm:block">
                 Gym Management & Biometric Fitness Portal
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {onOpenAppInstall && (
               <button
                 onClick={onOpenAppInstall}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition-all shadow-sm cursor-pointer"
+                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg sm:rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition-all shadow-xs cursor-pointer"
               >
-                <Smartphone className="w-4 h-4" />
-                <span className="hidden sm:inline">ऐप इंस्टॉल करें (Install App)</span>
+                <Smartphone className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">ऐप इंस्टॉल करें</span>
                 <span className="sm:hidden">App</span>
               </button>
             )}
@@ -223,10 +232,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
             {onOpenEnquiry && (
               <button
                 onClick={onOpenEnquiry}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold transition-all shadow-sm cursor-pointer"
+                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg sm:rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold transition-all shadow-xs cursor-pointer"
               >
-                <MessageSquare className="w-4 h-4 text-amber-600" />
-                <span className="hidden sm:inline">Admission / PT Enquiry (पूछताछ)</span>
+                <MessageSquare className="w-3.5 h-3.5 text-amber-600" />
+                <span className="hidden sm:inline">पूछताछ (Enquiry)</span>
                 <span className="sm:hidden">Enquiry</span>
               </button>
             )}
@@ -235,113 +244,113 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
       </header>
 
       {/* Main Login Card Area */}
-      <main className="relative z-10 flex-1 flex items-center justify-center gap-8 p-4 sm:p-6 my-2">
+      <main className="relative z-10 flex-1 flex items-center justify-center gap-6 px-3 py-2 sm:px-6 sm:py-3 min-h-0 overflow-y-auto sm:overflow-hidden">
         {/* Left Side Aesthetic Gym Showcase (Desktop) */}
-        <div className="hidden xl:flex flex-col gap-4 max-w-xs p-6 rounded-3xl bg-white/80 backdrop-blur-md border border-amber-200/80 shadow-xl text-slate-800">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-400 flex items-center justify-center text-slate-950 font-black shadow-md shadow-amber-500/30">
-            <Dumbbell className="w-6 h-6" />
+        <div className="hidden xl:flex flex-col gap-3 max-w-[260px] p-4 sm:p-5 rounded-2xl bg-white/85 backdrop-blur-md border border-amber-200/80 shadow-lg text-slate-800 shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-400 flex items-center justify-center text-slate-950 font-black shadow-md shadow-amber-500/30">
+            <Dumbbell className="w-5 h-5" />
           </div>
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 font-mono">
               Strength & Cardio Club
             </span>
-            <h3 className="font-black text-lg text-slate-900 mt-0.5">
+            <h3 className="font-black text-base text-slate-900 mt-0.5">
               कौशिक फिटनेस कांकेर
             </h3>
-            <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+            <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">
               आधुनिक हैवी वेट्स, डंबल्स, ट्रेडमिल व व्यक्तिगत प्रशिक्षण (PT) के साथ अपनी फिटनेस क्षमता को निखारें।
             </p>
           </div>
-          <div className="pt-2 border-t border-slate-200/80 flex flex-wrap gap-1.5 text-[11px] font-bold text-amber-900">
-            <span className="px-2.5 py-1 rounded-lg bg-amber-100/80">💪 Heavy Weights</span>
-            <span className="px-2.5 py-1 rounded-lg bg-amber-100/80">🔥 Cardio Zone</span>
-            <span className="px-2.5 py-1 rounded-lg bg-amber-100/80">🏆 PT Training</span>
+          <div className="pt-2 border-t border-slate-200/80 flex flex-wrap gap-1 text-[10px] font-bold text-amber-900">
+            <span className="px-2 py-0.5 rounded-md bg-amber-100/80">💪 Heavy Weights</span>
+            <span className="px-2 py-0.5 rounded-md bg-amber-100/80">🔥 Cardio Zone</span>
+            <span className="px-2 py-0.5 rounded-md bg-amber-100/80">🏆 PT Training</span>
           </div>
         </div>
 
-        <div className="w-full max-w-md bg-white/95 backdrop-blur-md border border-amber-200/70 rounded-3xl shadow-2xl shadow-slate-300/60 overflow-hidden">
-          {/* Card Top Banner */}
-          <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 py-6 text-white text-center">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 text-xs font-semibold uppercase tracking-wider mb-2">
-              <Sparkles className="w-3.5 h-3.5" />
-              Portal Access
+        {/* Center Main Login Card */}
+        <div className="w-full max-w-[390px] sm:max-w-md bg-white/95 backdrop-blur-md border border-amber-200/70 rounded-2xl sm:rounded-3xl shadow-xl shadow-slate-300/50 overflow-hidden flex flex-col my-auto">
+          {/* Card Top Banner with Integrated Geofence Info */}
+          <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-4 sm:px-5 py-2.5 sm:py-3 text-white">
+            <div className="flex items-center justify-between">
+              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-bold uppercase tracking-wider">
+                <Sparkles className="w-3 h-3" />
+                Portal Access
+              </div>
+              <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>GPS Active ({geofenceSettings.radiusMeters}m)</span>
+              </div>
             </div>
-            <h1 className="text-2xl font-black tracking-tight">
-              Welcome to Kaushik Fitness
-            </h1>
-            <p className="text-slate-300 text-xs mt-1">
-              सुरक्षित 4-अंकीय व्यक्तिगत पिन दर्ज करें
-            </p>
-          </div>
-
-          {/* Location & GPS Indicator */}
-          <div className="bg-slate-900/95 text-slate-300 px-6 py-2.5 border-b border-slate-800 flex items-center justify-between text-[11px]">
-            <div className="flex items-center gap-1.5 truncate">
-              <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span className="truncate">कांकेर जिम परिसर ({geofenceSettings.radiusMeters}m Geofence)</span>
+            <div className="mt-1 flex items-baseline justify-between">
+              <div>
+                <h1 className="text-base sm:text-lg font-black tracking-tight text-white">
+                  Welcome to Kaushik Fitness
+                </h1>
+                <p className="text-slate-300 text-[10px] sm:text-[11px]">
+                  सुरक्षित 4-अंकीय व्यक्तिगत पिन दर्ज करें
+                </p>
+              </div>
+              <span className="text-[10px] text-amber-400/90 font-bold hidden xs:inline">
+                कांकेर परिसर
+              </span>
             </div>
-            <span className="text-emerald-400 font-bold shrink-0 flex items-center gap-1 text-[10px]">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              GPS Active
-            </span>
           </div>
 
           {/* GPS Geofence Feedback Toast */}
           {geofenceFeedback && (
-            <div className={`mx-6 mt-4 p-3.5 rounded-2xl border text-xs flex items-center gap-3 font-semibold ${
+            <div className={`mx-3 sm:mx-4 mt-2 p-2 rounded-xl border text-xs flex items-center gap-2.5 font-semibold ${
               geofenceFeedback.status === 'present'
                 ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
                 : 'bg-rose-50 border-rose-200 text-rose-800'
             }`}>
-              <div className={`p-1.5 rounded-xl ${geofenceFeedback.status === 'present' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                {geofenceFeedback.status === 'present' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+              <div className={`p-1 rounded-lg ${geofenceFeedback.status === 'present' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                {geofenceFeedback.status === 'present' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
               </div>
-              <div className="flex-1">
-                <div className="font-bold text-xs">
+              <div className="flex-1 min-w-0">
+                <div className="font-bold text-[11px]">
                   {geofenceFeedback.status === 'present' ? 'GPS Verified: उपस्थिति दर्ज (Present)' : 'GPS Alert: परिधि से बाहर (Absent दर्ज)'}
                 </div>
-                <div className="text-[11px] opacity-85 mt-0.5">{geofenceFeedback.message}</div>
+                <div className="text-[10px] opacity-85 truncate">{geofenceFeedback.message}</div>
               </div>
             </div>
           )}
 
           {/* Error Message Display */}
           {(localError || authError) && (
-            <div className="mx-6 mt-4 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2.5 font-medium">
-              <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
-              <span>{localError || authError}</span>
+            <div className="mx-3 sm:mx-4 mt-2 p-2 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2 font-medium">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-600" />
+              <span className="text-[11px] leading-tight">{localError || authError}</span>
             </div>
           )}
 
           {/* 4-DIGIT PIN LOGIN FORM */}
-          <div className="p-6 sm:p-7 space-y-5">
-            <div className="text-center">
-              <img
-                src="/app-logo.png"
-                alt="Kaushik Fitness Logo"
-                className="w-14 h-14 rounded-2xl shadow-lg border-2 border-amber-400/60 mx-auto mb-2.5 object-cover"
-              />
-              <h3 className="font-black text-lg text-slate-900">4-Digit Security PIN</h3>
-              <p className="text-slate-500 text-xs mt-0.5">
-                Staff, Trainer & Member Check-In
-              </p>
+          <div className="p-3.5 sm:p-5 space-y-2 sm:space-y-3">
+            <div className="flex items-center justify-between text-xs px-1 text-slate-700 font-bold">
+              <span className="flex items-center gap-1.5">
+                <KeyRound className="w-3.5 h-3.5 text-amber-600" />
+                4-Digit Security PIN
+              </span>
+              <span className="text-[10px] text-slate-500 font-normal">
+                Member, Staff & Trainer
+              </span>
             </div>
 
-            <form onSubmit={handlePinSubmit} className="space-y-4">
+            <form onSubmit={handlePinSubmit} className="space-y-2 sm:space-y-2.5">
               <div>
                 <input
+                  ref={inputRef}
                   type="password"
                   maxLength={4}
                   value={pin}
                   onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
                   placeholder="••••"
-                  autoFocus
-                  className="w-full text-center tracking-[0.8em] text-3xl font-mono font-black py-3 px-4 bg-slate-50 border-2 border-slate-300 rounded-2xl focus:outline-none focus:border-amber-500 text-slate-900 shadow-inner"
+                  className="w-full text-center tracking-[0.6em] sm:tracking-[0.8em] text-2xl sm:text-3xl font-mono font-black py-1.5 sm:py-2 px-3 bg-slate-50 border-2 border-slate-300 rounded-xl sm:rounded-2xl focus:outline-none focus:border-amber-500 text-slate-900 shadow-inner"
                 />
               </div>
 
               {/* On-Screen Touch Keypad */}
-              <div className="grid grid-cols-3 gap-2 pt-1">
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                 {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map((k) => (
                   <button
                     type="button"
@@ -351,12 +360,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
                       else if (k === '⌫') setPin((p) => p.slice(0, -1));
                       else if (pin.length < 4) setPin((p) => p + k);
                     }}
-                    className={`py-3 font-mono font-bold text-lg rounded-xl transition-all cursor-pointer shadow-2xs active:scale-95 ${
+                    className={`h-9 sm:h-11 font-mono font-bold text-base sm:text-lg rounded-xl flex items-center justify-center transition-all cursor-pointer shadow-2xs active:scale-95 ${
                       k === 'C'
-                        ? 'bg-rose-100 hover:bg-rose-200 text-rose-800'
+                        ? 'bg-rose-100 hover:bg-rose-200 text-rose-800 active:bg-rose-300'
                         : k === '⌫'
-                        ? 'bg-slate-200 hover:bg-slate-300 text-slate-800'
-                        : 'bg-white hover:bg-slate-100 active:bg-amber-100 text-slate-900 border border-slate-200'
+                        ? 'bg-slate-200 hover:bg-slate-300 text-slate-800 active:bg-slate-400'
+                        : 'bg-white hover:bg-slate-100 active:bg-amber-100 text-slate-900 border border-slate-200 hover:border-amber-400'
                     }`}
                   >
                     {k}
@@ -367,22 +376,22 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
               <button
                 type="submit"
                 disabled={loading || pin.length < 4}
-                className="w-full py-3.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-black text-sm uppercase tracking-wider shadow-md hover:shadow-lg transition-all mt-3 flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-2 sm:py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-black text-xs sm:text-sm uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer mt-1"
               >
                 <span>{loading ? 'सत्यापित हो रहा है...' : 'पिन सत्यापित करें व प्रवेश करें'}</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             </form>
 
             {/* Mobile App Install & Unified Link Guide */}
             {onOpenAppInstall && (
-              <div className="pt-2 text-center">
+              <div className="pt-0.5 text-center">
                 <button
                   type="button"
                   onClick={onOpenAppInstall}
-                  className="inline-flex items-center gap-1.5 text-xs text-amber-700 hover:text-amber-800 font-bold underline underline-offset-2 cursor-pointer transition-colors"
+                  className="inline-flex items-center gap-1 text-[11px] sm:text-xs text-amber-700 hover:text-amber-800 font-bold underline underline-offset-2 cursor-pointer transition-colors"
                 >
-                  <Smartphone className="w-3.5 h-3.5" />
+                  <Smartphone className="w-3.5 h-3.5 shrink-0" />
                   <span>📱 मोबाइल में अलग से ऐप (APK) कैसे इंस्टॉल करें? यहाँ देखें</span>
                 </button>
               </div>
@@ -390,39 +399,42 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
           </div>
 
           {/* Card Footer Bar */}
-          <div className="bg-slate-50 border-t border-slate-200 px-6 py-3.5 flex items-center justify-between text-[11px] text-slate-500">
+          <div className="bg-slate-50 border-t border-slate-200 px-4 py-1.5 sm:py-2 flex items-center justify-between text-[10px] text-slate-500 shrink-0">
             <span>Kaushik Fitness Kanker © 2026</span>
-            <span>Secure SHA-256 PIN</span>
+            <span className="flex items-center gap-1 text-slate-600 font-medium">
+              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+              Secure SHA-256 PIN
+            </span>
           </div>
         </div>
 
         {/* Right Side Smart Features Badge (Desktop) */}
-        <div className="hidden xl:flex flex-col gap-4 max-w-xs p-6 rounded-3xl bg-white/80 backdrop-blur-md border border-amber-200/80 shadow-xl text-slate-800">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-slate-900 to-slate-800 flex items-center justify-center text-amber-400 font-black shadow-md">
-            <MapPin className="w-6 h-6" />
+        <div className="hidden xl:flex flex-col gap-3 max-w-[260px] p-4 sm:p-5 rounded-2xl bg-white/85 backdrop-blur-md border border-amber-200/80 shadow-lg text-slate-800 shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-900 to-slate-800 flex items-center justify-center text-amber-400 font-black shadow-md">
+            <MapPin className="w-5 h-5" />
           </div>
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 font-mono flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
               Smart Geofence Active
             </span>
-            <h3 className="font-black text-lg text-slate-900 mt-0.5">
+            <h3 className="font-black text-base text-slate-900 mt-0.5">
               डिजिटल उपस्थिति व ट्रैकिंग
             </h3>
-            <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+            <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">
               जिम परिसर में पहुंचते ही पिन द्वारा स्वचालित उपस्थिति दर्ज, मासिक बॉडी इंडेक्स और डिजिटल रसीद सुविधा।
             </p>
           </div>
-          <div className="pt-2 border-t border-slate-200/80 flex flex-wrap gap-1.5 text-[11px] font-bold text-slate-700">
-            <span className="px-2.5 py-1 rounded-lg bg-slate-100">📍 GPS Verify</span>
-            <span className="px-2.5 py-1 rounded-lg bg-slate-100">📊 Body BMI</span>
-            <span className="px-2.5 py-1 rounded-lg bg-slate-100">🧾 Instant Slip</span>
+          <div className="pt-2 border-t border-slate-200/80 flex flex-wrap gap-1 text-[10px] font-bold text-slate-700">
+            <span className="px-2 py-0.5 rounded-md bg-slate-100">📍 GPS Verify</span>
+            <span className="px-2 py-0.5 rounded-md bg-slate-100">📊 Body BMI</span>
+            <span className="px-2 py-0.5 rounded-md bg-slate-100">🧾 Instant Slip</span>
           </div>
         </div>
       </main>
 
       {/* Page Bottom Footer */}
-      <footer className="relative z-10 text-center py-3.5 text-xs text-slate-600 border-t border-slate-300/80 bg-slate-100/80 backdrop-blur-xs">
+      <footer className="relative z-10 text-center py-1 sm:py-1.5 text-[10px] sm:text-[11px] text-slate-600 border-t border-slate-300/80 bg-slate-100/80 backdrop-blur-xs shrink-0">
         Kaushik Fitness Kanker, Chhattisgarh • Built for Strength, Body Index Tracking & Management
       </footer>
     </div>
