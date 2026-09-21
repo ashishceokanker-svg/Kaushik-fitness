@@ -142,11 +142,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 ? 'bg-amber-500 text-slate-950 shadow-sm'
                 : item.highlight
                 ? 'text-cyan-800 bg-cyan-50/70 hover:bg-cyan-100 hover:text-cyan-900 border border-cyan-200/50'
-                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                : 'text-slate-700 hover:bg-slate-200/90 hover:text-slate-950'
             }`}
           >
             <div className="flex items-center gap-2.5">
-              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-slate-950' : item.highlight ? 'text-cyan-700' : 'text-slate-400'}`} />
+              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-slate-950' : item.highlight ? 'text-cyan-700' : 'text-slate-500'}`} />
               <span className="truncate">{item.label}</span>
             </div>
 
@@ -157,7 +157,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     ? 'bg-black/20 text-slate-950'
                     : item.alert
                     ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                    : 'bg-slate-100 text-slate-600'
+                    : 'bg-slate-200 text-slate-700'
                 }`}
               >
                 {item.badge}
@@ -170,7 +170,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   );
 
   const renderFooter = () => (
-    <div className="p-3.5 border-t border-slate-200 space-y-2 bg-slate-50/60">
+    <div className="p-3.5 border-t border-slate-300 space-y-2 bg-slate-200/60">
       {role === 'admin' && onOpenRegister && (
         <button
           onClick={onOpenRegister}
@@ -199,7 +199,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </button>
 
       {/* User Badge & Logout */}
-      <div className="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200">
+      <div className="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-300 shadow-2xs">
         <div className="flex items-center gap-2.5 min-w-0 pr-2">
           {currentUser?.avatarUrl ? (
             <img
@@ -234,7 +234,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   );
 
   return (
-    <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between shrink-0 hidden md:flex h-[calc(100vh-65px)] sticky top-[65px] shadow-sm">
+    <aside className="w-64 bg-slate-100/95 border-r border-slate-300 flex flex-col justify-between shrink-0 hidden md:flex h-[calc(100vh-65px)] sticky top-[65px] shadow-xs">
       {renderNavList()}
       {renderFooter()}
     </aside>

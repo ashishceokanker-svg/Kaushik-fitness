@@ -10,7 +10,7 @@
   }
 
   body {
-    background-color: #f8fafc;
+    background-color: #e2e8f0;
     color: #0f172a;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -20,6 +20,7 @@
     overflow-x: hidden !important;
     max-width: 100vw !important;
     width: 100%;
+    background-color: #e2e8f0;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -27,40 +28,40 @@
   }
 }
 
-/* Clean Light Scrollbars */
+/* Semi-Light Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #e2e8f0;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #94a3b8;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #64748b;
 }
 
-/* Modern Light Theme Utility Overrides */
+/* Modern Semi-Light Theme Utility Overrides */
 .bg-gym-dark {
-  background-color: #f8fafc !important;
+  background-color: #e2e8f0 !important;
   color: #0f172a !important;
 }
 
 .bg-gym-card {
   background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
   color: #0f172a !important;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.02);
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.04);
 }
 
 .border-gym-border {
-  border-color: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
 }
 
 /* Print Specific Rules for All Invoices, Receipts, and Slips */

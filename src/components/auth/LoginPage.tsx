@@ -63,7 +63,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
   };
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-slate-100 via-amber-50/70 to-slate-200/80 flex flex-col justify-between text-slate-800 selection:bg-amber-400 selection:text-slate-900 overflow-x-hidden">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-200 via-amber-100/50 to-slate-300/80 flex flex-col justify-between text-slate-800 selection:bg-amber-400 selection:text-slate-900 overflow-x-hidden">
       {/* Decorative Gym Vector Art & Light Ambient Background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 select-none">
         {/* Soft Ambient Light Glows */}
@@ -98,35 +98,31 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
           {/* Top-Right Large Olympic Plate Disc */}
           <g transform="translate(1120, 60) rotate(22)">
             <circle cx="100" cy="100" r="90" fill="#f8fafc" stroke="#d97706" strokeWidth="4" opacity="0.6" />
-            <circle cx="100" cy="100" r="75" fill="#fef3c7" stroke="#b45309" strokeWidth="2.5" strokeDasharray="8 6" opacity="0.5" />
-            <circle cx="100" cy="100" r="32" fill="#e2e8f0" stroke="#334155" strokeWidth="3" opacity="0.6" />
-            <circle cx="100" cy="100" r="16" fill="#0f172a" opacity="0.6" />
-            <text x="100" y="65" textAnchor="middle" fill="#d97706" fontSize="13" fontWeight="900" letterSpacing="2" opacity="0.7">25 KG</text>
-            <text x="100" y="150" textAnchor="middle" fill="#475569" fontSize="11" fontWeight="800" letterSpacing="1" opacity="0.6">KAUSHIK</text>
+            <circle cx="100" cy="100" r="72" fill="#e2e8f0" stroke="#b45309" strokeWidth="2.5" opacity="0.6" />
+            <circle cx="100" cy="100" r="28" fill="#cbd5e1" stroke="#b45309" strokeWidth="2" opacity="0.6" />
+            <circle cx="100" cy="100" r="16" fill="#334155" opacity="0.8" />
+            {/* Plate text */}
+            <text x="100" y="46" textAnchor="middle" fill="#92400e" fontSize="13" fontWeight="900" letterSpacing="2">KAUSHIK</text>
+            <text x="100" y="170" textAnchor="middle" fill="#92400e" fontSize="13" fontWeight="900" letterSpacing="2">25 KG</text>
           </g>
 
-          {/* Bottom-Left Cast Iron Kettlebell */}
-          <g transform="translate(80, 560) rotate(12)">
-            {/* Kettlebell Handle */}
-            <path d="M45 50 C45 10, 115 10, 115 50" fill="none" stroke="#d97706" strokeWidth="12" strokeLinecap="round" opacity="0.5" />
-            {/* Kettlebell Body */}
-            <circle cx="80" cy="110" r="62" fill="#fef3c7" stroke="#b45309" strokeWidth="3.5" opacity="0.5" />
-            <circle cx="80" cy="110" r="28" fill="#e2e8f0" stroke="#475569" strokeWidth="2.5" opacity="0.5" />
-            <text x="80" y="116" textAnchor="middle" fill="#d97706" fontSize="16" fontWeight="900" opacity="0.7">24KG</text>
+          {/* Bottom-Left Kettlebell Silhouette */}
+          <g transform="translate(140, 620) rotate(12)">
+            {/* Handle */}
+            <path d="M40 70 C40 10, 120 10, 120 70" stroke="#334155" strokeWidth="16" strokeLinecap="round" fill="none" opacity="0.4" />
+            {/* Bell Ball */}
+            <circle cx="80" cy="115" r="55" fill="#475569" stroke="#f59e0b" strokeWidth="2" opacity="0.5" />
+            <circle cx="80" cy="115" r="42" fill="#334155" opacity="0.5" />
+            <text x="80" y="122" textAnchor="middle" fill="#f59e0b" fontSize="16" fontWeight="900" opacity="0.8">24</text>
           </g>
 
-          {/* Bottom-Right Heavy Hex Dumbbell */}
-          <g transform="translate(1080, 520) rotate(-28)">
-            {/* Steel knurled shaft */}
-            <rect x="40" y="55" width="130" height="16" rx="6" fill="#64748b" stroke="#334155" strokeWidth="2.5" opacity="0.65" />
-            <line x1="60" y1="55" x2="60" y2="71" stroke="#f59e0b" strokeWidth="2" opacity="0.6" />
-            <line x1="80" y1="55" x2="80" y2="71" stroke="#f59e0b" strokeWidth="2" opacity="0.6" />
-            <line x1="105" y1="55" x2="105" y2="71" stroke="#f59e0b" strokeWidth="2" opacity="0.6" />
-            <line x1="130" y1="55" x2="130" y2="71" stroke="#f59e0b" strokeWidth="2" opacity="0.6" />
-            <line x1="150" y1="55" x2="150" y2="71" stroke="#f59e0b" strokeWidth="2" opacity="0.6" />
-            {/* Left Hex Head */}
-            <path d="M40 20 L40 106 L15 125 L-10 106 L-10 20 L15 1 Z" fill="#fef3c7" stroke="#d97706" strokeWidth="3.5" opacity="0.6" />
-            {/* Right Hex Head */}
+          {/* Bottom-Right Hex Dumbbell Duo */}
+          <g transform="translate(1140, 580) rotate(-15)">
+            {/* Dumbbell bar */}
+            <rect x="25" y="64" width="160" height="12" rx="4" fill="#475569" stroke="#1e293b" strokeWidth="2" opacity="0.6" />
+            {/* Left Hex head */}
+            <path d="M-10 20 L-10 106 L15 125 L40 106 L40 20 L15 1 Z" fill="#fef3c7" stroke="#d97706" strokeWidth="3.5" opacity="0.6" />
+            {/* Right Hex head */}
             <path d="M170 20 L170 106 L195 125 L220 106 L220 20 L195 1 Z" fill="#fef3c7" stroke="#d97706" strokeWidth="3.5" opacity="0.6" />
             <text x="15" y="70" textAnchor="middle" fill="#b45309" fontSize="14" fontWeight="900" opacity="0.7">30KG</text>
             <text x="195" y="70" textAnchor="middle" fill="#b45309" fontSize="14" fontWeight="900" opacity="0.7">30KG</text>
@@ -189,7 +185,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
       </div>
 
       {/* Top Brand Header */}
-      <header className="relative z-10 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-8 py-3.5 shadow-xs">
+      <header className="relative z-10 bg-slate-100/90 backdrop-blur-md border-b border-slate-300/80 px-4 sm:px-8 py-3.5 shadow-xs">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img
@@ -426,7 +422,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
       </main>
 
       {/* Page Bottom Footer */}
-      <footer className="relative z-10 text-center py-3.5 text-xs text-slate-600 border-t border-slate-200/80 bg-white/75 backdrop-blur-xs">
+      <footer className="relative z-10 text-center py-3.5 text-xs text-slate-600 border-t border-slate-300/80 bg-slate-100/80 backdrop-blur-xs">
         Kaushik Fitness Kanker, Chhattisgarh • Built for Strength, Body Index Tracking & Management
       </footer>
     </div>

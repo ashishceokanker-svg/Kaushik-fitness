@@ -305,7 +305,7 @@ const MainAppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-amber-400 selection:text-slate-900 max-w-full overflow-x-hidden">
+    <div className="min-h-screen bg-slate-200 text-slate-900 flex flex-col selection:bg-amber-400 selection:text-slate-900 max-w-full overflow-x-hidden">
       {/* Top Navigation Bar */}
       <Navbar
         isMobileView={isMobileSimulator}
@@ -321,7 +321,7 @@ const MainAppContent: React.FC = () => {
       />
 
       {/* Main Layout Body */}
-      <div className="flex-1 flex overflow-x-hidden overflow-y-auto max-w-full">
+      <div className="flex-1 flex overflow-x-hidden overflow-y-auto max-w-full bg-slate-200">
         {/* Desktop Sidebar Navigation */}
         <Sidebar
           activeTab={activeTab}
@@ -379,7 +379,7 @@ const MainAppContent: React.FC = () => {
       />
 
       {/* Mobile Bottom Icon Navigation Bar (Rendered on mobile screens < 768px for non-member views) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-1 py-1.5 flex items-center justify-around shadow-lg w-full max-w-full overflow-x-hidden">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-100/95 backdrop-blur-md border-t border-slate-300 px-1 py-1.5 flex items-center justify-around shadow-lg w-full max-w-full overflow-x-hidden">
         {mobileNavItems.map((item) => {
           const ItemIcon = item.icon;
           const isActive = activeTab === item.id;
@@ -399,10 +399,10 @@ const MainAppContent: React.FC = () => {
                   ? 'text-rose-600 hover:text-rose-700 hover:bg-rose-50/80 font-bold'
                   : isActive
                   ? 'text-amber-600 font-bold bg-amber-50/80 shadow-2xs'
-                  : 'text-slate-500 hover:text-slate-800 font-medium'
+                  : 'text-slate-600 hover:text-slate-900 font-medium'
               }`}
             >
-              <ItemIcon className={`w-4 h-4 shrink-0 ${isLogout ? 'text-rose-600' : isActive ? 'text-amber-600' : 'text-slate-500'}`} />
+              <ItemIcon className={`w-4 h-4 shrink-0 ${isLogout ? 'text-rose-600' : isActive ? 'text-amber-600' : 'text-slate-600'}`} />
               <span className="text-[9.5px] truncate max-w-full leading-tight">{item.label}</span>
             </button>
           );

@@ -68,7 +68,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const CurrentIcon = currentRoleConfig.icon;
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 px-3 sm:px-6 py-2.5 shadow-sm max-w-full overflow-x-hidden">
+    <header className="sticky top-0 z-40 bg-slate-100/95 backdrop-blur-md border-b border-slate-300 px-3 sm:px-6 py-2.5 shadow-xs max-w-full overflow-x-hidden">
       <div className="flex items-center justify-between gap-2 sm:gap-3 max-w-full">
         {/* Left: Brand Identity */}
         <div className="flex items-center gap-2 sm:gap-3">
@@ -88,7 +88,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             </div>
             <p className="text-[11px] text-slate-500 hidden sm:block">
-              Light Portal • Strength, Body Index & Management System
+              Semi-Light Portal • Strength, Body Index & Management System
             </p>
           </div>
         </div>

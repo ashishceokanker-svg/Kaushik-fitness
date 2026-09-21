@@ -8,11 +8,11 @@ export default {
     extend: {
       colors: {
         gym: {
-          bg: '#F8FAFC',
-          dark: '#F8FAFC',
+          bg: '#E2E8F0',
+          dark: '#E2E8F0',
           card: '#FFFFFF',
-          cardLight: '#F8FAFC',
-          border: '#E2E8F0',
+          cardLight: '#F1F5F9',
+          border: '#CBD5E1',
           gold: '#D97706',
           goldHover: '#B45309',
           cyan: '#0284C7',
