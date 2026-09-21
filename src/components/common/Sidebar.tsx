@@ -91,6 +91,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: 'supplements', label: 'Supplement Store & Inventory', icon: ShoppingBag, badge: 'Stock/POS', highlight: true },
         { id: 'enquiries', label: 'Gym Enquiries / Leads', icon: MessageSquare, badge: newEnquiriesCount > 0 ? `${newEnquiriesCount} new` : undefined, alert: newEnquiriesCount > 0 },
         { id: 'members', label: 'Members Directory', icon: Users, badge: members.length },
+        { id: 'staff', label: 'Staff & PT Trainers', icon: Award },
         { id: 'attendance', label: 'PIN Attendance Kiosk', icon: CalendarCheck, badge: `${liveGymCount} on floor` },
         { id: 'reminders', label: 'Due Reminders', icon: Bell, badge: expiringSoonMembers.length, alert: expiringSoonMembers.length > 0 },
       ];

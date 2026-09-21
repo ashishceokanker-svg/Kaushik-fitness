@@ -17,6 +17,8 @@ import {
   CheckCircle2,
   Camera,
   Upload,
+  KeyRound,
+  RefreshCw,
 } from 'lucide-react';
 import { LiveCameraModal } from '../common/LiveCameraModal';
 import { compressImageFile } from '../../utils/imageCompressor';
@@ -34,6 +36,7 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose }) => {
 
   // Basic Information
   const [name, setName] = useState('');
+  const [pin, setPin] = useState<string>(() => Math.floor(1000 + Math.random() * 9000).toString());
   const [fatherName, setFatherName] = useState('');
   const [dob, setDob] = useState('');
   const [phone, setPhone] = useState('');
@@ -53,6 +56,12 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose }) => {
   const [docFileName, setDocFileName] = useState('');
   const [docFileUrl, setDocFileUrl] = useState<string | undefined>(undefined);
   const [fileSizeStr, setFileSizeStr] = useState('');
+
+  // Generate a random 4-digit PIN
+  const handleGeneratePin = () => {
+    const randomPin = Math.floor(1000 + Math.random() * 9000).toString();
+    setPin(randomPin);
+  };
 
   // Escape key to close
   useEffect(() => {
@@ -118,30 +127,39 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !phone.trim()) return;
+
+    // Relaxed Validation - Anyone can submit without being blocked
+    const finalName = name.trim() || (staffType === 'instructor' ? 'नया ट्रेनर' : 'नया स्टाफ');
+    const finalPhone = phone.trim() || `9244${Math.floor(100000 + Math.random() * 900000)}`;
+    const finalPin = (pin.trim() && pin.trim().length === 4)
+      ? pin.trim()
+      : Math.floor(1000 + Math.random() * 9000).toString();
+    const finalSalary = Number(salaryMonthly) > 0 ? Number(salaryMonthly) : 15000;
 
     addStaff({
-      name: name.trim(),
+      name: finalName,
       fatherName: fatherName.trim() || undefined,
       dob: dob || undefined,
-      phone: phone.trim(),
-      email: email.trim() || `${phone.trim()}@koushikfitness.com`,
+      phone: finalPhone,
+      email: email.trim() || `${finalPhone}@koushikfitness.com`,
       address: address.trim() || undefined,
       role: staffType === 'instructor' ? 'trainer' : 'staff',
       staffType,
-      designation: designation.trim(),
+      designation: designation.trim() || (staffType === 'instructor' ? 'Gym Instructor & PT Coach' : 'Front Desk & Operations Officer'),
       joiningDate: new Date().toISOString().split('T')[0],
-      salaryMonthly,
+      salaryMonthly: finalSalary,
       specialization: specializations.split(',').map((s) => s.trim()).filter(Boolean),
       status: 'active',
-      bio: bio.trim(),
+      bio: bio.trim() || undefined,
       docType,
       docNumber: docNumber.trim() || undefined,
       docFileName: docFileName || undefined,
       docFileUrl,
       avatarUrl,
+      pin: finalPin,
     });
 
+    alert(`✅ ${finalName} का प्रोफ़ाइल सफलतापूर्वक सुरक्षित हो गया!\n\n🔑 4-अंकीय पिन (PIN): ${finalPin}\n📱 मोबाइल: ${finalPhone}\n💼 पद: ${staffType === 'instructor' ? 'जिम ट्रेनर (Trainer)' : 'स्टाफ (Staff)'}`);
     onClose();
   };
 
@@ -264,22 +282,26 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose }) => {
 
           {/* Section 1: Basic Identity */}
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-800 bg-cyan-50 px-2.5 py-1 rounded-md border border-cyan-200 inline-block mb-3">
-              1. व्यक्तिगत विवरण (Personal Identity)
-            </span>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-800 bg-cyan-50 px-2.5 py-1 rounded-md border border-cyan-200 inline-block">
+                1. व्यक्तिगत विवरण (Personal Identity)
+              </span>
+              <span className="text-[10.5px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
+                त्वरित एंट्री: सभी विवरण वैकल्पिक हैं
+              </span>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Full Name */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  पूरा नाम (Full Name) *
+                  पूरा नाम (Full Name)
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                   <input
                     type="text"
-                    required
-                    placeholder="उदा. विक्रम साहू"
+                    placeholder="उदा. विक्रम साहू (खाली छोड़ने पर स्वतः बनेगा)"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
@@ -287,14 +309,61 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose }) => {
                 </div>
               </div>
 
+              {/* 4-Digit Security PIN */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-700">
+                    4-अंकीय पिन (Security PIN)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleGeneratePin}
+                    className="text-[10px] text-amber-700 hover:text-amber-900 font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    नया पिन बनाएं
+                  </button>
+                </div>
+                <div className="relative">
+                  <KeyRound className="w-4 h-4 text-amber-600 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    maxLength={4}
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    placeholder="4-अंकीय पिन"
+                    className="w-full bg-amber-50/50 border border-amber-300 rounded-xl pl-9 pr-3 py-2 text-sm font-mono font-black text-amber-950 tracking-wider focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  लॉगिन व कियोस्क अटेंडेंस हेतु (कोई भी 4 अंक)
+                </p>
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  मोबाइल नंबर (Phone Number)
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <input
+                    type="tel"
+                    placeholder="उदा. 98261XXXXX (खाली छोड़ने पर स्वतः बनेगा)"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                  />
+                </div>
+              </div>
+
               {/* Father Name */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  पिता का नाम (Father's Name) *
+                  पिता का नाम (Father's Name) <span className="text-slate-400 font-normal">(वैकल्पिक)</span>
                 </label>
                 <input
                   type="text"
-                  required
                   placeholder="उदा. श्री संतोष साहू"
                   value={fatherName}
                   onChange={(e) => setFatherName(e.target.value)}
@@ -305,13 +374,12 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose }) => {
               {/* Date of Birth */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  जन्म तिथि (Date of Birth / DOB) *
+                  जन्म तिथि (Date of Birth / DOB) <span className="text-slate-400 font-normal">(वैकल्पिक)</span>
                 </label>
                 <div className="relative">
                   <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                   <input
                     type="date"
-                    required
                     value={dob}
                     onChange={(e) => setDob(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
@@ -319,28 +387,10 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose }) => {
                 </div>
               </div>
 
-              {/* Phone */}
+              {/* Email */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  मोबाइल नंबर (Phone Number) *
-                </label>
-                <div className="relative">
-                  <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                  <input
-                    type="tel"
-                    required
-                    placeholder="उदा. 98261XXXXX"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Email */}
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  ईमेल पता (Email Address)
+                  ईमेल पता (Email Address) <span className="text-slate-400 font-normal">(वैकल्पिक)</span>
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -357,13 +407,12 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose }) => {
               {/* Address */}
               <div className="sm:col-span-2">
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  स्थायी पता / निवास (Residential Address) *
+                  स्थायी पता / निवास (Residential Address) <span className="text-slate-400 font-normal">(वैकल्पिक)</span>
                 </label>
                 <div className="relative">
                   <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                   <textarea
                     rows={2}
-                    required
                     placeholder="मकान नं., मोहल्ला/वार्ड, पोस्ट, कांकेर (छ.ग.) पिनकोड"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
@@ -423,14 +472,12 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose }) => {
               {/* Salary Monthly */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  मासिक वेतन (Monthly Salary ₹) *
+                  मासिक वेतन (Monthly Salary ₹)
                 </label>
                 <div className="relative">
                   <DollarSign className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                   <input
                     type="number"
-                    required
-                    min={1000}
                     value={salaryMonthly}
                     onChange={(e) => setSalaryMonthly(Number(e.target.value))}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-900 font-mono font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"

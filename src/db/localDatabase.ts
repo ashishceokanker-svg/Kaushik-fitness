@@ -52,6 +52,7 @@ const DB_KEYS = {
   STAFF_DAILY_ATTENDANCE: 'kf_db_staff_daily_attendance',
   SUPPLEMENTS: 'kf_db_supplements',
   SUPPLEMENT_SALES: 'kf_db_supplement_sales',
+  STAFF_PROFILES: 'kf_db_staff_profiles',
   VERSION: 'kf_db_version_v9_photos_auto_plans',
 };
 
@@ -1298,10 +1299,28 @@ class LocalGymDatabase {
   getStaffMembers(): Staff[] {
     const users = this.getUsers().filter((u) => u.role === 'admin' || u.role === 'trainer' || u.role === 'staff');
     const memberships = this.getMemberships();
+    const savedStaffProfiles = this.getTable<Staff>(DB_KEYS.STAFF_PROFILES, []);
 
     return users.map((u) => {
       const assignedCount = memberships.filter((m) => m.trainer_id === u.id).length;
       const isInstructor = u.role === 'trainer';
+      const existingProfile = savedStaffProfiles.find((sp) => sp.id === u.id || sp.userId === u.id);
+
+      if (existingProfile) {
+        return {
+          ...existingProfile,
+          id: u.id,
+          userId: u.id,
+          name: u.name || existingProfile.name,
+          phone: u.phone || existingProfile.phone,
+          email: u.email || existingProfile.email,
+          role: (u.role as 'admin' | 'trainer' | 'staff') || existingProfile.role,
+          staffType: isInstructor ? 'instructor' : (existingProfile.staffType || 'regular'),
+          pin: u.pin || existingProfile.pin,
+          avatarUrl: u.avatar_url || existingProfile.avatarUrl,
+          assignedClientsCount: assignedCount,
+        };
+      }
 
       return {
         id: u.id,
@@ -1318,7 +1337,7 @@ class LocalGymDatabase {
             : u.id === 'usr-2'
             ? 'Head Fitness Coach & PT Lead'
             : 'Front Desk & Fee Collection Executive',
-        joiningDate: u.created_at.split('T')[0],
+        joiningDate: u.created_at ? u.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
         salaryMonthly: u.id === 'usr-1' ? 60000 : u.id === 'usr-2' ? 28000 : 18000,
         specialization:
           u.id === 'usr-2'
@@ -1372,7 +1391,9 @@ class LocalGymDatabase {
     const users = this.getUsers();
     const newId = staffData.id || `usr-${Date.now()}`;
     const staffCode = `KFS-${(users.filter(u => u.role === 'staff' || u.role === 'trainer').length + 1).toString().padStart(3, '0')}`;
-    const pin = staffData.pin || Math.floor(2000 + Math.random() * 8000).toString();
+    const pin = (staffData.pin && staffData.pin.trim().length === 4)
+      ? staffData.pin.trim()
+      : Math.floor(2000 + Math.random() * 8000).toString();
 
     const newUser: DbUser = {
       id: newId,
@@ -1384,12 +1405,13 @@ class LocalGymDatabase {
       created_at: new Date().toISOString(),
       pin,
       avatar_url: staffData.avatarUrl,
+      address: staffData.address,
     };
 
     users.push(newUser);
     this.setTable(DB_KEYS.USERS, users);
 
-    return {
+    const fullStaff: Staff = {
       ...staffData,
       id: newId,
       userId: newId,
@@ -1397,6 +1419,12 @@ class LocalGymDatabase {
       pin,
       avatarUrl: staffData.avatarUrl,
     };
+
+    const staffProfiles = this.getTable<Staff>(DB_KEYS.STAFF_PROFILES, []);
+    staffProfiles.push(fullStaff);
+    this.setTable(DB_KEYS.STAFF_PROFILES, staffProfiles);
+
+    return fullStaff;
   }
 
   registerMember(input: {

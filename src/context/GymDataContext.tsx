@@ -68,7 +68,7 @@ interface GymDataContextType {
   ) => void;
   
   // Staff actions
-  addStaff: (staffData: Omit<Staff, 'id' | 'staffCode' | 'pin' | 'userId'>) => Staff;
+  addStaff: (staffData: Omit<Staff, 'id' | 'staffCode' | 'userId'> & { pin?: string }) => Staff;
   updateStaff: (id: string, data: Partial<Staff>) => void;
   deleteStaff: (id: string) => void;
 
@@ -568,9 +568,26 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   // Staff CRUD
-  const addStaff = (staffData: Omit<Staff, 'id' | 'staffCode' | 'pin' | 'userId'>): Staff => {
+  const addStaff = (staffData: Omit<Staff, 'id' | 'staffCode' | 'userId'> & { pin?: string }): Staff => {
     const newStaff = localDb.addStaffUser(staffData);
     setStaff(localDb.getStaffMembers());
+
+    // Instant Cloud Firestore sync for multi-device login & attendance
+    if (isFirebaseConfigured()) {
+      syncDocToFirestore(FIRESTORE_COLLECTIONS.USERS, newStaff.userId || newStaff.id, {
+        id: newStaff.userId || newStaff.id,
+        name: newStaff.name,
+        email: newStaff.email,
+        phone: newStaff.phone,
+        password_hash: '$2a$12$defaultHashedPassword2024',
+        role: newStaff.role,
+        created_at: new Date().toISOString(),
+        pin: newStaff.pin,
+        avatar_url: newStaff.avatarUrl,
+        address: newStaff.address,
+      });
+    }
+
     return newStaff;
   };
 
@@ -627,6 +644,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 localDb.upsertUserFromCloud({ id: d.id, ...data });
                 currentMembers = localDb.getJoinedMembers();
                 setMembers(currentMembers);
+                setStaff(localDb.getStaffMembers());
                 matchedMember = currentMembers.find((m) => m.pin === trimmed || m.userId === d.id);
                 break;
               }
