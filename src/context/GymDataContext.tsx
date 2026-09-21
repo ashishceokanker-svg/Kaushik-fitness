@@ -75,6 +75,7 @@ interface GymDataContextType {
   // Attendance actions
   markAttendance: (identifier: string, method?: 'pin') => Promise<{ success: boolean; message: string; record?: AttendanceRecord; personName?: string }>;
   checkOutPerson: (recordId: string, customTime?: string) => void;
+  checkOutByUserId: (identifier: string, customTime?: string) => void;
   checkOutAllActive: () => void;
 
   // Financial actions
@@ -195,6 +196,24 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     localStorage.setItem('kf_progress_logs', JSON.stringify(progressLogs));
   }, [progressLogs]);
+
+  // Real-time cross-tab synchronization: Listen to localStorage changes in other tabs
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'kf_attendance' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) {
+            setAttendance(parsed);
+          }
+        } catch (err) {
+          console.warn('Error parsing storage sync for kf_attendance:', err);
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   const [isCloudSynced, setIsCloudSynced] = useState<boolean>(() => isFirebaseConfigured());
 
@@ -355,9 +374,21 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     const unsubAttendance = subscribeToLiveCollection(FIRESTORE_COLLECTIONS.ATTENDANCE, (items: AttendanceRecord[]) => {
       if (items && items.length > 0) {
-        setAttendance(items);
-        localStorage.setItem('kf_attendance', JSON.stringify(items));
-        localStorage.setItem('kf_db_attendance', JSON.stringify(items));
+        setAttendance((prev) => {
+          const map = new Map(prev.map((r) => [r.id, r]));
+          items.forEach((item) => {
+            const existing = map.get(item.id);
+            if (existing) {
+              map.set(item.id, { ...existing, ...item });
+            } else if (item.userName) {
+              map.set(item.id, item);
+            }
+          });
+          const merged = Array.from(map.values());
+          localStorage.setItem('kf_attendance', JSON.stringify(merged));
+          localStorage.setItem('kf_db_attendance', JSON.stringify(merged));
+          return merged;
+        });
       }
     });
 
@@ -840,30 +871,87 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       customTime ||
       new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
-    setAttendance((prev) =>
-      prev.map((a) => (a.id === recordId ? { ...a, checkOutTime: timeToSet } : a))
-    );
+    let updatedRecord: AttendanceRecord | undefined;
 
-    syncDocToFirestore(FIRESTORE_COLLECTIONS.ATTENDANCE, recordId, {
-      checkOutTime: timeToSet,
+    setAttendance((prev) => {
+      const next = prev.map((a) => {
+        if (a.id === recordId) {
+          updatedRecord = { ...a, checkOutTime: timeToSet };
+          return updatedRecord;
+        }
+        return a;
+      });
+      try {
+        localStorage.setItem('kf_attendance', JSON.stringify(next));
+        localStorage.setItem('kf_db_attendance', JSON.stringify(next));
+      } catch (e) {
+        console.warn('Local storage write failed for checkOutPerson:', e);
+      }
+      return next;
     });
+
+    if (updatedRecord) {
+      // If checked-out person is staff/trainer, also clock them out in StaffDailyAttendance
+      if (updatedRecord.userType === 'staff' || updatedRecord.staffCode) {
+        const sId = updatedRecord.userId || 'usr-2';
+        const staffMember = staff.find((s) => s.id === sId || s.staffCode === updatedRecord?.staffCode);
+        localDb.recordGeofencedAttendance(
+          sId,
+          updatedRecord.userName,
+          (staffMember?.role as any) || 'trainer',
+          'logout'
+        );
+      }
+      syncDocToFirestore(FIRESTORE_COLLECTIONS.ATTENDANCE, recordId, updatedRecord);
+    } else {
+      syncDocToFirestore(FIRESTORE_COLLECTIONS.ATTENDANCE, recordId, {
+        checkOutTime: timeToSet,
+      });
+    }
+  };
+
+  const checkOutByUserId = (identifier: string, customTime?: string) => {
+    const todayDate = new Date().toISOString().split('T')[0];
+    const rec = attendance.find(
+      (a) =>
+        (a.userId === identifier ||
+          a.userName.trim().toLowerCase() === identifier.trim().toLowerCase() ||
+          a.memberCode === identifier ||
+          a.staffCode === identifier ||
+          (identifier === 'usr-2' && a.id === 'att-2')) &&
+        a.date === todayDate &&
+        !a.checkOutTime
+    );
+    if (rec) {
+      checkOutPerson(rec.id, customTime);
+    }
   };
 
   const checkOutAllActive = () => {
     const timeToSet = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     const todayDate = new Date().toISOString().split('T')[0];
+    const activeList = attendance.filter((a) => a.date === todayDate && !a.checkOutTime);
 
-    setAttendance((prev) =>
-      prev.map((a) =>
+    setAttendance((prev) => {
+      const next = prev.map((a) =>
         a.date === todayDate && !a.checkOutTime ? { ...a, checkOutTime: timeToSet } : a
-      )
-    );
+      );
+      try {
+        localStorage.setItem('kf_attendance', JSON.stringify(next));
+        localStorage.setItem('kf_db_attendance', JSON.stringify(next));
+      } catch (e) {
+        console.warn('Local storage write failed for checkOutAllActive:', e);
+      }
+      return next;
+    });
 
-    attendance
-      .filter((a) => a.date === todayDate && !a.checkOutTime)
-      .forEach((a) => {
-        syncDocToFirestore(FIRESTORE_COLLECTIONS.ATTENDANCE, a.id, { checkOutTime: timeToSet });
-      });
+    activeList.forEach((a) => {
+      const updated = { ...a, checkOutTime: timeToSet };
+      if (a.userType === 'staff' || a.staffCode) {
+        localDb.recordGeofencedAttendance(a.userId || 'usr-2', a.userName, 'trainer', 'logout');
+      }
+      syncDocToFirestore(FIRESTORE_COLLECTIONS.ATTENDANCE, a.id, updated);
+    });
   };
 
   // Transactions
@@ -1118,6 +1206,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         deleteStaff,
         markAttendance,
         checkOutPerson,
+        checkOutByUserId,
         checkOutAllActive,
         addTransaction,
         addProgressLog,

@@ -428,6 +428,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           'logout'
         );
       }
+
+      // Check out from live gym floor attendance
+      try {
+        const rawAtt = localStorage.getItem('kf_attendance');
+        if (rawAtt) {
+          const attList: any[] = JSON.parse(rawAtt);
+          const today = new Date().toISOString().split('T')[0];
+          const nowTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+          let changed = false;
+          const updated = attList.map((a) => {
+            if (
+              (a.userId === currentUser.id ||
+                a.userId === currentUser.staffId ||
+                (a.userName && a.userName.trim().toLowerCase() === currentUser.name.trim().toLowerCase()) ||
+                (currentUser.id === 'usr-2' && a.id === 'att-2')) &&
+              a.date === today &&
+              !a.checkOutTime
+            ) {
+              changed = true;
+              return { ...a, checkOutTime: nowTime };
+            }
+            return a;
+          });
+          if (changed) {
+            localStorage.setItem('kf_attendance', JSON.stringify(updated));
+            localStorage.setItem('kf_db_attendance', JSON.stringify(updated));
+            window.dispatchEvent(new StorageEvent('storage', { key: 'kf_attendance', newValue: JSON.stringify(updated) }));
+          }
+        }
+      } catch (err) {
+        console.warn('Live floor checkout on logout failed:', err);
+      }
     }
     setCurrentUser(null);
     setToken(null);

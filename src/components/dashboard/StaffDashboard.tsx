@@ -31,7 +31,7 @@ interface StaffDashboardProps {
 
 export const StaffDashboard: React.FC<StaffDashboardProps> = ({ onNavigate }) => {
   const { currentUser } = useAuth();
-  const { staff, members, transactions } = useGymData();
+  const { staff, members, transactions, attendance, markAttendance, checkOutPerson, checkOutByUserId } = useGymData();
 
   // Find staff info
   const staffMember =
@@ -98,6 +98,18 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({ onNavigate }) =>
   });
   const [attendanceMsg, setAttendanceMsg] = useState<string | null>(null);
 
+  // Find active live gym floor occupancy record for this staff
+  const staffFloorRecord = attendance.find(
+    (a) =>
+      (a.userId === staffMember?.id ||
+        a.userId === currentUser?.id ||
+        (staffMember?.staffCode && a.staffCode === staffMember.staffCode) ||
+        a.userName.trim().toLowerCase() === (staffMember?.name || '').trim().toLowerCase()) &&
+      a.date === todayStr &&
+      !a.checkOutTime
+  );
+  const isStaffOnLiveFloor = !!staffFloorRecord;
+
   const handleDutyAction = (action: 'login' | 'logout') => {
     const staffId = currentUser?.staffId || currentUser?.id || 'usr-3';
     const staffName = staffMember?.name || currentUser?.name || 'Ramesh Verma';
@@ -105,6 +117,21 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({ onNavigate }) =>
     const today = new Date().toISOString().split('T')[0];
     const updated = localDb.getStaffDailyAttendance().find((a) => (a.staffId === staffId || a.staffId === 'usr-3') && a.date === today);
     setStaffAttendance(updated);
+
+    // Sync with Live Gym Floor Attendance
+    if (action === 'logout') {
+      if (staffFloorRecord) {
+        checkOutPerson(staffFloorRecord.id);
+      } else {
+        checkOutByUserId(staffId);
+        if (staffMember?.name) checkOutByUserId(staffMember.name);
+      }
+    } else {
+      if (!staffFloorRecord) {
+        markAttendance(staffMember?.pin || staffMember?.staffCode || staffId);
+      }
+    }
+
     setAttendanceMsg(res.message);
     setTimeout(() => setAttendanceMsg(null), 5000);
   };
@@ -228,7 +255,38 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({ onNavigate }) =>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Live Gym Floor status badge */}
+          <div className={`px-3 py-1.5 rounded-xl border flex items-center gap-2 text-xs ${
+            isStaffOnLiveFloor
+              ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
+              : 'bg-slate-800 border-slate-700 text-slate-400'
+          }`}>
+            <span className={`w-2 h-2 rounded-full ${
+              isStaffOnLiveFloor ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'
+            }`} />
+            <span className="font-semibold text-[11px]">
+              {isStaffOnLiveFloor ? 'फ्लोर पर उपस्थित' : 'फ्लोर से बाहर'}
+            </span>
+            {isStaffOnLiveFloor && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (staffFloorRecord) checkOutPerson(staffFloorRecord.id);
+                  else {
+                    const staffId = currentUser?.staffId || currentUser?.id || 'usr-3';
+                    checkOutByUserId(staffId);
+                    if (staffMember?.name) checkOutByUserId(staffMember.name);
+                  }
+                }}
+                className="ml-1 px-2 py-0.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-bold transition-all cursor-pointer shadow-2xs"
+                title="लाइव फ्लोर से चेक-आउट करें"
+              >
+                फ्लोर हटाएं
+              </button>
+            )}
+          </div>
+
           {staffAttendance?.checkInTime && !staffAttendance?.checkOutTime ? (
             <button
               onClick={() => handleDutyAction('logout')}

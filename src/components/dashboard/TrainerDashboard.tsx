@@ -48,6 +48,8 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
     updateMember,
     attendance,
     markAttendance,
+    checkOutPerson,
+    checkOutByUserId,
     progressLogs,
     addProgressLog,
     addBodyIndexLog,
@@ -131,10 +133,40 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
   });
   const [attFeedback, setAttFeedback] = useState<string | null>(null);
 
+  // Find active live gym floor occupancy record for this trainer
+  const trainerFloorRecord = attendance.find(
+    (a) =>
+      (a.userId === trainer.id ||
+        (trainer.userId && a.userId === trainer.userId) ||
+        (trainer.staffCode && a.staffCode === trainer.staffCode) ||
+        a.userName.trim().toLowerCase() === trainer.name.trim().toLowerCase() ||
+        (trainer.id === 'usr-2' && a.id === 'att-2')) &&
+      a.date === todayDate &&
+      !a.checkOutTime
+  );
+  const isTrainerOnLiveFloor = !!trainerFloorRecord;
+
   const handleTrainerDutyAction = (action: 'login' | 'logout') => {
     const res = localDb.recordGeofencedAttendance(trainer.id, trainer.name, 'trainer', action);
     const updated = localDb.getStaffDailyAttendance().find((a) => (a.staffId === trainer.id || a.staffId === 'usr-2') && a.date === todayDate);
     setTrainerDailyAtt(updated);
+
+    // Sync with Live Gym Floor Attendance
+    if (action === 'logout') {
+      if (trainerFloorRecord) {
+        checkOutPerson(trainerFloorRecord.id);
+      } else {
+        checkOutByUserId(trainer.id);
+        checkOutByUserId('usr-2');
+        checkOutByUserId(trainer.name);
+      }
+    } else {
+      // Clock in: Also ensure marked on gym floor if not yet present
+      if (!trainerFloorRecord) {
+        markAttendance(trainer.pin || trainer.staffCode || trainer.id);
+      }
+    }
+
     setAttFeedback(res.message);
     setTimeout(() => setAttFeedback(null), 5000);
   };
@@ -365,44 +397,80 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
             </div>
           </div>
 
-          {/* Geofenced Duty Status Badge */}
-          <div className="flex items-center gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
-            <div className="text-right">
-              <div className="flex items-center justify-end gap-1.5 mb-0.5">
-                <span className="text-[10px] text-slate-400 uppercase font-bold">GPS Duty Status</span>
-                <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${
-                  trainerDailyAtt?.status === 'present'
-                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                    : trainerDailyAtt?.status === 'absent'
-                    ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                    : 'bg-slate-200 text-slate-700'
-                }`}>
-                  {trainerDailyAtt ? (trainerDailyAtt.status === 'present' ? 'P - उपस्थित' : 'A - परिधि से बाहर') : 'Off Duty'}
+          <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
+            {/* Live Floor Status & 1-Click Floor Check-Out */}
+            <div className={`p-3 rounded-2xl border flex items-center gap-2.5 text-xs ${
+              isTrainerOnLiveFloor
+                ? 'bg-emerald-50/80 border-emerald-300 text-emerald-950'
+                : 'bg-slate-50 border-slate-200 text-slate-500'
+            }`}>
+              <div className="flex items-center gap-1.5">
+                <span className={`w-2.5 h-2.5 rounded-full ${
+                  isTrainerOnLiveFloor ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
+                }`} />
+                <span className="font-bold">
+                  {isTrainerOnLiveFloor ? 'लाइव जिम फ्लोर: उपस्थित' : 'जिम फ्लोर: बाहर'}
                 </span>
               </div>
-              <div className="text-xs font-bold text-slate-800">
-                {trainerDailyAtt?.checkInTime ? `In: ${trainerDailyAtt.checkInTime}` : 'Not Checked In'}
-                {trainerDailyAtt?.checkOutTime && ` • Out: ${trainerDailyAtt.checkOutTime}`}
-              </div>
+              {isTrainerOnLiveFloor && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (trainerFloorRecord) checkOutPerson(trainerFloorRecord.id);
+                    else {
+                      checkOutByUserId(trainer.id);
+                      checkOutByUserId('usr-2');
+                      checkOutByUserId(trainer.name);
+                    }
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-[11px] transition-all cursor-pointer shadow-2xs flex items-center gap-1"
+                  title="लाइव फ्लोर से चेक-आउट करें"
+                >
+                  <LogOut className="w-3 h-3" />
+                  <span>फ्लोर से हटाएं</span>
+                </button>
+              )}
             </div>
 
-            {trainerDailyAtt?.checkInTime && !trainerDailyAtt?.checkOutTime ? (
-              <button
-                onClick={() => handleTrainerDutyAction('logout')}
-                className="px-3 py-2 rounded-xl text-xs font-bold transition-all bg-rose-600 hover:bg-rose-700 text-white shadow-sm flex items-center gap-1 cursor-pointer"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span>Clock Out</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => handleTrainerDutyAction('login')}
-                className="px-3 py-2 rounded-xl text-xs font-bold transition-all bg-cyan-600 hover:bg-cyan-700 text-white shadow-sm flex items-center gap-1 cursor-pointer"
-              >
-                <MapPin className="w-3.5 h-3.5" />
-                <span>{trainerDailyAtt ? 'पुनः GPS In' : 'GPS Clock In'}</span>
-              </button>
-            )}
+            {/* Geofenced Duty Status Badge */}
+            <div className="flex items-center gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+              <div className="text-right">
+                <div className="flex items-center justify-end gap-1.5 mb-0.5">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold">GPS Duty Status</span>
+                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${
+                    trainerDailyAtt?.status === 'present'
+                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                      : trainerDailyAtt?.status === 'absent'
+                      ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                      : 'bg-slate-200 text-slate-700'
+                  }`}>
+                    {trainerDailyAtt ? (trainerDailyAtt.status === 'present' ? 'P - उपस्थित' : 'A - परिधि से बाहर') : 'Off Duty'}
+                  </span>
+                </div>
+                <div className="text-xs font-bold text-slate-800">
+                  {trainerDailyAtt?.checkInTime ? `In: ${trainerDailyAtt.checkInTime}` : 'Not Checked In'}
+                  {trainerDailyAtt?.checkOutTime && ` • Out: ${trainerDailyAtt.checkOutTime}`}
+                </div>
+              </div>
+
+              {trainerDailyAtt?.checkInTime && !trainerDailyAtt?.checkOutTime ? (
+                <button
+                  onClick={() => handleTrainerDutyAction('logout')}
+                  className="px-3 py-2 rounded-xl text-xs font-bold transition-all bg-rose-600 hover:bg-rose-700 text-white shadow-sm flex items-center gap-1 cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Clock Out</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleTrainerDutyAction('login')}
+                  className="px-3 py-2 rounded-xl text-xs font-bold transition-all bg-cyan-600 hover:bg-cyan-700 text-white shadow-sm flex items-center gap-1 cursor-pointer"
+                >
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>{trainerDailyAtt ? 'पुनः GPS In' : 'GPS Clock In'}</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
