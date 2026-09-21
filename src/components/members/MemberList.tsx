@@ -23,9 +23,11 @@ import {
   FileSpreadsheet,
   Download,
   X,
+  Edit3,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { ExcelImportModal } from '../common/ExcelImportModal';
+import { EditMemberModal } from './EditMemberModal';
 
 interface MemberListProps {
   onSelectMember?: (member: Member) => void;
@@ -65,6 +67,7 @@ export const MemberList: React.FC<MemberListProps> = ({ onSelectMember }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'active' | 'expiring_soon' | 'expired' | 'pt'>('all');
   const [selectedInvoiceMember, setSelectedInvoiceMember] = useState<Member | null>(null);
+  const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [renewingMember, setRenewingMember] = useState<Member | null>(null);
@@ -498,6 +501,15 @@ export const MemberList: React.FC<MemberListProps> = ({ onSelectMember }) => {
                             <MessageSquare className="w-4 h-4" />
                           </a>
 
+                          {/* Edit Member Button */}
+                          <button
+                            onClick={() => setEditingMember(member)}
+                            title="सदस्य विवरण संपादित करें"
+                            className="p-2 rounded-lg text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50 transition-colors cursor-pointer"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+
                           {/* Renew Button */}
                           <button
                             onClick={() => setRenewingMember(member)}
@@ -538,6 +550,14 @@ export const MemberList: React.FC<MemberListProps> = ({ onSelectMember }) => {
             setIsRegisterOpen(false);
             setSelectedInvoiceMember(newMember);
           }}
+        />
+      )}
+
+      {/* Edit Member Modal */}
+      {editingMember && (
+        <EditMemberModal
+          member={editingMember}
+          onClose={() => setEditingMember(null)}
         />
       )}
 

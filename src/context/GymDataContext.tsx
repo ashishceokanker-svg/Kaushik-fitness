@@ -503,9 +503,27 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteMember = (id: string) => {
-    setMembers((prev) => prev.filter((m) => m.id !== id));
-    deleteDocFromFirestore(FIRESTORE_COLLECTIONS.MEMBERSHIPS, id);
-    deleteDocFromFirestore(FIRESTORE_COLLECTIONS.MEMBER_PROFILES, id);
+    const existingMember = members.find((m) => m.id === id || m.userId === id);
+    const userId = existingMember?.userId;
+    const profileId = existingMember?.id || id;
+
+    // 1. Delete from local database permanently
+    localDb.deleteMember(profileId);
+    if (userId) {
+      localDb.deleteMember(userId);
+    }
+
+    // 2. Immediately update state with fresh local database data
+    setMembers(localDb.getJoinedMembers());
+
+    // 3. Delete from Firestore cloud collections
+    deleteDocFromFirestore(FIRESTORE_COLLECTIONS.MEMBERSHIPS, profileId);
+    deleteDocFromFirestore(FIRESTORE_COLLECTIONS.MEMBERSHIPS, `msh-${profileId}`);
+    deleteDocFromFirestore(FIRESTORE_COLLECTIONS.MEMBER_PROFILES, profileId);
+    if (userId && userId !== 'usr-1' && userId !== 'usr-dev') {
+      deleteDocFromFirestore(FIRESTORE_COLLECTIONS.USERS, userId);
+    }
+    deleteDocFromFirestore(FIRESTORE_COLLECTIONS.USERS, profileId);
   };
 
   const renewMember = (
@@ -594,11 +612,51 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const updateStaff = (id: string, data: Partial<Staff>) => {
-    setStaff((prev) => prev.map((s) => (s.id === id ? { ...s, ...data } : s)));
+    const updatedStaff = localDb.updateStaff(id, data);
+    setStaff(localDb.getStaffMembers());
+    setMembers(localDb.getJoinedMembers());
+
+    if (updatedStaff) {
+      const uId = updatedStaff.userId || updatedStaff.id;
+      syncDocToFirestore(FIRESTORE_COLLECTIONS.USERS, uId, {
+        id: uId,
+        name: updatedStaff.name,
+        email: updatedStaff.email,
+        phone: updatedStaff.phone,
+        role: updatedStaff.role,
+        pin: updatedStaff.pin,
+        avatar_url: updatedStaff.avatarUrl,
+        address: updatedStaff.address,
+      });
+      syncDocToFirestore('kf_staff_profiles', updatedStaff.id, updatedStaff);
+    }
   };
 
   const deleteStaff = (id: string) => {
-    setStaff((prev) => prev.filter((s) => s.id !== id));
+    if (id === 'usr-1' || id === 'staff-1' || id === 'usr-dev') {
+      alert('संस्थापक / मुख्य निदेशक प्रोफाइल को हटाया नहीं जा सकता।');
+      return;
+    }
+
+    const staffMember = staff.find((s) => s.id === id || s.userId === id);
+    const userId = staffMember?.userId || id;
+    const staffId = staffMember?.id || id;
+
+    // 1. Delete from local database
+    localDb.deleteStaff(id);
+    if (userId && userId !== id) {
+      localDb.deleteStaff(userId);
+    }
+
+    // 2. Immediately refresh staff and members state
+    setStaff(localDb.getStaffMembers());
+    setMembers(localDb.getJoinedMembers());
+
+    // 3. Delete from Firestore
+    deleteDocFromFirestore(FIRESTORE_COLLECTIONS.USERS, userId);
+    deleteDocFromFirestore(FIRESTORE_COLLECTIONS.USERS, staffId);
+    deleteDocFromFirestore('kf_staff_profiles', staffId);
+    deleteDocFromFirestore('kf_staff_profiles', userId);
   };
 
   // Attendance (PIN-based entry)

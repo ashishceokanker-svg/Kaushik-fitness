@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Staff } from '../../types';
 import { formatINR, formatDate, DEFAULT_PT_PLANS, DEFAULT_MEMBERSHIP_PLANS, PT_PRICING } from '../../utils/formatters';
 import { AddStaffModal } from './AddStaffModal';
+import { EditStaffModal } from './EditStaffModal';
 import { ExpirationCountdown } from '../common/ExpirationCountdown';
 import { ChangePinModal } from '../admin/ChangePinModal';
 import {
@@ -30,6 +31,8 @@ import {
   Sparkles,
   Settings,
   Search,
+  Edit3,
+  Trash2,
 } from 'lucide-react';
 
 interface StaffManagementProps {
@@ -38,10 +41,11 @@ interface StaffManagementProps {
 
 export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigateToPlans }) => {
   const { role } = useAuth();
-  const { staff, members, ptPlans, membershipPlans, updateMember } = useGymData();
+  const { staff, members, ptPlans, membershipPlans, updateMember, deleteStaff } = useGymData();
   const [activeTab, setActiveTab] = useState<'instructors' | 'regular'>('instructors');
   const [planViewTab, setPlanViewTab] = useState<'pt' | 'membership'>('pt');
   const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
+  const [staffToEdit, setStaffToEdit] = useState<Staff | null>(null);
   const [expandedTrainerId, setExpandedTrainerId] = useState<string | null>('staff-2');
   const [selectedDocStaff, setSelectedDocStaff] = useState<Staff | null>(null);
   const [pinTargetUser, setPinTargetUser] = useState<{ id: string; name: string; code?: string; role?: string; currentPin?: string } | null>(null);
@@ -385,25 +389,51 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigateToPl
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                       {role === 'admin' && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setPinTargetUser({
-                              id: trainer.id,
-                              name: trainer.name,
-                              code: trainer.staffCode,
-                              role: 'जिम ट्रेनर (Coach)',
-                              currentPin: (trainer as any).pin || '1234',
-                            })
-                          }
-                          className="flex items-center gap-1 px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 text-xs font-bold transition-colors cursor-pointer"
-                          title="ट्रेनर का 4-अंकीय PIN बदलें"
-                        >
-                          <KeyRound className="w-3.5 h-3.5 text-indigo-600" />
-                          <span>पिन बदलें</span>
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => setStaffToEdit(trainer)}
+                            className="flex items-center gap-1 px-3 py-2 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-200 text-xs font-bold transition-colors cursor-pointer"
+                            title="ट्रेनर की जानकारी संपादित करें"
+                          >
+                            <Edit3 className="w-3.5 h-3.5 text-cyan-600" />
+                            <span>संपादित करें</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPinTargetUser({
+                                id: trainer.id,
+                                name: trainer.name,
+                                code: trainer.staffCode,
+                                role: 'जिम ट्रेनर (Coach)',
+                                currentPin: (trainer as any).pin || '1234',
+                              })
+                            }
+                            className="flex items-center gap-1 px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 text-xs font-bold transition-colors cursor-pointer"
+                            title="ट्रेनर का 4-अंकीय PIN बदलें"
+                          >
+                            <KeyRound className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>पिन बदलें</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm(`क्या आप वाकई ट्रेनर ${trainer.name} (${trainer.staffCode}) को हटाना चाहते हैं?`)) {
+                                deleteStaff(trainer.id);
+                              }
+                            }}
+                            className="flex items-center gap-1 px-2.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-colors cursor-pointer"
+                            title="ट्रेनर हटाएं"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>हटाएं</span>
+                          </button>
+                        </>
                       )}
 
                       <button
@@ -600,23 +630,49 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigateToPl
                   </button>
 
                   {role === 'admin' && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setPinTargetUser({
-                          id: staffMember.id,
-                          name: staffMember.name,
-                          code: staffMember.staffCode,
-                          role: 'स्टाफ (Staff)',
-                          currentPin: (staffMember as any).pin || '1234',
-                        })
-                      }
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 text-xs font-bold transition-colors cursor-pointer"
-                      title="स्टाफ का 4-अंकीय PIN बदलें"
-                    >
-                      <KeyRound className="w-3.5 h-3.5 text-indigo-600" />
-                      <span>पिन बदलें</span>
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setStaffToEdit(staffMember)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-200 text-xs font-bold transition-colors cursor-pointer"
+                        title="स्टाफ की जानकारी संपादित करें"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-cyan-600" />
+                        <span>संपादित करें</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPinTargetUser({
+                            id: staffMember.id,
+                            name: staffMember.name,
+                            code: staffMember.staffCode,
+                            role: 'स्टाफ (Staff)',
+                            currentPin: (staffMember as any).pin || '1234',
+                          })
+                        }
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 text-xs font-bold transition-colors cursor-pointer"
+                        title="स्टाफ का 4-अंकीय PIN बदलें"
+                      >
+                        <KeyRound className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>पिन बदलें</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm(`क्या आप वाकई स्टाफ ${staffMember.name} (${staffMember.staffCode}) को हटाना चाहते हैं?`)) {
+                            deleteStaff(staffMember.id);
+                          }
+                        }}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-colors cursor-pointer"
+                        title="स्टाफ हटाएं"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>हटाएं</span>
+                      </button>
+                    </>
                   )}
                 </div>
 
@@ -634,6 +690,14 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigateToPl
 
       {/* Add Staff Modal */}
       {isAddStaffOpen && <AddStaffModal onClose={() => setIsAddStaffOpen(false)} />}
+
+      {/* Edit Staff Modal */}
+      {staffToEdit && (
+        <EditStaffModal
+          staffMember={staffToEdit}
+          onClose={() => setStaffToEdit(null)}
+        />
+      )}
 
       {/* Staff Document Viewer Modal */}
       {selectedDocStaff && (

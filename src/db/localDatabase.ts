@@ -1795,6 +1795,300 @@ class LocalGymDatabase {
     this.setTable(DB_KEYS.MEMBERSHIPS, memberships);
   }
 
+  deleteMember(memberId: string): boolean {
+    if (!memberId) return false;
+    const cleanId = memberId.trim();
+
+    const profiles = this.getMemberProfiles();
+    const memberships = this.getMemberships();
+    const users = this.getUsers();
+
+    // Match profile by id, or user_id, or member_code
+    const targetProfile = profiles.find(
+      (p) =>
+        p.id === cleanId ||
+        p.user_id === cleanId ||
+        p.member_code === cleanId ||
+        (cleanId.startsWith('prof-') && p.id === cleanId) ||
+        (cleanId.startsWith('usr-') && p.user_id === cleanId) ||
+        p.id.replace('prof-', '') === cleanId.replace('prof-', '').replace('mem-', '').replace('usr-', '')
+    );
+
+    const profileId = targetProfile ? targetProfile.id : cleanId;
+    const userId = targetProfile ? targetProfile.user_id : (cleanId.startsWith('usr-') ? cleanId : null);
+
+    // 1. Remove from profiles
+    const updatedProfiles = profiles.filter(
+      (p) =>
+        p.id !== profileId &&
+        p.id !== cleanId &&
+        (userId ? p.user_id !== userId : true)
+    );
+    this.setTable(DB_KEYS.MEMBER_PROFILES, updatedProfiles);
+
+    // 2. Remove from memberships
+    const updatedMemberships = memberships.filter(
+      (m) =>
+        m.member_id !== profileId &&
+        m.member_id !== cleanId &&
+        m.id !== cleanId &&
+        m.id !== `msh-${profileId}` &&
+        m.id !== `msh-${cleanId}`
+    );
+    this.setTable(DB_KEYS.MEMBERSHIPS, updatedMemberships);
+
+    // 3. Remove from users (NEVER delete admin or staff accounts)
+    const updatedUsers = users.filter((u) => {
+      if (
+        u.id === 'usr-1' ||
+        u.id === 'usr-dev' ||
+        u.role === 'admin' ||
+        u.role === 'trainer' ||
+        u.role === 'staff'
+      ) {
+        return true;
+      }
+      if (userId && u.id === userId) return false;
+      if (u.id === cleanId && u.role === 'member') return false;
+      return true;
+    });
+    this.setTable(DB_KEYS.USERS, updatedUsers);
+
+    // 4. Remove associated attendance
+    const attendance = this.getTable<AttendanceRecord>(DB_KEYS.ATTENDANCE, []);
+    this.setTable(
+      DB_KEYS.ATTENDANCE,
+      attendance.filter(
+        (a: AttendanceRecord) =>
+          a.userId !== profileId &&
+          a.userId !== cleanId &&
+          (!userId || a.userId !== userId) &&
+          (!targetProfile?.member_code || a.memberCode !== targetProfile.member_code)
+      )
+    );
+
+    // 5. Remove associated body logs, photos, and progress
+    const bodyIndex = this.getTable<BodyIndexLog>(DB_KEYS.BODY_INDEX_LOGS, []);
+    this.setTable(
+      DB_KEYS.BODY_INDEX_LOGS,
+      bodyIndex.filter(
+        (b) =>
+          b.memberId !== profileId &&
+          b.memberId !== cleanId &&
+          (!userId || b.memberId !== userId)
+      )
+    );
+
+    const bodyPhotos = this.getTable<BodyPhotoLog>(DB_KEYS.BODY_PHOTOS, []);
+    this.setTable(
+      DB_KEYS.BODY_PHOTOS,
+      bodyPhotos.filter(
+        (b) =>
+          b.memberId !== profileId &&
+          b.memberId !== cleanId &&
+          (!userId || b.memberId !== userId)
+      )
+    );
+
+    const progressLogs = this.getTable<ProgressLog>(DB_KEYS.PROGRESS_LOGS, []);
+    this.setTable(
+      DB_KEYS.PROGRESS_LOGS,
+      progressLogs.filter(
+        (p) =>
+          p.memberId !== profileId &&
+          p.memberId !== cleanId &&
+          (!userId || p.memberId !== userId)
+      )
+    );
+
+    return true;
+  }
+
+  updateStaff(id: string, staffData: Partial<Staff>): Staff | null {
+    if (!id) return null;
+    const cleanId = id.trim();
+
+    const users = this.getUsers();
+    const staffProfiles = this.getTable<Staff>(DB_KEYS.STAFF_PROFILES, []);
+
+    // Find staff profile and user
+    let profIdx = staffProfiles.findIndex((s) => s.id === cleanId || s.userId === cleanId);
+    let userIdx = users.findIndex(
+      (u) => u.id === cleanId || (profIdx >= 0 && u.id === staffProfiles[profIdx].userId)
+    );
+
+    if (userIdx < 0 && staffData.userId) {
+      userIdx = users.findIndex((u) => u.id === staffData.userId);
+    }
+    if (userIdx < 0 && staffData.phone) {
+      userIdx = users.findIndex((u) => u.phone === staffData.phone);
+    }
+
+    const matchedUser = userIdx >= 0 ? users[userIdx] : null;
+
+    // Check if founder/developer protection applies
+    const isFounder =
+      cleanId === 'usr-1' ||
+      cleanId === 'usr-dev' ||
+      matchedUser?.id === 'usr-1' ||
+      matchedUser?.id === 'usr-dev';
+
+    // 1. Update or create staff profile
+    let currentStaff: Staff;
+    if (profIdx >= 0) {
+      currentStaff = { ...staffProfiles[profIdx], ...staffData };
+      currentStaff.id = staffProfiles[profIdx].id;
+      currentStaff.userId = staffProfiles[profIdx].userId || currentStaff.id;
+      staffProfiles[profIdx] = currentStaff;
+    } else {
+      currentStaff = {
+        id: matchedUser ? matchedUser.id : cleanId,
+        userId: matchedUser ? matchedUser.id : cleanId,
+        staffCode: `KFS-${(users.filter((u) => u.role === 'staff' || u.role === 'trainer').length || 1).toString().padStart(3, '0')}`,
+        name: staffData.name || matchedUser?.name || 'Staff Member',
+        phone: staffData.phone || matchedUser?.phone || '',
+        email: staffData.email || matchedUser?.email || '',
+        role: staffData.role || (matchedUser?.role as any) || 'trainer',
+        staffType: staffData.staffType || (matchedUser?.role === 'trainer' ? 'instructor' : 'regular'),
+        designation:
+          staffData.designation ||
+          (matchedUser?.role === 'trainer' ? 'Gym Instructor' : 'Front Desk Executive'),
+        joiningDate:
+          staffData.joiningDate ||
+          (matchedUser?.created_at
+            ? matchedUser.created_at.split('T')[0]
+            : new Date().toISOString().split('T')[0]),
+        salaryMonthly: staffData.salaryMonthly || 20000,
+        specialization: staffData.specialization || ['Gym Management'],
+        assignedClientsCount: staffData.assignedClientsCount || 0,
+        status: staffData.status || 'active',
+        pin: staffData.pin || matchedUser?.pin || '1234',
+        fatherName: staffData.fatherName,
+        dob: staffData.dob,
+        address: staffData.address || matchedUser?.address,
+        bio: staffData.bio,
+        docType: staffData.docType,
+        docNumber: staffData.docNumber,
+        docFileName: staffData.docFileName,
+        docFileUrl: staffData.docFileUrl,
+        avatarUrl: staffData.avatarUrl || matchedUser?.avatar_url,
+      };
+      staffProfiles.push(currentStaff);
+    }
+    this.setTable(DB_KEYS.STAFF_PROFILES, staffProfiles);
+
+    // 2. Update user table if found
+    if (userIdx >= 0) {
+      const u = users[userIdx];
+      users[userIdx] = {
+        ...u,
+        name: staffData.name !== undefined ? staffData.name : u.name,
+        phone: staffData.phone !== undefined ? staffData.phone : u.phone,
+        email: staffData.email !== undefined ? staffData.email : u.email,
+        address: staffData.address !== undefined ? staffData.address : u.address,
+        avatar_url: staffData.avatarUrl !== undefined ? staffData.avatarUrl : u.avatar_url,
+        pin: staffData.pin !== undefined ? staffData.pin : u.pin,
+        role: isFounder
+          ? u.role
+          : staffData.role ||
+            (staffData.staffType === 'instructor'
+              ? 'trainer'
+              : staffData.staffType === 'regular'
+              ? 'staff'
+              : u.role),
+      };
+      this.setTable(DB_KEYS.USERS, users);
+    }
+
+    // 3. If trainer name changed, update memberships referencing this trainer
+    if (staffData.name && (currentStaff.staffType === 'instructor' || currentStaff.role === 'trainer')) {
+      const memberships = this.getMemberships();
+      let changed = false;
+      const updatedMemberships = memberships.map((m) => {
+        if (m.trainer_id === currentStaff.id || m.trainer_id === currentStaff.userId) {
+          changed = true;
+          return { ...m, trainer_name: staffData.name };
+        }
+        return m;
+      });
+      if (changed) {
+        this.setTable(DB_KEYS.MEMBERSHIPS, updatedMemberships);
+      }
+    }
+
+    return currentStaff;
+  }
+
+  deleteStaff(id: string): boolean {
+    if (!id) return false;
+    const cleanId = id.trim();
+
+    // Protect Founders & Directors
+    if (cleanId === 'usr-1' || cleanId === 'staff-1' || cleanId === 'usr-dev') {
+      return false;
+    }
+
+    const users = this.getUsers();
+    const user = users.find((u) => u.id === cleanId);
+    if (user) {
+      const nameLower = (user.name || '').toLowerCase();
+      if (
+        user.role === 'admin' ||
+        user.id === 'usr-1' ||
+        user.id === 'usr-dev' ||
+        user.phone === '9826189001' ||
+        user.phone === '9244249975' ||
+        nameLower.includes('vaibhav') ||
+        nameLower.includes('ashish dey')
+      ) {
+        return false;
+      }
+    }
+
+    // 1. Remove from staff profiles
+    const staffProfiles = this.getTable<Staff>(DB_KEYS.STAFF_PROFILES, []);
+    const updatedProfiles = staffProfiles.filter((s) => s.id !== cleanId && s.userId !== cleanId);
+    this.setTable(DB_KEYS.STAFF_PROFILES, updatedProfiles);
+
+    // 2. Remove from users
+    const updatedUsers = users.filter((u) => u.id !== cleanId);
+    this.setTable(DB_KEYS.USERS, updatedUsers);
+
+    // 3. Unassign from any members assigned to this trainer
+    const memberships = this.getMemberships();
+    let memChanged = false;
+    const updatedMemberships = memberships.map((m) => {
+      if (m.trainer_id === cleanId) {
+        memChanged = true;
+        return {
+          ...m,
+          trainer_id: undefined,
+          trainer_name: undefined,
+          is_personal_training: false,
+        };
+      }
+      return m;
+    });
+    if (memChanged) {
+      this.setTable(DB_KEYS.MEMBERSHIPS, updatedMemberships);
+    }
+
+    // 4. Remove daily attendance & login logs for this staff
+    const staffAttendance = this.getTable<StaffDailyAttendance>(DB_KEYS.STAFF_DAILY_ATTENDANCE, []);
+    this.setTable(
+      DB_KEYS.STAFF_DAILY_ATTENDANCE,
+      staffAttendance.filter((sa) => sa.staffId !== cleanId)
+    );
+
+    const loginLogs = this.getTable<StaffLoginLog>(DB_KEYS.LOGIN_LOGS, []);
+    this.setTable(
+      DB_KEYS.LOGIN_LOGS,
+      loginLogs.filter((l) => l.userId !== cleanId)
+    );
+
+    return true;
+  }
+
   resetDatabase() {
     this.setTable(DB_KEYS.USERS, SEED_USERS);
     this.setTable(DB_KEYS.MEMBER_PROFILES, SEED_MEMBER_PROFILES);
