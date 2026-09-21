@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { useGymData } from '../../context/GymDataContext';
-import { KeyRound, CheckCircle, CheckCircle2, AlertCircle, Users, Clock, ShieldCheck, Delete, ArrowRight } from 'lucide-react';
+import { KeyRound, CheckCircle, CheckCircle2, AlertCircle, Users, Clock, ShieldCheck, Delete, ArrowRight, LogOut } from 'lucide-react';
+import { LiveFloorRosterModal } from './LiveFloorRosterModal';
 
 export const AttendanceScanner: React.FC = () => {
-  const { attendance, markAttendance, liveGymCount } = useGymData();
+  const { attendance, markAttendance, liveGymCount, checkOutPerson } = useGymData();
   const [pinVal, setPinVal] = useState('');
   const [feedback, setFeedback] = useState<{ success: boolean; message: string; personName?: string } | null>(null);
+  const [isLiveFloorModalOpen, setIsLiveFloorModalOpen] = useState(false);
+  const [tableTab, setTableTab] = useState<'on_floor' | 'all'>('on_floor');
 
   const todayDate = new Date().toISOString().split('T')[0];
   const todayAttendance = attendance.filter((a) => a.date === todayDate);
@@ -69,9 +72,20 @@ export const AttendanceScanner: React.FC = () => {
           </div>
 
           <div className="my-2">
-            <div className="text-4xl font-black text-slate-900 font-mono tracking-tight flex items-baseline gap-2">
-              {liveGymCount}
-              <span className="text-sm font-normal text-slate-500">अंदर उपस्थित</span>
+            <div className="flex items-baseline justify-between">
+              <div className="text-4xl font-black text-slate-900 font-mono tracking-tight flex items-baseline gap-2">
+                {liveGymCount}
+                <span className="text-sm font-normal text-slate-500">अंदर उपस्थित</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsLiveFloorModalOpen(true)}
+                className="px-2.5 py-1 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-200 text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                title="लाइव फ्लोर रोस्टर सूची देखें"
+              >
+                <Users className="w-3.5 h-3.5 text-cyan-600" />
+                <span>रोस्टर देखें</span>
+              </button>
             </div>
             <div className="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
               <div
@@ -286,12 +300,51 @@ export const AttendanceScanner: React.FC = () => {
 
       {/* Today's Attendance Activity Table */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-amber-600" />
-            आज का पिन चेक-इन लॉग (Today's PIN Entry Activity Log - {todayAttendance.length})
-          </h3>
-          <span className="text-xs text-slate-500 font-mono">दिनांक: {todayDate}</span>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+          <div>
+            <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-amber-600" />
+              आज का पिन चेक-इन लॉग (Today's PIN Entry Activity Log)
+            </h3>
+            <span className="text-xs text-slate-500 font-mono">दिनांक: {todayDate}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsLiveFloorModalOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-cyan-700 hover:bg-cyan-800 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>लाइव रोस्टर ({todayAttendance.filter((a) => !a.checkOutTime).length})</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Tab switchers */}
+        <div className="flex border-b border-slate-200 space-x-3 mb-4 text-xs">
+          <button
+            type="button"
+            onClick={() => setTableTab('on_floor')}
+            className={`pb-2.5 px-2 font-bold transition-all cursor-pointer border-b-2 ${
+              tableTab === 'on_floor'
+                ? 'border-amber-600 text-amber-900'
+                : 'border-transparent text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            🔴 वर्तमान में फ्लोर पर ({todayAttendance.filter((a) => !a.checkOutTime).length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setTableTab('all')}
+            className={`pb-2.5 px-2 font-bold transition-all cursor-pointer border-b-2 ${
+              tableTab === 'all'
+                ? 'border-amber-600 text-amber-900'
+                : 'border-transparent text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            आज के सभी चेक-इन ({todayAttendance.length})
+          </button>
         </div>
 
         <div className="overflow-x-auto">
@@ -303,18 +356,26 @@ export const AttendanceScanner: React.FC = () => {
                 <th className="py-2.5 px-3">चेक-इन समय</th>
                 <th className="py-2.5 px-3">चेक-आउट समय</th>
                 <th className="py-2.5 px-3">माध्यम</th>
-                <th className="py-2.5 px-3 text-right">फ्लोर स्थिति</th>
+                <th className="py-2.5 px-3 text-right">फ्लोर स्थिति व एक्शन</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {todayAttendance.length === 0 ? (
+              {(tableTab === 'on_floor'
+                ? todayAttendance.filter((a) => !a.checkOutTime)
+                : todayAttendance
+              ).length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-8 text-center text-xs text-slate-400">
-                    आज कोई चेक-इन नहीं हुआ है
+                    {tableTab === 'on_floor'
+                      ? 'वर्तमान में कोई भी व्यक्ति जिम फ्लोर पर उपस्थित नहीं है'
+                      : 'आज कोई चेक-इन नहीं हुआ है'}
                   </td>
                 </tr>
               ) : (
-                todayAttendance.map((record) => (
+                (tableTab === 'on_floor'
+                  ? todayAttendance.filter((a) => !a.checkOutTime)
+                  : todayAttendance
+                ).map((record) => (
                   <tr key={record.id} className="hover:bg-slate-50/75 transition-colors">
                     <td className="py-3 px-3 font-bold text-slate-900">
                       {record.userName}
@@ -344,10 +405,26 @@ export const AttendanceScanner: React.FC = () => {
                     </td>
                     <td className="py-3 px-3 text-right">
                       {!record.checkOutTime ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                          Inside Gym
-                        </span>
+                        <div className="inline-flex items-center gap-2">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Inside Gym
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm(`क्या आप ${record.userName} को लाइव जिम फ्लोर से चेक-आउट करना चाहते हैं?`)) {
+                                checkOutPerson(record.id);
+                              }
+                            }}
+                            className="px-2 py-0.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1 shadow-2xs active:scale-95"
+                            title="फ्लोर से चेक-आउट करें"
+                          >
+                            <LogOut className="w-3 h-3 text-rose-600" />
+                            <span>चेक-आउट</span>
+                          </button>
+                        </div>
                       ) : (
                         <span className="text-[11px] text-slate-500">
                           Left at {record.checkOutTime}
@@ -361,6 +438,11 @@ export const AttendanceScanner: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Live Floor Roster Modal */}
+      {isLiveFloorModalOpen && (
+        <LiveFloorRosterModal onClose={() => setIsLiveFloorModalOpen(false)} />
+      )}
     </div>
   );
 };

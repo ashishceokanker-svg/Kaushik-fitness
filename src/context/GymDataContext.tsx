@@ -74,6 +74,8 @@ interface GymDataContextType {
 
   // Attendance actions
   markAttendance: (identifier: string, method?: 'pin') => Promise<{ success: boolean; message: string; record?: AttendanceRecord; personName?: string }>;
+  checkOutPerson: (recordId: string, customTime?: string) => void;
+  checkOutAllActive: () => void;
 
   // Financial actions
   addTransaction: (tx: Omit<FinancialTransaction, 'id' | 'transactionNumber' | 'date'>) => FinancialTransaction;
@@ -833,6 +835,37 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
   };
 
+  const checkOutPerson = (recordId: string, customTime?: string) => {
+    const timeToSet =
+      customTime ||
+      new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+    setAttendance((prev) =>
+      prev.map((a) => (a.id === recordId ? { ...a, checkOutTime: timeToSet } : a))
+    );
+
+    syncDocToFirestore(FIRESTORE_COLLECTIONS.ATTENDANCE, recordId, {
+      checkOutTime: timeToSet,
+    });
+  };
+
+  const checkOutAllActive = () => {
+    const timeToSet = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const todayDate = new Date().toISOString().split('T')[0];
+
+    setAttendance((prev) =>
+      prev.map((a) =>
+        a.date === todayDate && !a.checkOutTime ? { ...a, checkOutTime: timeToSet } : a
+      )
+    );
+
+    attendance
+      .filter((a) => a.date === todayDate && !a.checkOutTime)
+      .forEach((a) => {
+        syncDocToFirestore(FIRESTORE_COLLECTIONS.ATTENDANCE, a.id, { checkOutTime: timeToSet });
+      });
+  };
+
   // Transactions
   const addTransaction = (tx: Omit<FinancialTransaction, 'id' | 'transactionNumber' | 'date'>): FinancialTransaction => {
     const newTx: FinancialTransaction = {
@@ -1084,6 +1117,8 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         updateStaff,
         deleteStaff,
         markAttendance,
+        checkOutPerson,
+        checkOutAllActive,
         addTransaction,
         addProgressLog,
         getBodyIndexLogs,

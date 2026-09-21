@@ -5,6 +5,7 @@ import { formatINR, formatDate, calculateCountdown, generateWhatsAppReminderUrl 
 import { ExpirationCountdown } from '../common/ExpirationCountdown';
 import { localDb } from '../../db/localDatabase';
 import { AdminProfileModal } from '../admin/AdminProfileModal';
+import { LiveFloorRosterModal } from '../attendance/LiveFloorRosterModal';
 import {
   Users,
   TrendingUp,
@@ -31,6 +32,7 @@ import {
   CodeXml,
   Cloud,
   Package,
+  LogOut,
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -47,6 +49,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const { currentUser } = useAuth();
   const isDeveloper = currentUser?.id === 'usr-dev' || currentUser?.phone === '9244249975';
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isLiveFloorModalOpen, setIsLiveFloorModalOpen] = useState(false);
+  const [activeFloorTab, setActiveFloorTab] = useState<'on_floor' | 'all_today'>('on_floor');
   const {
     isCloudSynced,
     members,
@@ -58,6 +62,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     attendance,
     transactions,
     staff,
+    checkOutPerson,
   } = useGymData();
 
   const todayDate = new Date().toISOString().split('T')[0];
@@ -435,7 +440,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         {/* Live Gym Occupancy */}
         <div
-          onClick={() => onNavigate('attendance')}
+          onClick={() => setIsLiveFloorModalOpen(true)}
           className="bg-white border border-slate-200 hover:border-cyan-400 p-5 rounded-2xl cursor-pointer transition-all shadow-sm group"
         >
           <div className="flex justify-between items-start">
@@ -448,8 +453,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             {liveGymCount}
             <span className="text-xs font-normal text-slate-500">वर्तमान में उपस्थित</span>
           </div>
-          <div className="text-[11px] text-emerald-600 font-medium mt-1">
-            {todayAttendance.length} आज कुल चेक-इन
+          <div className="text-[11px] text-cyan-700 font-bold mt-1 flex items-center justify-between">
+            <span>रोस्टर देखें व हटाएं &rarr;</span>
+            <span className="text-slate-400 font-normal">({todayAttendance.length} आज कुल)</span>
           </div>
         </div>
 
@@ -817,57 +823,173 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </div>
 
-        {/* Live Attendance Activity */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-sm uppercase tracking-wider text-slate-800 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-cyan-600" />
-              लाइव फ्लोर उपस्थिति (Floor Attendance)
-            </h3>
-            <button
-              onClick={() => onNavigate('attendance')}
-              className="text-xs text-slate-500 hover:text-slate-900 font-bold cursor-pointer"
-            >
-              पूर्ण लॉग &rarr;
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {todayAttendance.length === 0 ? (
-              <div className="py-6 text-center text-xs text-slate-400">
-                आज अभी तक कोई चेक-इन नहीं हुआ है
-              </div>
-            ) : (
-              todayAttendance.slice(0, 4).map((att) => (
-                <div
-                  key={att.id}
-                  className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs"
+        {/* Live Attendance Activity & Floor Roster Widget */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+              <h3 className="font-bold text-sm uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-cyan-600" />
+                लाइव फ्लोर उपस्थिति (Floor Attendance)
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsLiveFloorModalOpen(true)}
+                  className="px-2.5 py-1 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-200 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                  title="पूरा लाइव फ्लोर रोस्टर देखें"
                 >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center font-bold text-amber-900 text-[10px]">
-                      {att.userName.slice(0, 2).toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="font-semibold text-slate-900">{att.userName}</div>
-                      <div className="text-[11px] text-slate-500">
-                        In: {att.checkInTime} • {att.method.toUpperCase()} Pass
+                  <Users className="w-3.5 h-3.5 text-cyan-600" />
+                  <span>रोस्टर सूची ({liveGymCount})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onNavigate('attendance')}
+                  className="text-xs text-slate-500 hover:text-slate-900 font-bold cursor-pointer"
+                >
+                  कियोस्क लॉग &rarr;
+                </button>
+              </div>
+            </div>
+
+            {/* Tab switchers */}
+            <div className="flex border-b border-slate-200 space-x-2 mb-3 text-xs">
+              <button
+                type="button"
+                onClick={() => setActiveFloorTab('on_floor')}
+                className={`pb-2 px-2 font-bold transition-all cursor-pointer border-b-2 ${
+                  activeFloorTab === 'on_floor'
+                    ? 'border-cyan-600 text-cyan-800'
+                    : 'border-transparent text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                🔴 फ्लोर पर उपस्थित ({todayAttendance.filter((a) => !a.checkOutTime).length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveFloorTab('all_today')}
+                className={`pb-2 px-2 font-bold transition-all cursor-pointer border-b-2 ${
+                  activeFloorTab === 'all_today'
+                    ? 'border-cyan-600 text-cyan-800'
+                    : 'border-transparent text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                आज के सभी लॉग्स ({todayAttendance.length})
+              </button>
+            </div>
+
+            {/* List */}
+            <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+              {activeFloorTab === 'on_floor' ? (
+                todayAttendance.filter((a) => !a.checkOutTime).length === 0 ? (
+                  <div className="py-8 text-center text-xs text-slate-400">
+                    वर्तमान में कोई भी व्यक्ति जिम फ्लोर पर उपस्थित नहीं है।
+                  </div>
+                ) : (
+                  todayAttendance
+                    .filter((a) => !a.checkOutTime)
+                    .map((att) => (
+                      <div
+                        key={att.id}
+                        className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs hover:border-cyan-300 transition-colors"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-[10px] shrink-0 border ${
+                              att.userType === 'staff'
+                                ? 'bg-amber-100 text-amber-900 border-amber-200'
+                                : 'bg-cyan-100 text-cyan-900 border-cyan-200'
+                            }`}
+                          >
+                            {att.userName.slice(0, 2).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-bold text-slate-900 truncate flex items-center gap-1.5">
+                              <span>{att.userName}</span>
+                              <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-slate-200/70 text-slate-700">
+                                {att.memberCode || att.staffCode || (att.userType === 'staff' ? 'STAFF' : 'MEM')}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-slate-500 mt-0.5">
+                              In: <strong className="text-slate-700 font-mono">{att.checkInTime}</strong>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            On Floor
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm(`क्या आप ${att.userName} को लाइव जिम फ्लोर से चेक-आउट करना चाहते हैं?`)) {
+                                checkOutPerson(att.id);
+                              }
+                            }}
+                            className="px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                            title="फ्लोर से हटाएं / चेक-आउट"
+                          >
+                            <LogOut className="w-3.5 h-3.5 text-rose-600" />
+                            <span>हटाएं</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                )
+              ) : todayAttendance.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400">
+                  आज अभी तक कोई चेक-इन नहीं हुआ है
+                </div>
+              ) : (
+                todayAttendance.slice(0, 6).map((att) => (
+                  <div
+                    key={att.id}
+                    className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-slate-200 flex items-center justify-center font-bold text-slate-700 text-[10px] shrink-0">
+                        {att.userName.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-semibold text-slate-900 truncate">{att.userName}</div>
+                        <div className="text-[11px] text-slate-500">
+                          In: {att.checkInTime} {att.checkOutTime && `• Out: ${att.checkOutTime}`}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {!att.checkOutTime ? (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200">
-                      On Floor
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-slate-500">Out: {att.checkOutTime}</span>
-                  )}
-                </div>
-              ))
-            )}
+                    {!att.checkOutTime ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm(`क्या आप ${att.userName} को लाइव जिम फ्लोर से चेक-आउट करना चाहते हैं?`)) {
+                            checkOutPerson(att.id);
+                          }
+                        }}
+                        className="px-2 py-0.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1"
+                        title="फ्लोर से हटाएं"
+                      >
+                        <LogOut className="w-3 h-3 text-rose-600" />
+                        <span>हटाएं</span>
+                      </button>
+                    ) : (
+                      <span className="text-[10px] text-slate-500 font-mono">Out: {att.checkOutTime}</span>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Live Gym Floor Roster Modal */}
+      {isLiveFloorModalOpen && (
+        <LiveFloorRosterModal onClose={() => setIsLiveFloorModalOpen(false)} />
+      )}
 
       {/* Admin Profile Edit Modal */}
       <AdminProfileModal
