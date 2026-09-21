@@ -114,7 +114,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
               <div className="flex flex-wrap items-center gap-2.5">
                 <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                  {currentUser?.name || 'Vaibhav Kaushik'} (Admin Portal)
+                  {currentUser?.name || 'Vaibhav Kaushik'}
                 </h1>
                 <button
                   onClick={() => setIsProfileModalOpen(true)}
@@ -124,6 +124,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <Edit className="w-3.5 h-3.5 text-amber-700" />
                   <span>✏️ प्रोफाइल एडिट करें</span>
                 </button>
+              </div>
+              <div className="mt-0.5">
+                <span className="text-xs sm:text-sm font-bold text-amber-600 tracking-wide">
+                  (Admin Portal)
+                </span>
               </div>
 
               {/* Admin Contact & Address Details */}
