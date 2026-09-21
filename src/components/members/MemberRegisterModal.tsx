@@ -13,8 +13,15 @@ interface MemberRegisterModalProps {
 }
 
 export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({ onClose, onSuccess }) => {
-  const { staff, addMember } = useGymData();
+  const { staff, addMember, membershipPlans, ptPlans } = useGymData();
   const trainers = staff.filter((s) => s.staffType === 'instructor' && s.status === 'active');
+
+  const activeMembershipPlans = (membershipPlans && membershipPlans.length > 0 ? membershipPlans : []).filter(
+    (p) => p.isActive !== false
+  );
+  const activePTPlans = (ptPlans && ptPlans.length > 0 ? ptPlans : []).filter(
+    (p) => p.isActive !== false && p.id !== 'none'
+  );
 
   // Form states
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
@@ -51,8 +58,11 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({ onClos
   const [customPaidAmount, setCustomPaidAmount] = useState<number>(0);
 
   // Calculations
-  const baseFee = MEMBERSHIP_PRICING[duration].price;
-  const ptFee = hasPT ? PT_PRICING[ptDuration].price : 0;
+  const selectedMPlan = activeMembershipPlans.find((p) => p.id === duration) || membershipPlans.find((p) => p.id === duration);
+  const baseFee = selectedMPlan ? selectedMPlan.price : (MEMBERSHIP_PRICING[duration]?.price || 1200);
+
+  const selectedPTPlan = activePTPlans.find((p) => p.id === ptDuration) || ptPlans.find((p) => p.id === ptDuration);
+  const ptFee = hasPT ? (selectedPTPlan ? selectedPTPlan.price : (PT_PRICING[ptDuration]?.price || 0)) : 0;
   const subtotal = baseFee + ptFee;
 
   const calculatedDiscount =
@@ -502,21 +512,20 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({ onClos
             </span>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {(Object.keys(MEMBERSHIP_PRICING) as MembershipDuration[]).map((key) => {
-                const plan = MEMBERSHIP_PRICING[key];
-                const isSelected = duration === key;
+              {activeMembershipPlans.map((plan) => {
+                const isSelected = duration === plan.id;
                 return (
                   <div
-                    key={key}
-                    onClick={() => setDuration(key)}
+                    key={plan.id}
+                    onClick={() => setDuration(plan.id as MembershipDuration)}
                     className={`cursor-pointer p-3.5 rounded-xl border transition-all text-center relative ${
                       isSelected
                         ? 'bg-amber-50 border-2 border-amber-500 shadow-sm'
                         : 'bg-slate-50 border-slate-200 hover:border-slate-300'
                     }`}
                   >
-                    <span className="text-[10px] uppercase font-bold text-slate-500 block">{plan.badge}</span>
-                    <div className="font-bold text-sm text-slate-900 mt-1">{plan.label}</div>
+                    {plan.badge && <span className="text-[10px] uppercase font-bold text-slate-500 block">{plan.badge}</span>}
+                    <div className="font-bold text-sm text-slate-900 mt-1">{plan.name}</div>
                     <div className="text-base font-black text-amber-700 font-mono mt-1">{formatINR(plan.price)}</div>
                   </div>
                 );
@@ -554,13 +563,11 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({ onClos
                       onChange={(e) => setPtDuration(e.target.value as PTPackageDuration)}
                       className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500"
                     >
-                      {Object.entries(PT_PRICING)
-                        .filter(([k]) => k !== 'none')
-                        .map(([k, pkg]) => (
-                          <option key={k} value={k}>
-                            {pkg.label} ({formatINR(pkg.price)})
-                          </option>
-                        ))}
+                      {activePTPlans.map((pkg) => (
+                        <option key={pkg.id} value={pkg.id}>
+                          {pkg.name} ({formatINR(pkg.price)}) - {pkg.durationMonths} माह
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -677,12 +684,12 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({ onClos
             {/* Total Summary Box */}
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
               <div className="flex justify-between text-slate-600">
-                <span>बेस सदस्यता ({MEMBERSHIP_PRICING[duration].label}):</span>
+                <span>बेस सदस्यता ({selectedMPlan?.name || MEMBERSHIP_PRICING[duration]?.label || duration}):</span>
                 <span className="font-mono font-bold text-slate-800">{formatINR(baseFee)}</span>
               </div>
               {hasPT && (
                 <div className="flex justify-between text-cyan-800 font-semibold">
-                  <span>पर्सनल ट्रेनिंग ({PT_PRICING[ptDuration].label}):</span>
+                  <span>पर्सनल ट्रेनिंग ({selectedPTPlan?.name || PT_PRICING[ptDuration]?.label || ptDuration}):</span>
                   <span className="font-mono">{formatINR(ptFee)}</span>
                 </div>
               )}

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useGymData } from '../../context/GymDataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Staff } from '../../types';
-import { formatINR, formatDate } from '../../utils/formatters';
+import { formatINR, formatDate, DEFAULT_PT_PLANS, DEFAULT_MEMBERSHIP_PLANS, PT_PRICING } from '../../utils/formatters';
 import { AddStaffModal } from './AddStaffModal';
 import { ExpirationCountdown } from '../common/ExpirationCountdown';
 import { ChangePinModal } from '../admin/ChangePinModal';
@@ -26,26 +26,50 @@ import {
   Download,
   ExternalLink,
   KeyRound,
+  Package,
+  Sparkles,
+  Settings,
 } from 'lucide-react';
 
-export const StaffManagement: React.FC = () => {
+interface StaffManagementProps {
+  onNavigateToPlans?: () => void;
+}
+
+export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigateToPlans }) => {
   const { role } = useAuth();
-  const { staff, members } = useGymData();
+  const { staff, members, ptPlans, membershipPlans } = useGymData();
   const [activeTab, setActiveTab] = useState<'instructors' | 'regular'>('instructors');
+  const [planViewTab, setPlanViewTab] = useState<'pt' | 'membership'>('pt');
   const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
   const [expandedTrainerId, setExpandedTrainerId] = useState<string | null>('staff-2');
   const [selectedDocStaff, setSelectedDocStaff] = useState<Staff | null>(null);
   const [pinTargetUser, setPinTargetUser] = useState<{ id: string; name: string; code?: string; role?: string; currentPin?: string } | null>(null);
 
-  const instructors = staff.filter((s) => s.staffType === 'instructor' || s.role === 'trainer');
-  const regularStaff = staff.filter((s) => s.staffType === 'regular' || s.role === 'staff');
+  // Exclude Vaibhav Kaushik (Owner/Admin) and Ashish Dey (Developer/CEO) from staff & front desk
+  const isExcludedStaff = (s: Staff) => {
+    const nameLower = (s.name || '').toLowerCase();
+    return (
+      nameLower.includes('vaibhav') ||
+      nameLower.includes('ashish') ||
+      s.id === 'usr-1' ||
+      s.id === 'staff-1' ||
+      s.id === 'usr-dev' ||
+      s.phone === '9826189001' ||
+      s.phone === '9244249975' ||
+      s.role === 'admin'
+    );
+  };
 
-  // PT Packages Pricing Reference
-  const ptPackages = [
-    { duration: '1_month', label: '1 Month PT', price: 2500, desc: 'फाउंडेशन कोचिंग, फॉर्म सुधार व व्यक्तिगत रूटीन' },
-    { duration: '3_months', label: '3 Months PT', price: 6500, desc: 'बॉडी ट्रांसफॉर्मेशन, प्रोग्रेसिव ओवरलोड व डाइट ट्रैकिंग' },
-    { duration: '6_months', label: '6 Months PT', price: 12000, desc: 'एडवांस्ड बॉडीबिल्डिंग व एथलेटिक कंडीशनिंग' },
-  ];
+  const instructors = staff.filter((s) => (s.staffType === 'instructor' || s.role === 'trainer') && !isExcludedStaff(s));
+  const regularStaff = staff.filter((s) => (s.staffType === 'regular' || s.role === 'staff') && !isExcludedStaff(s));
+
+  // Dynamic Live PT and Membership Plans
+  const activePtPlans = (ptPlans && ptPlans.length > 0 ? ptPlans : DEFAULT_PT_PLANS).filter(
+    (p) => p.isActive !== false && p.id !== 'none'
+  );
+  const activeMembershipPlans = (membershipPlans && membershipPlans.length > 0 ? membershipPlans : DEFAULT_MEMBERSHIP_PLANS).filter(
+    (p) => p.isActive !== false
+  );
 
   return (
     <div className="space-y-6">
@@ -61,49 +85,147 @@ export const StaffManagement: React.FC = () => {
           </p>
         </div>
 
-        {(role === 'admin' || role === 'staff') && (
-          <button
-            onClick={() => setIsAddStaffOpen(true)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md transition-all cursor-pointer"
-          >
-            <UserPlus className="w-4 h-4" />
-            + नया स्टाफ / ट्रेनर जोड़ें
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {onNavigateToPlans && (
+            <button
+              onClick={onNavigateToPlans}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs border border-slate-300 transition-all cursor-pointer shadow-xs"
+            >
+              <Settings className="w-3.5 h-3.5 text-cyan-600" />
+              <span>प्लान्स प्रबंधित करें</span>
+            </button>
+          )}
+
+          {(role === 'admin' || role === 'staff') && (
+            <button
+              onClick={() => setIsAddStaffOpen(true)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md transition-all cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4" />
+              + नया स्टाफ / ट्रेनर जोड़ें
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* PT Packages Structure Overview Banner */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
+      {/* Dynamic Membership & PT Plans Overview Banner */}
+      <div className="bg-white border border-slate-300 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
           <div className="flex items-center gap-2">
-            <Dumbbell className="w-5 h-5 text-cyan-600" />
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">
-              पर्सनल ट्रेनिंग (PT) पैकेज व फीस संरचना
-            </h3>
+            <Package className="w-5 h-5 text-amber-600" />
+            <div>
+              <h3 className="text-sm font-black uppercase tracking-wider text-slate-900">
+                जिम सदस्यता व पर्सनल ट्रेनिंग (PT) प्लान्स दरें
+              </h3>
+              <p className="text-[11px] text-slate-500">
+                वर्तमान में सक्रिय प्लान्स - कोई भी बदलाव यहाँ तुरंत अपडेट होगा
+              </p>
+            </div>
           </div>
-          <span className="text-xs text-slate-500 font-semibold">कस्टम पैकेज दरें</span>
+
+          {/* Tab switcher between PT plans and Membership plans */}
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-300 self-stretch sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setPlanViewTab('pt')}
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                planViewTab === 'pt'
+                  ? 'bg-cyan-600 text-white shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Dumbbell className="w-3.5 h-3.5" />
+              <span>PT प्लान्स ({activePtPlans.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPlanViewTab('membership')}
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                planViewTab === 'membership'
+                  ? 'bg-amber-600 text-white shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>सदस्यता प्लान्स ({activeMembershipPlans.length})</span>
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {ptPackages.map((pkg) => (
-            <div
-              key={pkg.duration}
-              className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-sm text-slate-900">{pkg.label}</span>
-                  <span className="text-base font-black text-cyan-600 font-mono">{formatINR(pkg.price)}</span>
+        {/* PT Plans Grid */}
+        {planViewTab === 'pt' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {activePtPlans.map((pkg) => (
+              <div
+                key={pkg.id}
+                className="p-4 rounded-xl bg-slate-50/80 border border-slate-200 hover:border-cyan-300 transition-all flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex justify-between items-start gap-2">
+                    <div>
+                      <span className="font-bold text-sm text-slate-900 block">{pkg.name}</span>
+                      <span className="text-[10px] text-cyan-800 font-semibold">
+                        {pkg.durationMonths} माह अवधि {pkg.sessionsPerWeek ? `• ${pkg.sessionsPerWeek} सेशंस/सप्ताह` : ''}
+                      </span>
+                    </div>
+                    <span className="text-base font-black text-cyan-700 font-mono shrink-0">
+                      {formatINR(pkg.price)}
+                    </span>
+                  </div>
+                  {pkg.description && (
+                    <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">{pkg.description}</p>
+                  )}
                 </div>
-                <p className="text-xs text-slate-500 mt-1.5">{pkg.desc}</p>
+                <div className="mt-3 pt-2 border-t border-slate-200 flex justify-between items-center text-[11px] text-slate-500">
+                  <span>1-on-1 कोचिंग</span>
+                  <span className="text-emerald-700 font-bold">
+                    {pkg.features?.[0] || 'डाइट व रूटीन शामिल'}
+                  </span>
+                </div>
               </div>
-              <div className="mt-3 pt-2 border-t border-slate-200 flex justify-between items-center text-[11px] text-slate-500">
-                <span>1-on-1 कोचिंग</span>
-                <span className="text-emerald-600 font-bold">डाइट व रूटीन शामिल</span>
+            ))}
+          </div>
+        )}
+
+        {/* Membership Plans Grid */}
+        {planViewTab === 'membership' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {activeMembershipPlans.map((plan) => (
+              <div
+                key={plan.id}
+                className="p-4 rounded-xl bg-slate-50/80 border border-slate-200 hover:border-amber-300 transition-all flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex justify-between items-start gap-2">
+                    <div>
+                      <span className="font-bold text-sm text-slate-900 block">{plan.name}</span>
+                      <span className="text-[10px] text-amber-800 font-semibold">
+                        {plan.durationMonths} माह अवधि
+                      </span>
+                    </div>
+                    {plan.badge && (
+                      <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
+                        {plan.badge}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-base font-black text-amber-700 font-mono mt-2">
+                    {formatINR(plan.price)}
+                  </div>
+                  {plan.description && (
+                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">{plan.description}</p>
+                  )}
+                </div>
+                <div className="mt-3 pt-2 border-t border-slate-200 flex justify-between items-center text-[11px] text-slate-500">
+                  <span>जिम फ्लोर एक्सेस</span>
+                  <span className="text-emerald-700 font-bold">
+                    {plan.features?.[0] || 'कार्डियो व स्ट्रेंथ'}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Staff Tabs */}
@@ -312,7 +434,9 @@ export const StaffManagement: React.FC = () => {
                                   <div className="text-xs text-slate-500 font-mono">{client.memberCode}</div>
                                 </div>
                                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-50 text-cyan-800 border border-cyan-200">
-                                  {client.ptDuration?.replace('_', ' ').toUpperCase()} PT
+                                  {client.ptDuration
+                                    ? (ptPlans.find((p) => p.id === client.ptDuration)?.name || PT_PRICING[client.ptDuration]?.label || `${client.ptDuration.replace('_', ' ').toUpperCase()} PT`)
+                                    : 'PT Client'}
                                 </span>
                               </div>
 

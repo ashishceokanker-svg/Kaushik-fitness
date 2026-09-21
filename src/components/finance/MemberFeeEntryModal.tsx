@@ -28,7 +28,24 @@ export const MemberFeeEntryModal: React.FC<MemberFeeEntryModalProps> = ({
   preselectedMemberId,
   onSuccess,
 }) => {
-  const { members, updateMember, addTransaction } = useGymData();
+  const { members, updateMember, addTransaction, membershipPlans, ptPlans } = useGymData();
+
+  const activeMembershipPlans = (membershipPlans && membershipPlans.length > 0 ? membershipPlans : []).filter(
+    (p) => p.isActive !== false
+  );
+  const activePTPlans = (ptPlans && ptPlans.length > 0 ? ptPlans : []).filter(
+    (p) => p.isActive !== false && p.id !== 'none'
+  );
+
+  const getMembershipPrice = (d: string) => {
+    const p = membershipPlans.find((m) => m.id === d);
+    return p ? p.price : (MEMBERSHIP_PRICING[d as MembershipDuration]?.price || 1200);
+  };
+
+  const getPTPrice = (d: string) => {
+    const p = ptPlans.find((pt) => pt.id === d);
+    return p ? p.price : (PT_PRICING[d as PTPackageDuration]?.price || 0);
+  };
 
   const [selectedMemberId, setSelectedMemberId] = useState<string>(preselectedMemberId || members[0]?.id || '');
   const [feeType, setFeeType] = useState<'due_clearance' | 'renewal' | 'pt' | 'admission'>('renewal');
@@ -37,7 +54,7 @@ export const MemberFeeEntryModal: React.FC<MemberFeeEntryModalProps> = ({
   const [discountType, setDiscountType] = useState<'flat' | 'percentage'>('flat');
   const [discountValue, setDiscountValue] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('upi');
-  const [paidAmount, setPaidAmount] = useState<number>(MEMBERSHIP_PRICING['3_months'].price);
+  const [paidAmount, setPaidAmount] = useState<number>(() => getMembershipPrice('3_months'));
   const [notes, setNotes] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [receiptRecord, setReceiptRecord] = useState<any | null>(null);
@@ -52,11 +69,11 @@ export const MemberFeeEntryModal: React.FC<MemberFeeEntryModalProps> = ({
     if (feeType === 'due_clearance') {
       subtotal = selectedMember?.dueAmount || 0;
     } else if (feeType === 'renewal') {
-      const base = MEMBERSHIP_PRICING[duration].price;
-      const pt = ptDuration !== 'none' ? PT_PRICING[ptDuration]?.price || 0 : 0;
+      const base = getMembershipPrice(duration);
+      const pt = ptDuration !== 'none' ? getPTPrice(ptDuration) : 0;
       subtotal = base + pt;
     } else if (feeType === 'pt') {
-      subtotal = PT_PRICING[ptDuration === 'none' ? '1_month' : ptDuration]?.price || 3000;
+      subtotal = getPTPrice(ptDuration === 'none' ? (activePTPlans[0]?.id || '1_month') : ptDuration);
     } else {
       subtotal = 1500;
     }
@@ -76,10 +93,11 @@ export const MemberFeeEntryModal: React.FC<MemberFeeEntryModalProps> = ({
     if (type === 'due_clearance') {
       setPaidAmount(selectedMember?.dueAmount || 0);
     } else if (type === 'renewal') {
-      setPaidAmount(MEMBERSHIP_PRICING[duration].price);
+      setPaidAmount(getMembershipPrice(duration));
     } else if (type === 'pt') {
-      setPaidAmount(PT_PRICING['1_month'].price);
-      setPtDuration('1_month');
+      const firstPt = activePTPlans[0]?.id || '1_month';
+      setPaidAmount(getPTPrice(firstPt));
+      setPtDuration(firstPt as PTPackageDuration);
     } else {
       setPaidAmount(1500);
     }
@@ -87,8 +105,8 @@ export const MemberFeeEntryModal: React.FC<MemberFeeEntryModalProps> = ({
 
   const handleDurationChange = (d: MembershipDuration) => {
     setDuration(d);
-    const base = MEMBERSHIP_PRICING[d].price;
-    const pt = ptDuration !== 'none' ? PT_PRICING[ptDuration].price : 0;
+    const base = getMembershipPrice(d);
+    const pt = ptDuration !== 'none' ? getPTPrice(ptDuration) : 0;
     const subtotal = base + pt;
     const discountAmt =
       discountType === 'percentage'
@@ -365,9 +383,9 @@ export const MemberFeeEntryModal: React.FC<MemberFeeEntryModalProps> = ({
                     onChange={(e) => handleDurationChange(e.target.value as MembershipDuration)}
                     className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900"
                   >
-                    {Object.entries(MEMBERSHIP_PRICING).map(([key, val]) => (
-                      <option key={key} value={key}>
-                        {val.label} - ₹{val.price}
+                    {activeMembershipPlans.map((val) => (
+                      <option key={val.id} value={val.id}>
+                        {val.name} - ₹{val.price}
                       </option>
                     ))}
                   </select>
@@ -379,12 +397,19 @@ export const MemberFeeEntryModal: React.FC<MemberFeeEntryModalProps> = ({
                   </label>
                   <select
                     value={ptDuration}
-                    onChange={(e) => setPtDuration(e.target.value as PTPackageDuration)}
+                    onChange={(e) => {
+                      const newPt = e.target.value as PTPackageDuration;
+                      setPtDuration(newPt);
+                      const base = getMembershipPrice(duration);
+                      const pt = newPt !== 'none' ? getPTPrice(newPt) : 0;
+                      setPaidAmount(base + pt);
+                    }}
                     className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900"
                   >
-                    {Object.entries(PT_PRICING).map(([key, val]) => (
-                      <option key={key} value={key}>
-                        {val.label} {val.price > 0 ? `(+₹${val.price})` : ''}
+                    <option value="none">No PT (केवल जिम)</option>
+                    {activePTPlans.map((val) => (
+                      <option key={val.id} value={val.id}>
+                        {val.name} (+₹{val.price})
                       </option>
                     ))}
                   </select>

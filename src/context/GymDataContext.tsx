@@ -519,8 +519,10 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const member = members.find((m) => m.id === id);
     if (!member) return;
 
-    const baseFee = MEMBERSHIP_PRICING[duration].price;
-    const ptFee = PT_PRICING[ptDuration]?.price || 0;
+    const mPlan = membershipPlans.find((p) => p.id === duration);
+    const baseFee = mPlan ? mPlan.price : (MEMBERSHIP_PRICING[duration]?.price || 1200);
+    const pPlan = ptPlans.find((p) => p.id === ptDuration);
+    const ptFee = pPlan ? pPlan.price : (PT_PRICING[ptDuration]?.price || 0);
     const subtotal = baseFee + ptFee;
     const discountAmt =
       discountType === 'percentage'
@@ -906,7 +908,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         updated = [...prev, { ...plan, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }];
       }
       localStorage.setItem('kf_membership_plans', JSON.stringify(updated));
-      syncDocToFirestore(FIRESTORE_COLLECTIONS.MEMBERSHIPS, plan.id, plan);
+      syncDocToFirestore(FIRESTORE_COLLECTIONS.MEMBERSHIP_PLANS, plan.id, plan);
       return updated;
     });
   };
@@ -915,7 +917,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setMembershipPlans((prev) => {
       const updated = prev.filter((p) => p.id !== id);
       localStorage.setItem('kf_membership_plans', JSON.stringify(updated));
-      deleteDocFromFirestore(FIRESTORE_COLLECTIONS.MEMBERSHIPS, id);
+      deleteDocFromFirestore(FIRESTORE_COLLECTIONS.MEMBERSHIP_PLANS, id);
       return updated;
     });
   };

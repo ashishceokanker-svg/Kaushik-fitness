@@ -120,14 +120,12 @@ function buildMembershipRecord(): Record<string, { label: string; months: number
   const plans = getSavedMembershipPlans();
   const map: Record<string, { label: string; months: number; price: number; badge: string }> = {};
   for (const p of plans) {
-    if (p.isActive !== false) {
-      map[p.id] = {
-        label: p.name,
-        months: p.durationMonths,
-        price: p.price,
-        badge: p.badge || '',
-      };
-    }
+    map[p.id] = {
+      label: p.name,
+      months: p.durationMonths,
+      price: p.price,
+      badge: p.badge || '',
+    };
   }
   return map;
 }
@@ -136,13 +134,11 @@ function buildPTRecord(): Record<string, { label: string; months: number; price:
   const plans = getSavedPTPlans();
   const map: Record<string, { label: string; months: number; price: number }> = {};
   for (const p of plans) {
-    if (p.isActive !== false) {
-      map[p.id] = {
-        label: p.name,
-        months: p.durationMonths,
-        price: p.price,
-      };
-    }
+    map[p.id] = {
+      label: p.name,
+      months: p.durationMonths,
+      price: p.price,
+    };
   }
   if (!map['none']) {
     map['none'] = { label: 'No Personal Training', months: 0, price: 0 };

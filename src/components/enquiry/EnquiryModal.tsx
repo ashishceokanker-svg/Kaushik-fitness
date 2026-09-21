@@ -15,7 +15,10 @@ export const EnquiryModal: React.FC<EnquiryModalProps> = ({
   onClose,
   prefillGoal = 'general_fitness',
 }) => {
-  const { addEnquiry } = useGymData();
+  const { addEnquiry, membershipPlans } = useGymData();
+  const activePlans = (membershipPlans && membershipPlans.length > 0 ? membershipPlans : []).filter(
+    (p) => p.isActive !== false
+  );
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -197,19 +200,19 @@ export const EnquiryModal: React.FC<EnquiryModalProps> = ({
                   पसंदीदा पैकेज (Membership Plan)
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {(['1_month', '3_months', '6_months', '1_year'] as MembershipDuration[]).map((pkg) => (
+                  {activePlans.map((pkg) => (
                     <button
-                      key={pkg}
+                      key={pkg.id}
                       type="button"
-                      onClick={() => setInterestedPackage(pkg)}
+                      onClick={() => setInterestedPackage(pkg.id as MembershipDuration)}
                       className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
-                        interestedPackage === pkg
+                        interestedPackage === pkg.id
                           ? 'bg-cyan-50 border-2 border-cyan-500 text-cyan-950 font-bold'
                           : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                       }`}
                     >
-                      <div className="text-xs font-bold">{MEMBERSHIP_PRICING[pkg]?.label}</div>
-                      <div className="text-[11px] text-cyan-800 font-mono font-bold">₹{MEMBERSHIP_PRICING[pkg]?.price}</div>
+                      <div className="text-xs font-bold">{pkg.name}</div>
+                      <div className="text-[11px] text-cyan-800 font-mono font-bold">₹{pkg.price}</div>
                     </button>
                   ))}
                 </div>

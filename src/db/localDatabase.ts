@@ -1297,7 +1297,19 @@ class LocalGymDatabase {
   }
 
   getStaffMembers(): Staff[] {
-    const users = this.getUsers().filter((u) => u.role === 'admin' || u.role === 'trainer' || u.role === 'staff');
+    const users = this.getUsers().filter((u) => {
+      const isStaffRole = u.role === 'trainer' || u.role === 'staff';
+      const nameLower = (u.name || '').toLowerCase();
+      const isExcluded =
+        u.role === 'admin' ||
+        u.id === 'usr-1' ||
+        u.id === 'usr-dev' ||
+        u.phone === '9826189001' ||
+        u.phone === '9244249975' ||
+        nameLower.includes('vaibhav') ||
+        nameLower.includes('ashish dey');
+      return isStaffRole && !isExcluded;
+    });
     const memberships = this.getMemberships();
     const savedStaffProfiles = this.getTable<Staff>(DB_KEYS.STAFF_PROFILES, []);
 

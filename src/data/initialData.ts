@@ -13,30 +13,8 @@ const subDays = (days: number) => {
   return d.toISOString();
 };
 
-// ONLY 1-1 DEMO DATA (Admin & Trainer)
+// ONLY DEMO STAFF (Trainer & Front Desk Staff)
 export const INITIAL_STAFF: Staff[] = [
-  {
-    id: 'staff-1',
-    staffCode: 'KFS-001',
-    name: 'Vaibhav Kaushik',
-    phone: '9826189001',
-    email: 'admin@kaushikfitness.com',
-    role: 'admin',
-    staffType: 'regular',
-    designation: 'Gym Owner & Chief Director',
-    joiningDate: '2022-01-01',
-    salaryMonthly: 60000,
-    specialization: ['Gym Management', 'Biomechanics', 'Strength Coaching'],
-    status: 'active',
-    pin: '1001',
-    bio: 'Founder of Kaushik Fitness Kanker. Oversees entire facility, finances, and member experience.',
-    fatherName: 'श्री लक्ष्मण कौशिक (Shri Laxman Kaushik)',
-    dob: '1990-05-12',
-    address: 'मेन रोड, नया बस स्टैंड के पास, कांकेर (छ.ग.) - 494334',
-    docType: 'Aadhaar Card',
-    docNumber: 'XXXX-XXXX-9001',
-    docFileName: 'aadhaar_vaibhav_kaushik.pdf',
-  },
   {
     id: 'staff-2',
     staffCode: 'KFS-002',

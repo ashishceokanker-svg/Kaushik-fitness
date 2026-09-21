@@ -225,7 +225,7 @@ const MainAppContent: React.FC = () => {
         if (role === 'trainer') {
           return <TrainerDashboard onNavigate={(tab) => setActiveTab(tab)} />;
         }
-        return <StaffManagement />;
+        return <StaffManagement onNavigateToPlans={() => setActiveTab('plans')} />;
 
       case 'fitness':
         return <SmartFitnessEngine />;

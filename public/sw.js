@@ -1,5 +1,5 @@
-// Service Worker for Kaushik Fitness PWA - Resilient Offline & Cloud Cache v7
-const CACHE_NAME = 'koushik-fitness-v7-semi-light';
+// Service Worker for Kaushik Fitness PWA - Resilient Offline & Cloud Cache v8
+const CACHE_NAME = 'koushik-fitness-v8-dynamic-plans-staff-clean';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',

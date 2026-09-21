@@ -30,7 +30,15 @@ interface MemberListProps {
 }
 
 export const MemberList: React.FC<MemberListProps> = ({ onSelectMember }) => {
-  const { members, addMember, renewMember, deleteMember, activateMember } = useGymData();
+  const { members, addMember, renewMember, deleteMember, activateMember, membershipPlans } = useGymData();
+
+  const activeMembershipPlans = (membershipPlans && membershipPlans.length > 0 ? membershipPlans : []).filter(
+    (p) => p.isActive !== false
+  );
+  const getPlanPrice = (d: string) => {
+    const p = membershipPlans.find((m) => m.id === d);
+    return p ? p.price : (MEMBERSHIP_PRICING[d as MembershipDuration]?.price || 1200);
+  };
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'active' | 'expiring_soon' | 'expired' | 'pt'>('all');
@@ -514,10 +522,11 @@ export const MemberList: React.FC<MemberListProps> = ({ onSelectMember }) => {
                   onChange={(e) => setRenewDuration(e.target.value as MembershipDuration)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 font-semibold"
                 >
-                  <option value="1_month">1 Month Standard ({formatINR(1200)})</option>
-                  <option value="3_months">3 Months Quarter ({formatINR(3200)})</option>
-                  <option value="6_months">6 Months Half-Year ({formatINR(5800)})</option>
-                  <option value="1_year">1 Year Annual Gold ({formatINR(9999)})</option>
+                  {activeMembershipPlans.map((plan) => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.name} ({formatINR(plan.price)})
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -568,9 +577,9 @@ export const MemberList: React.FC<MemberListProps> = ({ onSelectMember }) => {
                   {formatINR(
                     Math.max(
                       0,
-                      MEMBERSHIP_PRICING[renewDuration].price -
+                      getPlanPrice(renewDuration) -
                         (renewDiscountType === 'percentage'
-                          ? Math.round((MEMBERSHIP_PRICING[renewDuration].price * renewDiscount) / 100)
+                          ? Math.round((getPlanPrice(renewDuration) * renewDiscount) / 100)
                           : renewDiscount)
                     )
                   )}
