@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useGymData } from '../../context/GymDataContext';
+import { useAuth } from '../../context/AuthContext';
 import { Member, MembershipDuration } from '../../types';
 import { formatINR, formatDate, calculateCountdown, generateWhatsAppReminderUrl, MEMBERSHIP_PRICING, calculateExpiryDate } from '../../utils/formatters';
 import { ExpirationCountdown } from '../common/ExpirationCountdown';
@@ -21,6 +22,7 @@ import {
   Lock,
   FileSpreadsheet,
   Download,
+  X,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { ExcelImportModal } from '../common/ExcelImportModal';
@@ -30,7 +32,27 @@ interface MemberListProps {
 }
 
 export const MemberList: React.FC<MemberListProps> = ({ onSelectMember }) => {
-  const { members, addMember, renewMember, deleteMember, activateMember, membershipPlans } = useGymData();
+  const { role } = useAuth();
+  const { members, staff, addMember, renewMember, deleteMember, activateMember, updateMember, membershipPlans } = useGymData();
+
+  const isExcludedStaff = (s: any) => {
+    const nameLower = (s.name || '').toLowerCase();
+    return (
+      nameLower.includes('vaibhav') ||
+      nameLower.includes('ashish') ||
+      s.id === 'usr-1' ||
+      s.id === 'staff-1' ||
+      s.id === 'usr-dev' ||
+      s.phone === '9826189001' ||
+      s.phone === '9244249975' ||
+      s.role === 'admin'
+    );
+  };
+  const activeInstructors = (staff || []).filter(
+    (s) => (s.staffType === 'instructor' || s.role === 'trainer') && !isExcludedStaff(s)
+  );
+
+  const [trainerChangeMember, setTrainerChangeMember] = useState<Member | null>(null);
 
   const activeMembershipPlans = (membershipPlans && membershipPlans.length > 0 ? membershipPlans : []).filter(
     (p) => p.isActive !== false
@@ -340,12 +362,34 @@ export const MemberList: React.FC<MemberListProps> = ({ onSelectMember }) => {
                           {MEMBERSHIP_PRICING[member.membershipDuration]?.label}
                         </div>
                         {member.personalTraining ? (
-                          <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-cyan-800 mt-1 px-1.5 py-0.5 rounded bg-cyan-50 border border-cyan-200">
-                            <Sparkles className="w-3 h-3 text-cyan-600" />
-                            PT: {member.assignedTrainerName || 'Instructor Assigned'}
+                          <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-cyan-800 mt-1 px-1.5 py-0.5 rounded bg-cyan-50 border border-cyan-200 flex-wrap">
+                            <Sparkles className="w-3 h-3 text-cyan-600 shrink-0" />
+                            <span>PT: {member.assignedTrainerName || 'Trainer Assigned'}</span>
+                            {role === 'admin' && (
+                              <button
+                                type="button"
+                                onClick={() => setTrainerChangeMember(member)}
+                                className="ml-1 text-[10px] text-cyan-700 hover:text-cyan-900 underline font-bold cursor-pointer"
+                                title="ट्रेनर बदलें"
+                              >
+                                (बदलें)
+                              </button>
+                            )}
                           </div>
                         ) : (
-                          <div className="text-[11px] text-slate-400 mt-0.5">Regular Access</div>
+                          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-0.5 flex-wrap">
+                            <span>{member.assignedTrainerName ? `कोच: ${member.assignedTrainerName}` : 'Regular Access'}</span>
+                            {role === 'admin' && (
+                              <button
+                                type="button"
+                                onClick={() => setTrainerChangeMember(member)}
+                                className="text-cyan-700 hover:text-cyan-900 text-[10px] font-bold hover:underline cursor-pointer"
+                                title="ट्रेनर असाइन करें या बदलें"
+                              >
+                                {member.assignedTrainerName ? '(बदलें)' : '+ ट्रेनर दें'}
+                              </button>
+                            )}
+                          </div>
                         )}
                       </td>
 
@@ -612,6 +656,104 @@ export const MemberList: React.FC<MemberListProps> = ({ onSelectMember }) => {
           targetUser={pinTargetUser}
           onClose={() => setPinTargetUser(null)}
         />
+      )}
+
+      {/* Assign / Change Trainer Modal */}
+      {trainerChangeMember && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
+              <div>
+                <h3 className="font-bold text-base text-white">
+                  ट्रेनर / कोच बदलें
+                </h3>
+                <p className="text-xs text-slate-300 mt-0.5">
+                  सदस्य: <strong className="text-amber-400">{trainerChangeMember.name}</strong> ({trainerChangeMember.memberCode})
+                </p>
+              </div>
+              <button
+                onClick={() => setTrainerChangeMember(null)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div>
+                <div className="text-xs text-slate-500 mb-2">
+                  वर्तमान ट्रेनर: <strong className="text-slate-800">{trainerChangeMember.assignedTrainerName || 'कोई नहीं (None)'}</strong>
+                </div>
+                <label className="block text-xs font-bold text-slate-700 mb-2">
+                  नया कोच / ट्रेनर चुनें:
+                </label>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {activeInstructors.map((t) => {
+                    const isCurrent =
+                      trainerChangeMember.assignedTrainerId === t.id ||
+                      (trainerChangeMember.assignedTrainerName && trainerChangeMember.assignedTrainerName.toLowerCase() === t.name.toLowerCase());
+                    return (
+                      <button
+                        type="button"
+                        key={t.id}
+                        onClick={() => {
+                          updateMember(trainerChangeMember.id, {
+                            assignedTrainerId: t.id,
+                            assignedTrainerName: t.name,
+                            personalTraining: true,
+                          });
+                          setTrainerChangeMember(null);
+                        }}
+                        className={`w-full p-3 rounded-xl border text-left flex items-center justify-between transition-all cursor-pointer ${
+                          isCurrent
+                            ? 'bg-cyan-50 border-cyan-300 ring-2 ring-cyan-400/20'
+                            : 'bg-white border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div>
+                          <div className="font-bold text-xs text-slate-900">{t.name}</div>
+                          <div className="text-[11px] text-slate-500">{t.designation} • Code: {t.staffCode}</div>
+                        </div>
+                        {isCurrent && (
+                          <span className="text-[10px] font-bold text-cyan-800 bg-cyan-100 px-2 py-0.5 rounded">
+                            वर्तमान
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+
+                  {/* Option to Unassign Trainer */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      updateMember(trainerChangeMember.id, {
+                        assignedTrainerId: undefined,
+                        assignedTrainerName: undefined,
+                        personalTraining: false,
+                      });
+                      setTrainerChangeMember(null);
+                    }}
+                    className="w-full p-3 rounded-xl border border-rose-200 bg-rose-50/60 hover:bg-rose-100 text-rose-800 text-left font-bold text-xs flex items-center justify-between transition-colors cursor-pointer"
+                  >
+                    <span>❌ कोई ट्रेनर नहीं (हटाएं)</span>
+                    <span className="text-[10px] bg-rose-100 px-2 py-0.5 rounded">Unassign</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setTrainerChangeMember(null)}
+                className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold cursor-pointer"
+              >
+                रद्द करें
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Excel / CSV Bulk Import Modal */}

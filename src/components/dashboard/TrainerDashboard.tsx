@@ -7,7 +7,7 @@ import { MemberProgressChart } from '../progress/MemberProgressChart';
 import { TrainerDietModal } from '../trainer/TrainerDietModal';
 import { TrainerWorkoutModal } from '../trainer/TrainerWorkoutModal';
 import { localDb } from '../../db/localDatabase';
-import { CustomDietPlan, CustomWorkoutPlan, StaffDailyAttendance, WorkoutDay } from '../../types';
+import { CustomDietPlan, CustomWorkoutPlan, StaffDailyAttendance, WorkoutDay, Staff } from '../../types';
 import { generateAutomaticCustomDiet, generateWorkoutRoutine, calculateBMR, calculateTDEE } from '../../utils/fitnessCalculator';
 import {
   Award,
@@ -54,19 +54,31 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
   } = useGymData();
 
   // Find trainer info
-  const trainer = staff.find((s) => s.id === currentUser?.staffId) || staff.find((s) => s.role === 'trainer') || staff[1];
+  const trainer =
+    staff.find((s) => s.id === currentUser?.staffId || s.id === currentUser?.id || (s.userId && s.userId === currentUser?.id) || (s.phone && s.phone === currentUser?.phone)) ||
+    staff.find((s) => s.role === 'trainer' && s.staffType === 'instructor') ||
+    staff.find((s) => s.role === 'trainer') ||
+    staff[0];
 
-  // Find assigned PT clients (or default to registered members if not specifically assigned)
-  const ptClients = members.filter(
-    (m) =>
-      m.assignedTrainerId === trainer.id ||
-      m.assignedTrainerId === 'usr-2' ||
-      m.assignedTrainerId === 'staff-2' ||
-      m.personalTraining
-  );
-  const displayClients = ptClients.length > 0 ? ptClients : members;
+  // Strictly check if member is assigned to this specific trainer
+  const isMemberAssignedToTrainer = (m: any, t: Staff) => {
+    if (!m || !t) return false;
+    if (m.assignedTrainerId) {
+      if (m.assignedTrainerId === t.id) return true;
+      if (t.userId && m.assignedTrainerId === t.userId) return true;
+    }
+    if (m.assignedTrainerName && t.name) {
+      const mName = m.assignedTrainerName.trim().toLowerCase();
+      const tName = t.name.trim().toLowerCase();
+      if (mName === tName) return true;
+    }
+    return false;
+  };
 
-  const [selectedClient, setSelectedClient] = useState<any>(displayClients[0] || members[0]);
+  // Strictly assigned clients for this specific trainer
+  const displayClients = members.filter((m) => trainer && isMemberAssignedToTrainer(m, trainer));
+
+  const [selectedClient, setSelectedClient] = useState<any>(displayClients[0] || null);
   const [sessionNotes, setSessionNotes] = useState('');
   const [noteSaved, setNoteSaved] = useState(false);
   const [isDietModalOpen, setIsDietModalOpen] = useState(false);
@@ -81,6 +93,8 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
   useEffect(() => {
     if (!selectedClient && displayClients.length > 0) {
       setSelectedClient(displayClients[0]);
+    } else if (selectedClient && !displayClients.some((c) => c.id === selectedClient.id)) {
+      setSelectedClient(displayClients[0] || null);
     }
   }, [displayClients, selectedClient]);
 
@@ -441,54 +455,66 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
           <div>
             <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
               <Users className="w-5 h-5 text-cyan-600" />
-              <span>मेरे ट्रेन किए जाने वाले 5 मेंबर्स (Coach Vikram Sahu's PT Clients)</span>
+              <span>मेरे असाइन किए गए सदस्य ({trainer.name}'s Clients - {displayClients.length})</span>
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              कोच विक्रम साहू के सभी 5 सदस्य: किसी भी सदस्य पर क्लिक करके उसकी शारीरिक प्रोग्रेस, ट्रांसफॉर्मेशन बदलाव और ऑटो डाइट प्लान देखें व बदलें:
+              कोच {trainer.name} के असाइन सदस्य: किसी भी सदस्य पर क्लिक करके उसकी शारीरिक प्रोग्रेस, ट्रांसफॉर्मेशन बदलाव और डाइट प्लान देखें व बदलें:
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {displayClients.map((client) => {
-            const isSelected = selectedClient?.id === client.id;
-            return (
-              <div
-                key={client.id}
-                onClick={() => setSelectedClient(client)}
-                className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between ${
-                  isSelected
-                    ? 'bg-cyan-50/80 border-cyan-400 shadow-md ring-2 ring-cyan-400/30'
-                    : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/60'
-                }`}
-              >
-                <div>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-black text-slate-900 text-sm">{client.name}</div>
-                      <div className="text-xs text-slate-500 font-mono">{client.memberCode}</div>
+        {displayClients.length === 0 ? (
+          <div className="py-10 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-300 p-6 space-y-2">
+            <Users className="w-8 h-8 text-slate-400 mx-auto" />
+            <div className="text-sm font-bold text-slate-700">
+              वर्तमान में कोच {trainer.name} को कोई सदस्य असाइन नहीं है।
+            </div>
+            <p className="text-xs text-slate-400">
+              एडमिन द्वारा आपके नाम पर सदस्य असाइन किए जाने पर वे यहाँ दिखाई देंगे।
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {displayClients.map((client) => {
+              const isSelected = selectedClient?.id === client.id;
+              return (
+                <div
+                  key={client.id}
+                  onClick={() => setSelectedClient(client)}
+                  className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between ${
+                    isSelected
+                      ? 'bg-cyan-50/80 border-cyan-400 shadow-md ring-2 ring-cyan-400/30'
+                      : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/60'
+                  }`}
+                >
+                  <div>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-black text-slate-900 text-sm">{client.name}</div>
+                        <div className="text-xs text-slate-500 font-mono">{client.memberCode}</div>
+                      </div>
+                      <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300">
+                        {client.ptDuration?.replace('_', ' ').toUpperCase() || 'PT CLIENT'}
+                      </span>
                     </div>
-                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300">
-                      {client.ptDuration?.replace('_', ' ').toUpperCase() || 'PT CLIENT'}
+
+                    <div className="mt-2.5 space-y-1 text-xs text-slate-600">
+                      <div>Goal: <strong className="text-amber-700 capitalize">{client.fitnessGoal?.replace('_', ' ')}</strong></div>
+                      <div>Weight: <strong className="text-slate-800">{client.weightKg} kg</strong> (Target: {client.targetWeightKg || 80} kg)</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400">Status: Active</span>
+                    <span className="text-cyan-700 font-bold flex items-center gap-0.5">
+                      View Details <ChevronRight className="w-3 h-3" />
                     </span>
                   </div>
-
-                  <div className="mt-2.5 space-y-1 text-xs text-slate-600">
-                    <div>Goal: <strong className="text-amber-700 capitalize">{client.fitnessGoal?.replace('_', ' ')}</strong></div>
-                    <div>Weight: <strong className="text-slate-800">{client.weightKg} kg</strong> (Target: {client.targetWeightKg || 80} kg)</div>
-                  </div>
                 </div>
-
-                <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                  <span className="text-slate-400">Status: Active</span>
-                  <span className="text-cyan-700 font-bold flex items-center gap-0.5">
-                    View Details <ChevronRight className="w-3 h-3" />
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* SELECTED CLIENT WORKSPACE */}

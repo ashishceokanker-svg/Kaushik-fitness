@@ -29,6 +29,7 @@ import {
   Package,
   Sparkles,
   Settings,
+  Search,
 } from 'lucide-react';
 
 interface StaffManagementProps {
@@ -37,13 +38,35 @@ interface StaffManagementProps {
 
 export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigateToPlans }) => {
   const { role } = useAuth();
-  const { staff, members, ptPlans, membershipPlans } = useGymData();
+  const { staff, members, ptPlans, membershipPlans, updateMember } = useGymData();
   const [activeTab, setActiveTab] = useState<'instructors' | 'regular'>('instructors');
   const [planViewTab, setPlanViewTab] = useState<'pt' | 'membership'>('pt');
   const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
   const [expandedTrainerId, setExpandedTrainerId] = useState<string | null>('staff-2');
   const [selectedDocStaff, setSelectedDocStaff] = useState<Staff | null>(null);
   const [pinTargetUser, setPinTargetUser] = useState<{ id: string; name: string; code?: string; role?: string; currentPin?: string } | null>(null);
+
+  // States for Assigning / Re-assigning Members to Trainers
+  const [assignModalTrainer, setAssignModalTrainer] = useState<Staff | null>(null);
+  const [memberToReassign, setMemberToReassign] = useState<any | null>(null);
+  const [assignSearchQuery, setAssignSearchQuery] = useState('');
+
+  // Strictly check if a member is assigned to a specific instructor
+  const isMemberAssignedToTrainer = (m: any, trainer: Staff) => {
+    if (!m || !trainer) return false;
+    // 1. Direct ID match
+    if (m.assignedTrainerId) {
+      if (m.assignedTrainerId === trainer.id) return true;
+      if (trainer.userId && m.assignedTrainerId === trainer.userId) return true;
+    }
+    // 2. Direct Name match
+    if (m.assignedTrainerName && trainer.name) {
+      const mName = m.assignedTrainerName.trim().toLowerCase();
+      const tName = trainer.name.trim().toLowerCase();
+      if (mName === tName) return true;
+    }
+    return false;
+  };
 
   // Exclude Vaibhav Kaushik (Owner/Admin) and Ashish Dey (Developer/CEO) from staff & front desk
   const isExcludedStaff = (s: Staff) => {
@@ -258,7 +281,7 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigateToPl
       {activeTab === 'instructors' && (
         <div className="space-y-4">
           {instructors.map((trainer) => {
-            const assignedMembers = members.filter((m) => m.assignedTrainerId === trainer.id || m.personalTraining);
+            const assignedMembers = members.filter((m) => isMemberAssignedToTrainer(m, trainer));
             const isExpanded = expandedTrainerId === trainer.id;
 
             return (
@@ -406,26 +429,47 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigateToPl
                 {/* Collapsible PT Client Roster */}
                 {isExpanded && (
                   <div className="bg-slate-50/75 border-t border-slate-200 p-5">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                       <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                         <Users className="w-4 h-4 text-cyan-600" />
-                        {trainer.name} के पर्सनल ट्रेनिंग क्लाइंट्स
+                        {trainer.name} के व्यक्तिगत PT क्लाइंट्स
                       </h4>
-                      <span className="text-xs text-slate-500 font-semibold">
-                        कुल {assignedMembers.length} सक्रिय क्लाइंट्स
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-500 font-semibold">
+                          कुल {assignedMembers.length} सक्रिय क्लाइंट्स
+                        </span>
+                        {role === 'admin' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAssignModalTrainer(trainer);
+                              setAssignSearchQuery('');
+                            }}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                          >
+                            <UserPlus className="w-3.5 h-3.5" />
+                            <span>+ सदस्य असाइन करें</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     {assignedMembers.length === 0 ? (
-                      <div className="py-6 text-center text-xs text-slate-400">
-                        वर्तमान में कोई सदस्य असाइन नहीं है।
+                      <div className="py-8 text-center bg-white rounded-xl border border-dashed border-slate-300 p-6 space-y-2">
+                        <Users className="w-8 h-8 text-slate-400 mx-auto" />
+                        <div className="text-xs font-bold text-slate-600">
+                          वर्तमान में {trainer.name} को कोई सदस्य असाइन नहीं है।
+                        </div>
+                        <p className="text-[11px] text-slate-400">
+                          ऊपर दिए गए "+ सदस्य असाइन करें" बटन से सदस्य असाइन करें।
+                        </p>
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {assignedMembers.map((client) => (
                           <div
                             key={client.id}
-                            className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between space-y-3 shadow-sm"
+                            className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between space-y-3 shadow-sm hover:border-cyan-300 transition-colors"
                           >
                             <div>
                               <div className="flex justify-between items-start">
@@ -447,8 +491,20 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigateToPl
                               </div>
                             </div>
 
-                            <div className="pt-2 border-t border-slate-100">
-                              <ExpirationCountdown expiryDate={client.expiryDate} variant="compact" showSeconds={false} />
+                            <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <ExpirationCountdown expiryDate={client.expiryDate} variant="compact" showSeconds={false} />
+                              </div>
+                              {role === 'admin' && (
+                                <button
+                                  type="button"
+                                  onClick={() => setMemberToReassign(client)}
+                                  className="text-[11px] font-bold text-cyan-700 hover:text-cyan-900 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 px-2 py-1 rounded-lg transition-colors cursor-pointer shrink-0"
+                                  title="ट्रेनर बदलें या हटाएं"
+                                >
+                                  ट्रेनर बदलें
+                                </button>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -709,6 +765,232 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigateToPl
                   बंद करें (Close)
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Member Assignment to Trainer Modal */}
+      {assignModalTrainer && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-slate-900 to-slate-800 text-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 font-bold">
+                  <UserPlus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-white">
+                    सदस्य असाइन करें
+                  </h3>
+                  <p className="text-xs text-slate-300">
+                    कोच: <strong className="text-cyan-300">{assignModalTrainer.name}</strong> ({assignModalTrainer.staffCode})
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setAssignModalTrainer(null)}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Search Filter */}
+            <div className="p-4 border-b border-slate-200 bg-slate-50">
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="सदस्य का नाम, फोन या कोड खोजें..."
+                  value={assignSearchQuery}
+                  onChange={(e) => setAssignSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                />
+              </div>
+            </div>
+
+            {/* Members List */}
+            <div className="p-4 overflow-y-auto space-y-2 flex-1">
+              {members
+                .filter((m) => {
+                  if (!assignSearchQuery) return true;
+                  const q = assignSearchQuery.toLowerCase();
+                  return (
+                    m.name.toLowerCase().includes(q) ||
+                    m.phone.includes(q) ||
+                    m.memberCode.toLowerCase().includes(q)
+                  );
+                })
+                .map((m) => {
+                  const isAssignedToThis = isMemberAssignedToTrainer(m, assignModalTrainer);
+                  return (
+                    <div
+                      key={m.id}
+                      className="p-3 rounded-xl border border-slate-200 hover:border-slate-300 bg-white flex items-center justify-between gap-3 transition-colors"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm text-slate-900 truncate">{m.name}</span>
+                          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+                            {m.memberCode}
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
+                          <span>{m.phone}</span>
+                          <span>•</span>
+                          {isAssignedToThis ? (
+                            <span className="text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded text-[10px]">
+                              वर्तमान में असाइन है
+                            </span>
+                          ) : m.assignedTrainerName ? (
+                            <span className="text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded text-[10px]">
+                              अन्य कोच: {m.assignedTrainerName}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 text-[10px]">कोई ट्रेनर नहीं</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="shrink-0">
+                        {isAssignedToThis ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              updateMember(m.id, {
+                                assignedTrainerId: undefined,
+                                assignedTrainerName: undefined,
+                                personalTraining: false,
+                              });
+                            }}
+                            className="px-2.5 py-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-colors cursor-pointer"
+                          >
+                            हटाएं
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              updateMember(m.id, {
+                                assignedTrainerId: assignModalTrainer.id,
+                                assignedTrainerName: assignModalTrainer.name,
+                                personalTraining: true,
+                              });
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-bold transition-colors shadow-xs cursor-pointer"
+                          >
+                            असाइन करें
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+
+            <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setAssignModalTrainer(null)}
+                className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold cursor-pointer transition-colors"
+              >
+                पूर्ण (Done)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Member Re-assignment / Trainer Transfer Modal */}
+      {memberToReassign && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
+              <div>
+                <h3 className="font-bold text-base text-white">
+                  ट्रेनर बदलें या हटाएं
+                </h3>
+                <p className="text-xs text-slate-300 mt-0.5">
+                  सदस्य: <strong className="text-amber-400">{memberToReassign.name}</strong> ({memberToReassign.memberCode})
+                </p>
+              </div>
+              <button
+                onClick={() => setMemberToReassign(null)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-2">
+                  नया कोच / ट्रेनर चुनें:
+                </label>
+                <div className="space-y-2">
+                  {instructors.map((t) => {
+                    const isCurrent = isMemberAssignedToTrainer(memberToReassign, t);
+                    return (
+                      <button
+                        type="button"
+                        key={t.id}
+                        onClick={() => {
+                          updateMember(memberToReassign.id, {
+                            assignedTrainerId: t.id,
+                            assignedTrainerName: t.name,
+                            personalTraining: true,
+                          });
+                          setMemberToReassign(null);
+                        }}
+                        className={`w-full p-3 rounded-xl border text-left flex items-center justify-between transition-all cursor-pointer ${
+                          isCurrent
+                            ? 'bg-cyan-50 border-cyan-300 ring-2 ring-cyan-400/20'
+                            : 'bg-white border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div>
+                          <div className="font-bold text-xs text-slate-900">{t.name}</div>
+                          <div className="text-[11px] text-slate-500">{t.designation}</div>
+                        </div>
+                        {isCurrent && (
+                          <span className="text-[10px] font-bold text-cyan-800 bg-cyan-100 px-2 py-0.5 rounded">
+                            वर्तमान ट्रेनर
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+
+                  {/* Option to Unassign Trainer */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      updateMember(memberToReassign.id, {
+                        assignedTrainerId: undefined,
+                        assignedTrainerName: undefined,
+                        personalTraining: false,
+                      });
+                      setMemberToReassign(null);
+                    }}
+                    className="w-full p-3 rounded-xl border border-rose-200 bg-rose-50/60 hover:bg-rose-100 text-rose-800 text-left font-bold text-xs flex items-center justify-between transition-colors cursor-pointer"
+                  >
+                    <span>❌ कोई ट्रेनर नहीं (ट्रेनर असाइनमेंट हटाएं)</span>
+                    <span className="text-[10px] bg-rose-100 px-2 py-0.5 rounded">Unassign</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setMemberToReassign(null)}
+                className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold cursor-pointer"
+              >
+                रद्द करें
+              </button>
             </div>
           </div>
         </div>

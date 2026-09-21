@@ -1247,7 +1247,10 @@ class LocalGymDatabase {
         active: true,
       };
 
-      const trainer = users.find((u) => u.id === membership.trainer_id);
+      const savedStaff = this.getTable<Staff>(DB_KEYS.STAFF_PROFILES, []);
+      const trainer =
+        users.find((u) => u.id === membership.trainer_id) ||
+        savedStaff.find((s) => s.id === membership.trainer_id || s.userId === membership.trainer_id);
 
       return {
         id: profile.id,
@@ -1314,9 +1317,19 @@ class LocalGymDatabase {
     const savedStaffProfiles = this.getTable<Staff>(DB_KEYS.STAFF_PROFILES, []);
 
     return users.map((u) => {
-      const assignedCount = memberships.filter((m) => m.trainer_id === u.id).length;
-      const isInstructor = u.role === 'trainer';
       const existingProfile = savedStaffProfiles.find((sp) => sp.id === u.id || sp.userId === u.id);
+      const isInstructor = u.role === 'trainer';
+      const assignedCount = memberships.filter((m) => {
+        if (!m.is_personal_training && !m.trainer_id) return false;
+        if (m.trainer_id) {
+          if (m.trainer_id === u.id) return true;
+          if (existingProfile && m.trainer_id === existingProfile.id) return true;
+        }
+        if (m.trainer_name && u.name) {
+          return m.trainer_name.trim().toLowerCase() === u.name.trim().toLowerCase();
+        }
+        return false;
+      }).length;
 
       if (existingProfile) {
         return {
