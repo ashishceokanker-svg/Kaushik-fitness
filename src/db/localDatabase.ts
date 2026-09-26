@@ -70,7 +70,32 @@ const SEED_USERS: DbUser[] = [
     role: 'admin',
     created_at: '2022-01-01T00:00:00.000Z',
     pin: '2343',
+    gender: 'male',
     address: 'मेन रोड, नया बस स्टैंड के पास, कांकेर (छ.ग.) - 494334',
+  },
+  {
+    id: 'usr-2',
+    name: 'Vikram Sahu',
+    email: 'trainer@kaushikfitness.com',
+    phone: '9826189002',
+    password_hash: '$2a$12$trainerHashKanker2024',
+    role: 'trainer',
+    created_at: '2023-01-01T00:00:00.000Z',
+    pin: '8902',
+    gender: 'male',
+    address: 'वार्ड क्र. 12, उपनगर कॉलोनी, स्टेडियम रोड, कांकेर (छ.ग.) - 494334',
+  },
+  {
+    id: 'usr-5',
+    name: 'Rahul Sharma',
+    email: 'rahul@kaushikfitness.com',
+    phone: '9826112345',
+    password_hash: '$2a$12$memberHashKanker2024',
+    role: 'member',
+    created_at: '2023-01-01T00:00:00.000Z',
+    pin: '2222',
+    gender: 'male',
+    address: 'कांकेर (छ.ग.)',
   },
   {
     id: 'usr-dev',
@@ -81,6 +106,7 @@ const SEED_USERS: DbUser[] = [
     role: 'admin',
     created_at: '2022-01-01T00:00:00.000Z',
     pin: '9975',
+    gender: 'male',
     address: 'Janpad Panchayat Baderajpur, District Kondagaon (C.G.)',
   },
 ];
@@ -446,7 +472,42 @@ class LocalGymDatabase {
         role: 'admin',
         created_at: '2022-01-01T00:00:00.000Z',
         pin: '9975',
+        gender: 'male',
         address: 'Janpad Panchayat Baderajpur, District Kondagaon (C.G.)',
+      });
+      changed = true;
+    }
+
+    const hasTrainer = list.some((u) => u.id === 'usr-2' || u.phone === '9826189002');
+    if (!hasTrainer) {
+      list.push({
+        id: 'usr-2',
+        name: 'Vikram Sahu',
+        email: 'trainer@kaushikfitness.com',
+        phone: '9826189002',
+        password_hash: '$2a$12$trainerHashKanker2024',
+        role: 'trainer',
+        created_at: '2023-01-01T00:00:00.000Z',
+        pin: '8902',
+        gender: 'male',
+        address: 'वार्ड क्र. 12, उपनगर कॉलोनी, स्टेडियम रोड, कांकेर (छ.ग.) - 494334',
+      });
+      changed = true;
+    }
+
+    const hasMember = list.some((u) => u.id === 'usr-5' || u.phone === '9826112345');
+    if (!hasMember) {
+      list.push({
+        id: 'usr-5',
+        name: 'Rahul Sharma',
+        email: 'rahul@kaushikfitness.com',
+        phone: '9826112345',
+        password_hash: '$2a$12$memberHashKanker2024',
+        role: 'member',
+        created_at: '2023-01-01T00:00:00.000Z',
+        pin: '2222',
+        gender: 'male',
+        address: 'कांकेर (छ.ग.)',
       });
       changed = true;
     }

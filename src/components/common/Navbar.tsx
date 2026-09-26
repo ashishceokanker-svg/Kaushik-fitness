@@ -181,8 +181,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {/* Mobile vs Desktop Viewport Switcher - Strictly DEVELOPER ONLY */}
-          {isDeveloper && onToggleMobileView && (
+          {/* Mobile vs Desktop Viewport Switcher - DEVELOPER, ADMIN & TRAINER */}
+          {(isDeveloper || role === 'admin' || role === 'trainer') && onToggleMobileView && (
             <button
               onClick={onToggleMobileView}
               title={isMobileView ? 'Switch to Full Desktop Portal' : 'Preview Simulated Mobile App View'}

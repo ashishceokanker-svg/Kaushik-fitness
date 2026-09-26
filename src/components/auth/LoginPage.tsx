@@ -11,6 +11,7 @@ import {
   MapPin,
   CheckCircle2,
   Smartphone,
+  RefreshCw,
 } from 'lucide-react';
 import { MemberSelfRegisterModal } from './MemberSelfRegisterModal';
 
@@ -88,6 +89,53 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
     } catch (err: any) {
       setLocalError('अमान्य पिन या नेटवर्क त्रुटि। कृपया पुनः प्रयास करें।');
       setPin('');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const [purging, setPurging] = useState<boolean>(false);
+
+  const handlePurgeAndRefresh = async () => {
+    setPurging(true);
+    try {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const reg of registrations) {
+          await reg.unregister();
+        }
+      }
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        for (const k of keys) {
+          await caches.delete(k);
+        }
+      }
+      sessionStorage.clear();
+      window.location.href = `/?reload_v=${Date.now()}`;
+    } catch {
+      window.location.reload();
+    }
+  };
+
+  const handleQuickPin = async (quickPin: string) => {
+    setPin(quickPin);
+    setLoading(true);
+    setLocalError(null);
+    setGeofenceFeedback(null);
+    try {
+      const res = await loginWithCredentials(quickPin);
+      if (!res.success) {
+        setLocalError(res.message || 'अमान्य पिन');
+      } else if (res.geofenceResult) {
+        setGeofenceFeedback({
+          status: res.geofenceResult.status,
+          message: res.geofenceResult.message,
+          distance: res.geofenceResult.formattedDistance,
+        });
+      }
+    } catch {
+      setLocalError('त्रुटि आई, पुनः प्रयास करें।');
     } finally {
       setLoading(false);
     }
@@ -240,6 +288,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
+            <button
+              type="button"
+              onClick={handlePurgeAndRefresh}
+              disabled={purging}
+              title="नया ऐप अपडेट लोड करें और पुराना कैश साफ करें"
+              className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg sm:rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs transition-all shadow-xs cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${purging ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{purging ? 'लोड हो रहा है...' : '🔄 नया अपडेट लोड करें'}</span>
+              <span className="sm:hidden">{purging ? 'लोडिंग...' : '🔄 अपडेट'}</span>
+            </button>
+
             {onOpenAppInstall && (
               <button
                 onClick={onOpenAppInstall}
@@ -404,6 +464,51 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
                 <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             </form>
+
+            {/* Quick 1-Tap Role Test Pills */}
+            <div className="pt-2 border-t border-slate-200/90">
+              <div className="text-[10px] text-slate-500 font-semibold mb-1 text-center">
+                ⚡ त्वरित रोल चयन (1-क्लिक टेस्ट प्रवेश):
+              </div>
+              <div className="grid grid-cols-4 gap-1 sm:gap-1.5 text-center">
+                <button
+                  type="button"
+                  onClick={() => handleQuickPin('8902')}
+                  title="Coach Vikram Sahu (PIN: 8902)"
+                  className="px-1 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-[10px] font-black cursor-pointer transition-all flex flex-col items-center shadow-2xs active:scale-95"
+                >
+                  <span>🏆 ट्रेनर</span>
+                  <span className="text-[9px] font-mono text-amber-700">8902</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickPin('2222')}
+                  title="Member Rahul Sharma (PIN: 2222)"
+                  className="px-1 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 text-[10px] font-black cursor-pointer transition-all flex flex-col items-center shadow-2xs active:scale-95"
+                >
+                  <span>👤 सदस्य</span>
+                  <span className="text-[9px] font-mono text-emerald-700">2222</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickPin('2343')}
+                  title="Admin Vaibhav Kaushik (PIN: 2343)"
+                  className="px-1 py-1 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-900 border border-indigo-300 text-[10px] font-black cursor-pointer transition-all flex flex-col items-center shadow-2xs active:scale-95"
+                >
+                  <span>🛡️ एडमिन</span>
+                  <span className="text-[9px] font-mono text-indigo-700">2343</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickPin('9975')}
+                  title="Developer Ashish Dey (PIN: 9975)"
+                  className="px-1 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-900 border border-slate-300 text-[10px] font-black cursor-pointer transition-all flex flex-col items-center shadow-2xs active:scale-95"
+                >
+                  <span>👨‍💻 देव</span>
+                  <span className="text-[9px] font-mono text-slate-700">9975</span>
+                </button>
+              </div>
+            </div>
 
             {/* Mobile App Install & Unified Link Guide */}
             {onOpenAppInstall && (

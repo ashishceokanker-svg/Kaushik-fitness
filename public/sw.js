@@ -1,5 +1,5 @@
-// Service Worker for Kaushik Fitness PWA - Resilient Offline & Cloud Cache v27
-const CACHE_NAME = 'koushik-fitness-v27-trainer-app-parity-helpdesk';
+// Service Worker for Kaushik Fitness PWA - Resilient Offline & Cloud Cache v28
+const CACHE_NAME = 'koushik-fitness-v28-trainer-parity-instant-update';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',

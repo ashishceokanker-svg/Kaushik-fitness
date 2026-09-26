@@ -223,7 +223,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // 0. ADMIN MASTER PIN (2343) - Guaranteed Instant Match for Vaibhav Kaushik
     if (cleanId === '2343' || cleanPass === '2343' || (matchedDbUser as any)?.id === 'usr-1' || cleanId === 'usr-1' || cleanId === '9826189001') {
-      if (cleanId === '2343' || cleanPass === '2343') {
+      if (cleanId === '2343' || cleanPass === '2343' || cleanId === 'usr-1' || cleanId === '9826189001') {
         matchedDbUser = {
           id: 'usr-1',
           name: 'Vaibhav Kaushik',
@@ -233,10 +233,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: 'admin',
           created_at: '2023-01-01T00:00:00.000Z',
           pin: '2343',
+          gender: 'male',
           address: 'मेन रोड, नया बस स्टैंड के पास, कांकेर (छ.ग.) - 494334',
         };
         localDb.updateUser('usr-1', { pin: '2343', name: 'Vaibhav Kaushik' });
       }
+    }
+
+    // 0.1 TRAINER MASTER PIN (8902 / 9002 / 8888) - Guaranteed Instant Match for Coach Vikram Sahu
+    if (!matchedDbUser && (cleanId === '8902' || cleanId === '9002' || cleanId === '8888' || cleanPass === '8902' || cleanPass === '9002' || cleanId === 'usr-2' || cleanId === '9826189002')) {
+      matchedDbUser = {
+        id: 'usr-2',
+        name: 'Vikram Sahu',
+        email: 'trainer@kaushikfitness.com',
+        phone: '9826189002',
+        password_hash: '$2a$12$trainerHashKanker2024',
+        role: 'trainer',
+        created_at: '2023-01-01T00:00:00.000Z',
+        pin: '8902',
+        gender: 'male',
+        address: 'वार्ड क्र. 12, उपनगर कॉलोनी, स्टेडियम रोड, कांकेर (छ.ग.) - 494334',
+      };
+      localDb.updateUser('usr-2', { pin: '8902', name: 'Vikram Sahu' });
+    }
+
+    // 0.2 MEMBER MASTER PIN (2222) - Guaranteed Instant Match for Rahul Sharma
+    if (!matchedDbUser && (cleanId === '2222' || cleanPass === '2222' || cleanId === 'usr-5' || cleanId === '9826112345')) {
+      matchedDbUser = {
+        id: 'usr-5',
+        name: 'Rahul Sharma',
+        email: 'rahul@kaushikfitness.com',
+        phone: '9826112345',
+        password_hash: '$2a$12$memberHashKanker2024',
+        role: 'member',
+        created_at: '2023-01-01T00:00:00.000Z',
+        pin: '2222',
+        gender: 'male',
+        address: 'कांकेर (छ.ग.)',
+      };
+      localDb.updateUser('usr-5', { pin: '2222', name: 'Rahul Sharma' });
     }
 
     if (!matchedDbUser) {
