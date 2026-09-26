@@ -400,8 +400,8 @@ export interface CustomDietPlan {
   id: string;
   memberId: string;
   memberName: string;
-  trainerId: string;
-  trainerName: string;
+  trainerId?: string;
+  trainerName?: string;
   updatedAt: string;
   dietType?: 'veg' | 'non_veg' | 'eggitarian';
   targetCalories: number;

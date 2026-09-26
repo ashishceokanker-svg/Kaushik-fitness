@@ -563,24 +563,28 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                   )}
                 </div>
 
-                {/* Trainer WhatsApp Direct Card */}
-                <div className="p-3.5 rounded-2xl bg-white border border-slate-200 flex items-center justify-between shadow-xs">
-                  <div>
-                    <span className="text-[10px] font-bold text-cyan-800 uppercase tracking-wide">जिम कोच (Trainer)</span>
-                    <div className="text-xs font-black text-slate-900">{member.assignedTrainerName || 'Coach Vikram Sahu'}</div>
-                    <div className="text-[10px] text-slate-500">सहायता हेतु तुरंत संपर्क करें</div>
-                  </div>
+                {/* Trainer WhatsApp Direct Card (Only shown when trainer is assigned) */}
+                {member.assignedTrainerName && (
+                  <div className="p-3.5 rounded-2xl bg-white border border-slate-200 flex items-center justify-between shadow-xs">
+                    <div>
+                      <span className="text-[10px] font-bold text-cyan-800 uppercase tracking-wide">जिम कोच (Trainer)</span>
+                      <div className="text-xs font-black text-slate-900">{member.assignedTrainerName}</div>
+                      <div className="text-[10px] text-slate-500">सहायता हेतु तुरंत संपर्क करें</div>
+                    </div>
 
-                  <a
-                    href="https://api.whatsapp.com/send?phone=919826189002"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    <span>WhatsApp</span>
-                  </a>
-                </div>
+                    <a
+                      href={`https://api.whatsapp.com/send?phone=919826189002&text=${encodeURIComponent(
+                        `Namaste ${member.assignedTrainerName}! Mera naam ${member.name} hai (KF Code: ${member.memberCode}). Mujhe workout/diet ke baare me poochna hai.`
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      <span>WhatsApp</span>
+                    </a>
+                  </div>
+                )}
               </div>
             )}
 

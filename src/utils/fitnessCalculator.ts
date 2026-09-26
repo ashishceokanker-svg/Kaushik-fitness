@@ -456,7 +456,7 @@ export interface AutoDietInput {
 }
 
 export function generateAutomaticCustomDiet(input: AutoDietInput): CustomDietPlan {
-  const { weightKg, heightCm, age, gender, goal, dietType, memberId, memberName, trainerId = 'usr-2', trainerName = 'Coach Vikram Sahu' } = input;
+  const { weightKg, heightCm, age, gender, goal, dietType, memberId, memberName, trainerId, trainerName } = input;
 
   // 1. Calculate BMR (Mifflin-St Jeor)
   const isFemale = gender === 'female';
@@ -710,7 +710,9 @@ export function generateAutomaticCustomDiet(input: AutoDietInput): CustomDietPla
     ];
   }
 
-  const notes = `व्यक्तिगत ट्रेनर निर्देश (${trainerName}):\n• यह डाइट चार्ट सदस्य के सटीक वजन (${weightKg} kg), बीएमआई व फिटनेस लक्ष्य (${goal.replace('_', ' ')}) के आधार पर दैनिक ${targetCalories} kcal और ${targetProtein}g प्रोटीन हेतु स्वचालित रूप से तैयार किया गया है।\n• प्रतिदिन 3.5 से 4 लीटर पानी अवश्य पिएं।\n• वर्कआउट के तुरंत बाद व्हे प्रोटीन शेक अवश्य लें।`;
+  const notes = trainerName
+    ? `व्यक्तिगत ट्रेनर निर्देश (${trainerName}):\n• यह डाइट चार्ट सदस्य के सटीक वजन (${weightKg} kg), बीएमआई व फिटनेस लक्ष्य (${goal.replace('_', ' ')}) के आधार पर दैनिक ${targetCalories} kcal और ${targetProtein}g प्रोटीन हेतु तैयार किया गया है।\n• प्रतिदिन 3.5 से 4 लीटर पानी अवश्य पिएं।\n• वर्कआउट के तुरंत बाद व्हे प्रोटीन शेक अवश्य लें।`
+    : `व्यक्तिगत पोषण निर्देश:\n• यह डाइट चार्ट सदस्य के सटीक वजन (${weightKg} kg), बीएमआई व फिटनेस लक्ष्य (${goal.replace('_', ' ')}) के आधार पर दैनिक ${targetCalories} kcal और ${targetProtein}g प्रोटीन हेतु स्वचालित रूप से तैयार किया गया है।\n• प्रतिदिन 3.5 से 4 लीटर पानी अवश्य पिएं।\n• वर्कआउट के तुरंत बाद व्हे प्रोटीन शेक अवश्य लें।`;
 
   return {
     id: `diet-${memberId}-${Date.now()}`,
@@ -744,8 +746,8 @@ export function generateAutomaticCustomWorkout(input: AutoWorkoutInput): CustomW
     memberName,
     goal,
     level = 'Intermediate',
-    trainerId = 'usr-2',
-    trainerName = 'Coach Vikram Sahu',
+    trainerId,
+    trainerName,
   } = input;
 
   const days = generateWorkoutRoutine(goal);
@@ -758,6 +760,10 @@ export function generateAutomaticCustomWorkout(input: AutoWorkoutInput): CustomW
     general_fitness: 'जनरल फिटनेस (Total Body Fitness)',
   };
 
+  const notes = trainerName
+    ? `कोच ${trainerName} द्वारा निर्धारित साप्ताहिक वर्कआउट रूटीन (${goalLabels[goal] || goal})। प्रत्येक एक्सरसाइज से पूर्व 5-7 मिनट वार्म-अप व स्ट्रेचिंग अनिवार्य है। प्रोग्रेसिव ओवरलोड का पालन करें।`
+    : `निर्धारित साप्ताहिक वर्कआउट रूटीन (${goalLabels[goal] || goal})। प्रत्येक एक्सरसाइज से पूर्व 5-7 मिनट वार्म-अप व स्ट्रेचिंग अनिवार्य है। प्रोग्रेसिव ओवरलोड का पालन करें।`;
+
   return {
     id: `workout-${memberId}-${Date.now()}`,
     memberId,
@@ -768,6 +774,6 @@ export function generateAutomaticCustomWorkout(input: AutoWorkoutInput): CustomW
     goal,
     level,
     days,
-    notes: `कोच ${trainerName} द्वारा स्वचालित निर्धारित साप्ताहिक वर्कआउट रूटीन (${goalLabels[goal] || goal})। प्रत्येक एक्सरसाइज से पूर्व 5-7 मिनट वार्म-अप व स्ट्रेचिंग अनिवार्य है। प्रोग्रेसिव ओवरलोड का पालन करें।`,
+    notes,
   };
 }

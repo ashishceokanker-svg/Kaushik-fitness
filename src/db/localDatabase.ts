@@ -300,6 +300,74 @@ class LocalGymDatabase {
 
         localStorage.setItem(CLEAN_MIGRATION_KEY, 'true');
       }
+
+      // V13 MIGRATION: Sanitize any non-PT member who got Coach Vikram Sahu auto-assigned
+      const CLEAN_MIGRATION_V13_KEY = 'kf_clean_v13_trainer_and_nav_fix';
+      if (localStorage.getItem(CLEAN_MIGRATION_V13_KEY) !== 'true') {
+        try {
+          const membershipsRaw = localStorage.getItem(DB_KEYS.MEMBERSHIPS);
+          if (membershipsRaw) {
+            const memberships: DbMembership[] = JSON.parse(membershipsRaw);
+            let changed = false;
+            memberships.forEach((m) => {
+              if (!m.is_personal_training) {
+                if (m.trainer_id || m.trainer_name) {
+                  m.trainer_id = undefined;
+                  m.trainer_name = undefined;
+                  changed = true;
+                }
+              }
+            });
+            if (changed) {
+              localStorage.setItem(DB_KEYS.MEMBERSHIPS, JSON.stringify(memberships));
+            }
+          }
+        } catch {}
+
+        try {
+          const workoutsRaw = localStorage.getItem(DB_KEYS.CUSTOM_WORKOUTS);
+          if (workoutsRaw) {
+            const workouts: any[] = JSON.parse(workoutsRaw);
+            let changed = false;
+            workouts.forEach((w) => {
+              if (w.trainerName?.includes('Vikram') || w.trainerId === 'usr-2') {
+                w.trainerName = undefined;
+                w.trainerId = undefined;
+                if (w.notes) {
+                  w.notes = w.notes.replace(/कोच (Coach )?Vikram Sahu द्वारा (स्वचालित )?निर्धारित/, 'निर्धारित');
+                }
+                changed = true;
+              }
+            });
+            if (changed) {
+              localStorage.setItem(DB_KEYS.CUSTOM_WORKOUTS, JSON.stringify(workouts));
+            }
+          }
+        } catch {}
+
+        try {
+          const dietsRaw = localStorage.getItem(DB_KEYS.CUSTOM_DIETS);
+          if (dietsRaw) {
+            const diets: any[] = JSON.parse(dietsRaw);
+            let changed = false;
+            diets.forEach((d) => {
+              if (d.trainerName?.includes('Vikram') || d.trainerId === 'usr-2') {
+                d.trainerName = undefined;
+                d.trainerId = undefined;
+                if (d.notes) {
+                  d.notes = d.notes.replace(/व्यक्तिगत ट्रेनर निर्देश \(.*?\):/, 'व्यक्तिगत पोषण निर्देश:');
+                }
+                changed = true;
+              }
+            });
+            if (changed) {
+              localStorage.setItem(DB_KEYS.CUSTOM_DIETS, JSON.stringify(diets));
+            }
+          }
+        } catch {}
+
+        localStorage.setItem(CLEAN_MIGRATION_V13_KEY, 'true');
+      }
     } catch (e) {
       console.warn('Local database migration notice:', e);
     }
@@ -646,8 +714,8 @@ class LocalGymDatabase {
         expiryDate: membership.expiry_date,
         personalTraining: membership.is_personal_training,
         ptDuration: membership.pt_duration,
-        assignedTrainerId: membership.trainer_id,
-        assignedTrainerName: trainer ? trainer.name : membership.trainer_name,
+        assignedTrainerId: membership.is_personal_training ? membership.trainer_id : undefined,
+        assignedTrainerName: membership.is_personal_training ? (trainer ? trainer.name : membership.trainer_name) : undefined,
         baseFee: membership.base_fee || 1200,
         ptFee: membership.pt_fee || 0,
         discountType: membership.discount_type || 'flat',

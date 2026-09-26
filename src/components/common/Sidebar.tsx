@@ -137,13 +137,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
 
     // MEMBER: Personal workout, diet, progress charts
-    return [
+    const isAdvanced = formMode === 'advanced';
+    const memberItems: NavItem[] = [
       { id: 'dashboard', label: 'My Fitness Portal', icon: LayoutDashboard },
       { id: 'progress', label: 'My Progress & PRs Chart', icon: Trophy, highlight: true },
       { id: 'body_index', label: 'Body Index & Changes', icon: Activity },
       { id: 'fitness', label: 'Workout & Diet Routine', icon: Dumbbell },
-      { id: 'attendance', label: '4-Digit PIN Pass', icon: KeyRound },
     ];
+
+    if (isAdvanced) {
+      memberItems.push({ id: 'attendance', label: '4-Digit PIN Pass', icon: KeyRound });
+    }
+
+    return memberItems;
   };
 
   const navItems = getNavItems();

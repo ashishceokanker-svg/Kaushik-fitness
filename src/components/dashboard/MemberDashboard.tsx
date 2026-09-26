@@ -596,37 +596,39 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
             </div>
           </div>
 
-          {/* Trainer Card with WhatsApp Help */}
-          <div className="p-5 rounded-2xl bg-gradient-to-r from-cyan-50 via-white to-cyan-50/50 border border-cyan-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex items-center gap-3.5">
-              <div className="w-13 h-13 rounded-2xl bg-cyan-100 border-2 border-cyan-300 flex items-center justify-center font-black text-cyan-800 text-lg shadow-sm">
-                PT
+          {/* Trainer Card with WhatsApp Help (Only shown when trainer is assigned) */}
+          {member.assignedTrainerName && (
+            <div className="p-5 rounded-2xl bg-gradient-to-r from-cyan-50 via-white to-cyan-50/50 border border-cyan-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-13 h-13 rounded-2xl bg-cyan-100 border-2 border-cyan-300 flex items-center justify-center font-black text-cyan-800 text-lg shadow-sm">
+                  PT
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-cyan-700">
+                    Aapke Personal Gym Trainer (Coaching)
+                  </span>
+                  <h3 className="text-base font-black text-slate-900">
+                    {member.assignedTrainerName}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {member.personalTraining ? `Package: ${PT_PRICING[member.ptDuration || '3_months']?.label || 'Personal Training'}` : 'Gym Floor Support Coach'}
+                  </p>
+                </div>
               </div>
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-cyan-700">
-                  Aapke Personal Gym Trainer (Coaching)
-                </span>
-                <h3 className="text-base font-black text-slate-900">
-                  {member.assignedTrainerName || 'Coach Vikram Sahu'}
-                </h3>
-                <p className="text-xs text-slate-500">
-                  {member.personalTraining ? `Package: ${PT_PRICING[member.ptDuration || '3_months']?.label}` : 'Gym Floor Support Coach'}
-                </p>
-              </div>
-            </div>
 
-            <a
-              href={`https://api.whatsapp.com/send?phone=919826189002&text=${encodeURIComponent(
-                `Namaste Coach Vikram! Mera naam ${member.name} hai (KF Code: ${member.memberCode}). Mujhe workout/diet ke baare me poochna hai.`
-              )}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
-            >
-              <MessageSquare className="w-4 h-4" />
-              WhatsApp Par Coach Se Baat Karein
-            </a>
-          </div>
+              <a
+                href={`https://api.whatsapp.com/send?phone=919826189002&text=${encodeURIComponent(
+                  `Namaste ${member.assignedTrainerName}! Mera naam ${member.name} hai (KF Code: ${member.memberCode}). Mujhe workout/diet ke baare me poochna hai.`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
+              >
+                <MessageSquare className="w-4 h-4" />
+                WhatsApp Par Coach Se Baat Karein
+              </a>
+            </div>
+          )}
 
           {/* Today's Workout Sneak Peek */}
           <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
@@ -781,7 +783,7 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
       {/* TAB 3: DIET (Meal-by-Meal High Protein Food) */}
       {activeTab === 'diet' && (
         <div className="space-y-4">
-          {customDiet ? (
+          {customDiet && customDiet.trainerName ? (
             <div className="p-4 rounded-2xl bg-cyan-50 border border-cyan-200 text-xs text-cyan-950 flex flex-col sm:flex-row justify-between sm:items-center gap-2 shadow-sm">
               <div>
                 <div className="font-black text-sm text-cyan-900 flex items-center gap-2">
