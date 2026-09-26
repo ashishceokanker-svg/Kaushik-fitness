@@ -286,6 +286,7 @@ export interface User {
   staffId?: string;
   token?: string;
   address?: string;
+  pin?: string;
 }
 
 export interface AttendanceRecord {

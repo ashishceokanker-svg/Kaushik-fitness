@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGymData } from '../../context/GymDataContext';
 import { useAuth } from '../../context/AuthContext';
 import { formatINR, formatDate, MEMBERSHIP_PRICING, PT_PRICING } from '../../utils/formatters';
@@ -9,6 +9,7 @@ import { BodyIndexTracker } from '../members/BodyIndexTracker';
 import { generateWorkoutRoutine, generateDietPlan } from '../../utils/fitnessCalculator';
 import { localDb } from '../../db/localDatabase';
 import { CustomDietPlan } from '../../types';
+import confetti from 'canvas-confetti';
 import {
   User,
   Clock,
@@ -36,6 +37,8 @@ import {
   Edit3,
   Ruler,
   X,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 interface MemberDashboardProps {
@@ -43,8 +46,21 @@ interface MemberDashboardProps {
 }
 
 export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, updateCurrentUserProfile } = useAuth();
   const { members, updateMember } = useGymData();
+
+  // Form Mode (Simple vs Advanced)
+  const [formMode, setFormMode] = useState<'simple' | 'advanced'>(() => localDb.getFormMode());
+  useEffect(() => {
+    const handleModeChange = () => setFormMode(localDb.getFormMode());
+    window.addEventListener('kf_form_mode_change', handleModeChange);
+    window.addEventListener('storage', handleModeChange);
+    return () => {
+      window.removeEventListener('kf_form_mode_change', handleModeChange);
+      window.removeEventListener('storage', handleModeChange);
+    };
+  }, []);
+  const isAdvanced = formMode === 'advanced';
 
   const fallbackMember: any = {
     id: currentUser?.memberId || 'mem-1',
@@ -63,12 +79,13 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
     bmi: 23.7,
     active: true,
     status: 'active',
+    pin: currentUser?.pin || '2222',
   };
 
   // Find active member info
   const member =
     (members && members.length > 0
-      ? members.find((m) => m.id === currentUser?.memberId) || members[0]
+      ? members.find((m) => m.id === currentUser?.memberId || m.userId === currentUser?.id || (currentUser?.phone && m.phone === currentUser?.phone)) || members[0]
       : null) || fallbackMember;
 
   const isMemberExpired = member?.expiryDate
@@ -79,6 +96,63 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [completedExercises, setCompletedExercises] = useState<Record<string, boolean>>({});
   const [selectedWorkoutDay, setSelectedWorkoutDay] = useState<number>(0);
+
+  // Change PIN State
+  const [isChangePinModalOpen, setIsChangePinModalOpen] = useState(false);
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [showPin, setShowPin] = useState(false);
+  const [pinError, setPinError] = useState<string | null>(null);
+  const [pinSuccessToast, setPinSuccessToast] = useState<string | null>(null);
+  const [isSubmittingPin, setIsSubmittingPin] = useState(false);
+
+  const handleSaveNewPin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPinError(null);
+    const p1 = newPin.trim();
+    const p2 = confirmPin.trim();
+
+    if (!p1 || p1.length !== 4 || !/^\d{4}$/.test(p1)) {
+      setPinError('कृपया ठीक 4 अंकों का संख्यात्मक पिन दर्ज करें (उदा. 3482)');
+      return;
+    }
+    if (p1 !== p2) {
+      setPinError('पुष्टि किया गया पिन मेल नहीं खाता। कृपया दोनों बॉक्स में एक ही पिन दर्ज करें।');
+      return;
+    }
+
+    setIsSubmittingPin(true);
+    try {
+      // 1. Update member in GymDataContext
+      updateMember(member.id, { pin: p1 });
+
+      // 2. Update user in local database
+      const userId = member.userId || currentUser?.id;
+      if (userId) {
+        localDb.updateUser(userId, { pin: p1 });
+      }
+
+      // 3. Update current user in AuthContext
+      updateCurrentUserProfile({ pin: p1 });
+
+      // 4. Confetti and toast
+      try {
+        confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
+      } catch {}
+
+      setPinSuccessToast(`✅ आपका 4-अंकीय पिन सफलतापूर्वक बदल गया है! नया पिन: ${p1}`);
+      setTimeout(() => {
+        setIsChangePinModalOpen(false);
+        setPinSuccessToast(null);
+        setNewPin('');
+        setConfirmPin('');
+      }, 2200);
+    } catch (err: any) {
+      setPinError('पिन अपडेट करने में विफल रहा। कृपया पुनः प्रयास करें।');
+    } finally {
+      setIsSubmittingPin(false);
+    }
+  };
 
   // Editable Physical Stats State (Height, Weight, Target Weight)
   const [isEditStatsModalOpen, setIsEditStatsModalOpen] = useState(false);
@@ -235,6 +309,21 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
             </button>
 
             <button
+              onClick={() => {
+                setPinError(null);
+                setPinSuccessToast(null);
+                setNewPin('');
+                setConfirmPin('');
+                setIsChangePinModalOpen(true);
+              }}
+              className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase shadow-sm transition-all cursor-pointer"
+              title="अपना 4-अंकीय कियोस्क व लॉगिन पिन बदलें"
+            >
+              <KeyRound className="w-4 h-4 text-slate-950" />
+              पिन बदलें (Change PIN)
+            </button>
+
+            <button
               onClick={() => setActiveTab('body_index')}
               className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase shadow-sm transition-all cursor-pointer"
             >
@@ -242,13 +331,15 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
               4-साइड फोटो व नाप (Photos)
             </button>
 
-            <button
-              onClick={() => setIsInvoiceOpen(true)}
-              className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs border border-slate-300 shadow-sm transition-all cursor-pointer"
-            >
-              <Receipt className="w-4 h-4 text-amber-600" />
-              Receipt / Bill
-            </button>
+            {isAdvanced && (
+              <button
+                onClick={() => setIsInvoiceOpen(true)}
+                className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs border border-slate-300 shadow-sm transition-all cursor-pointer"
+              >
+                <Receipt className="w-4 h-4 text-amber-600" />
+                Receipt / Bill
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -341,17 +432,19 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
           <span>Body Index (बदलाव)</span>
         </button>
 
-        <button
-          onClick={() => setActiveTab('receipt')}
-          className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            activeTab === 'receipt'
-              ? 'bg-white text-amber-800 shadow-sm border border-slate-200/80 font-black'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-          }`}
-        >
-          <Receipt className="w-4 h-4 text-amber-600" />
-          <span>Fees (फीस)</span>
-        </button>
+        {isAdvanced && (
+          <button
+            onClick={() => setActiveTab('receipt')}
+            className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              activeTab === 'receipt'
+                ? 'bg-white text-amber-800 shadow-sm border border-slate-200/80 font-black'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+            }`}
+          >
+            <Receipt className="w-4 h-4 text-amber-600" />
+            <span>Fees (फीस)</span>
+          </button>
+        )}
 
         <button
           onClick={() => setActiveTab('3d')}
@@ -795,6 +888,22 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
                   Verified Active Membership Pass
                 </span>
               )}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPinError(null);
+                    setPinSuccessToast(null);
+                    setNewPin('');
+                    setConfirmPin('');
+                    setIsChangePinModalOpen(true);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer mx-auto active:scale-95"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>पिन बदलें (Change 4-Digit PIN)</span>
+                </button>
+              </div>
             </div>
 
             <div className="p-3.5 bg-slate-100 rounded-xl border border-slate-200 text-xs text-slate-600 space-y-1">
@@ -815,7 +924,7 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
       )}
 
       {/* TAB 5: FEES & RECEIPT */}
-      {activeTab === 'receipt' && (
+      {isAdvanced && activeTab === 'receipt' && (
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-4 border-b border-slate-100 gap-2">
             <div>
@@ -1011,6 +1120,160 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
                 >
                   <CheckCircle2 className="w-4 h-4 text-slate-950" />
                   <span>माप सेव करें</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MEMBER CHANGE SECURITY PIN MODAL */}
+      {isChangePinModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full shadow-2xl overflow-hidden animate-scale-up my-8">
+            <div className="bg-gradient-to-r from-amber-500 via-amber-600 to-slate-900 text-white p-5 flex justify-between items-center shadow-sm">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/25 shadow-xs">
+                  <KeyRound className="w-5 h-5 text-amber-200" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">सुरक्षा पिन बदलें (Change PIN)</h3>
+                  <p className="text-[11px] text-amber-100">जिम प्रवेश व ऐप हेतु नया 4-अंकीय पिन</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsChangePinModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center cursor-pointer transition-colors"
+                title="बंद करें"
+              >
+                <X className="w-4 h-4 stroke-[2.5]" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveNewPin} className="p-6 space-y-4">
+              {/* Current PIN Info */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    वर्तमान सक्रिय पिन (Current PIN)
+                  </div>
+                  <div className="text-xs text-slate-700 font-bold mt-0.5">
+                    {member.name} ({member.memberCode})
+                  </div>
+                </div>
+                <div className="px-3 py-1.5 rounded-xl bg-cyan-50 border border-cyan-200 font-mono font-black text-cyan-800 text-base">
+                  {member.pin || currentUser?.pin || '••••'}
+                </div>
+              </div>
+
+              {/* Feedback messages */}
+              {pinError && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{pinError}</span>
+                </div>
+              )}
+
+              {pinSuccessToast && (
+                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{pinSuccessToast}</span>
+                </div>
+              )}
+
+              {/* New PIN Input */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-slate-800 flex items-center justify-between">
+                  <span>नया 4-अंकीय पिन (New 4-Digit PIN) *</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowPin(!showPin)}
+                    className="text-[11px] font-bold text-amber-700 hover:text-amber-800 flex items-center gap-1 cursor-pointer"
+                  >
+                    {showPin ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    <span>{showPin ? 'छुपाएं' : 'दिखाएं'}</span>
+                  </button>
+                </label>
+                <input
+                  type={showPin ? 'text' : 'password'}
+                  maxLength={4}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={newPin}
+                  onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  placeholder="••••"
+                  className="w-full text-center tracking-[0.8em] text-2xl font-mono font-black py-2.5 px-4 bg-slate-50 border-2 border-slate-300 rounded-2xl focus:outline-none focus:border-amber-500 text-slate-900 shadow-inner"
+                  autoFocus
+                />
+              </div>
+
+              {/* Confirm New PIN Input */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-slate-800">
+                  नया पिन दोबारा दर्ज करें (Confirm New PIN) *
+                </label>
+                <input
+                  type={showPin ? 'text' : 'password'}
+                  maxLength={4}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={confirmPin}
+                  onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  placeholder="••••"
+                  className="w-full text-center tracking-[0.8em] text-2xl font-mono font-black py-2.5 px-4 bg-slate-50 border-2 border-slate-300 rounded-2xl focus:outline-none focus:border-amber-500 text-slate-900 shadow-inner"
+                />
+              </div>
+
+              {/* On-screen touch keypad for mobile convenience */}
+              <div className="pt-1">
+                <div className="grid grid-cols-3 gap-1.5">
+                  {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map((k) => (
+                    <button
+                      type="button"
+                      key={k}
+                      onClick={() => {
+                        if (k === 'C') {
+                          if (newPin.length < 4) setNewPin('');
+                          else setConfirmPin('');
+                        } else if (k === '⌫') {
+                          if (confirmPin.length > 0) setConfirmPin((p) => p.slice(0, -1));
+                          else setNewPin((p) => p.slice(0, -1));
+                        } else {
+                          if (newPin.length < 4) setNewPin((p) => p + k);
+                          else if (confirmPin.length < 4) setConfirmPin((p) => p + k);
+                        }
+                      }}
+                      className={`h-9 font-mono font-bold text-base rounded-xl flex items-center justify-center transition-all cursor-pointer shadow-2xs active:scale-95 ${
+                        k === 'C'
+                          ? 'bg-rose-100 hover:bg-rose-200 text-rose-800'
+                          : k === '⌫'
+                          ? 'bg-slate-200 hover:bg-slate-300 text-slate-800'
+                          : 'bg-white hover:bg-slate-100 text-slate-900 border border-slate-200'
+                      }`}
+                    >
+                      {k}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsChangePinModalOpen(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+                >
+                  रद्द करें (Cancel)
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingPin || newPin.length !== 4 || confirmPin.length !== 4}
+                  className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>{isSubmittingPin ? 'सुरक्षित हो रहा है...' : 'पिन सुरक्षित करें'}</span>
                 </button>
               </div>
             </form>

@@ -425,6 +425,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       memberId: linkedProfile ? linkedProfile.id : (matchedDbUser.id.startsWith('prof-') ? matchedDbUser.id : undefined),
       staffId: matchedDbUser.role !== 'member' ? matchedDbUser.id : undefined,
       token: mockJwt,
+      pin: matchedDbUser.pin,
     };
 
     setCurrentUser(userObj);
@@ -523,7 +524,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           phone: updated.phone,
           avatar_url: updated.avatarUrl,
           address: updated.address,
+          ...(updated.pin ? { pin: updated.pin } : {}),
         });
+        if (isFirebaseConfigured()) {
+          try {
+            const { db } = getFirebaseInstance();
+            if (db) {
+              setDoc(doc(db, FIRESTORE_COLLECTIONS.USERS, updated.id), {
+                name: updated.name,
+                phone: updated.phone,
+                ...(updated.pin ? { pin: updated.pin } : {}),
+              }, { merge: true }).catch(() => {});
+            }
+          } catch {}
+        }
       } catch (err) {
         console.warn('Failed to persist user profile update:', err);
       }

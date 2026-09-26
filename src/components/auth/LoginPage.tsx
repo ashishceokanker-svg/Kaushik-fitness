@@ -32,6 +32,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
     distance: string;
   } | null>(null);
 
+  const [formMode, setFormMode] = useState<'simple' | 'advanced'>(() => localDb.getFormMode());
+
+  useEffect(() => {
+    const handleModeChange = () => setFormMode(localDb.getFormMode());
+    window.addEventListener('kf_form_mode_change', handleModeChange);
+    window.addEventListener('storage', handleModeChange);
+    return () => {
+      window.removeEventListener('kf_form_mode_change', handleModeChange);
+      window.removeEventListener('storage', handleModeChange);
+    };
+  }, []);
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   const geofenceSettings = localDb.getGeofenceSettings();
@@ -239,7 +251,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
               </button>
             )}
 
-            {onOpenEnquiry && (
+            {onOpenEnquiry && formMode === 'advanced' && (
               <button
                 onClick={onOpenEnquiry}
                 className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg sm:rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold transition-all shadow-xs cursor-pointer"
@@ -406,18 +418,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
                 </button>
               </div>
             )}
-
-            {/* PIN 1111 Self-Registration Prompt */}
-            <div className="pt-2 text-center border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setShowSelfRegisterModal(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-xs border border-amber-300 transition-all cursor-pointer shadow-2xs hover:shadow-xs active:scale-95"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-700" />
-                <span>नया सदस्य? <b>PIN: 1111</b> दर्ज करें या यहाँ क्लिक करें</span>
-              </button>
-            </div>
           </div>
 
           {/* Card Footer Bar */}

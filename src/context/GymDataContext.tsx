@@ -533,6 +533,14 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     localDb.upsertMemberFromCloud({ id, ...data });
     syncDocToFirestore(FIRESTORE_COLLECTIONS.MEMBERSHIPS, id, data);
     syncDocToFirestore(FIRESTORE_COLLECTIONS.MEMBER_PROFILES, id, data);
+    if (data.pin) {
+      const existingMember = members.find((m) => m.id === id || m.userId === id);
+      const userId = existingMember?.userId;
+      if (userId) {
+        localDb.updateUser(userId, { pin: data.pin });
+        syncDocToFirestore(FIRESTORE_COLLECTIONS.USERS, userId, { pin: data.pin });
+      }
+    }
   };
 
   const deleteMember = (id: string) => {

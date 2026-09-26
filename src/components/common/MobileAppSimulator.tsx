@@ -104,6 +104,18 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
   const [isHelpdeskOpen, setIsHelpdeskOpen] = useState(false);
   const [completedExercises, setCompletedExercises] = useState<Record<string, boolean>>({});
 
+  const [formMode, setFormMode] = useState<'simple' | 'advanced'>(() => localDb.getFormMode());
+  useEffect(() => {
+    const handleModeChange = () => setFormMode(localDb.getFormMode());
+    window.addEventListener('kf_form_mode_change', handleModeChange);
+    window.addEventListener('storage', handleModeChange);
+    return () => {
+      window.removeEventListener('kf_form_mode_change', handleModeChange);
+      window.removeEventListener('storage', handleModeChange);
+    };
+  }, []);
+  const isAdvanced = formMode === 'advanced';
+
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     const handleResize = () => {
@@ -445,14 +457,16 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                     <div className="text-[10px] text-slate-500">डाइट चार्ट व कैलोरी</div>
                   </button>
 
-                  <button
-                    onClick={() => setMobileTab('profile')}
-                    className="p-3 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-left active:scale-95 transition-all shadow-xs cursor-pointer"
-                  >
-                    <Receipt className="w-5 h-5 text-amber-600 mb-1.5" />
-                    <div className="font-black text-xs text-slate-900">Fees & Bill</div>
-                    <div className="text-[10px] text-slate-500">रसीद / इनवॉइस</div>
-                  </button>
+                  {isAdvanced && (
+                    <button
+                      onClick={() => setMobileTab('profile')}
+                      className="p-3 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-left active:scale-95 transition-all shadow-xs cursor-pointer"
+                    >
+                      <Receipt className="w-5 h-5 text-amber-600 mb-1.5" />
+                      <div className="font-black text-xs text-slate-900">Fees & Bill</div>
+                      <div className="text-[10px] text-slate-500">रसीद / इनवॉइस</div>
+                    </button>
+                  )}
                 </div>
 
                 {/* Trainer WhatsApp Direct Card */}
@@ -660,13 +674,15 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                     <strong className="text-emerald-700 uppercase font-bold">Paid in Full (पूरा जमा)</strong>
                   </div>
 
-                  <button
-                    onClick={() => setSelectedInvoice(true)}
-                    className="w-full mt-3 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm hover:brightness-105 transition-all cursor-pointer"
-                  >
-                    <Receipt className="w-3.5 h-3.5" />
-                    Tax Receipt / Bill Download
-                  </button>
+                  {isAdvanced && (
+                    <button
+                      onClick={() => setSelectedInvoice(true)}
+                      className="w-full mt-3 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm hover:brightness-105 transition-all cursor-pointer"
+                    >
+                      <Receipt className="w-3.5 h-3.5" />
+                      Tax Receipt / Bill Download
+                    </button>
+                  )}
 
                   {/* Helpdesk & App User Guide Card */}
                   <div className="mt-3 p-3.5 rounded-2xl bg-gradient-to-br from-amber-50 via-orange-50/40 to-white border border-amber-200 shadow-2xs space-y-2 text-left">
