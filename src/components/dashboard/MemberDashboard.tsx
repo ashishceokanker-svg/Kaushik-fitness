@@ -33,6 +33,9 @@ import {
   Droplets,
   Check,
   Lock,
+  Edit3,
+  Ruler,
+  X,
 } from 'lucide-react';
 
 interface MemberDashboardProps {
@@ -41,7 +44,7 @@ interface MemberDashboardProps {
 
 export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) => {
   const { currentUser } = useAuth();
-  const { members } = useGymData();
+  const { members, updateMember } = useGymData();
 
   const fallbackMember: any = {
     id: currentUser?.memberId || 'mem-1',
@@ -54,6 +57,10 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
     joinDate: new Date().toISOString().split('T')[0],
     expiryDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
     fitnessGoal: 'muscle_building',
+    heightCm: 172,
+    weightKg: 70,
+    targetWeightKg: 75,
+    bmi: 23.7,
     active: true,
     status: 'active',
   };
@@ -72,6 +79,40 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [completedExercises, setCompletedExercises] = useState<Record<string, boolean>>({});
   const [selectedWorkoutDay, setSelectedWorkoutDay] = useState<number>(0);
+
+  // Editable Physical Stats State (Height, Weight, Target Weight)
+  const [isEditStatsModalOpen, setIsEditStatsModalOpen] = useState(false);
+  const [editHeight, setEditHeight] = useState<number>(() => member?.heightCm || 172);
+  const [editWeight, setEditWeight] = useState<number>(() => member?.weightKg || 70);
+  const [editTargetWeight, setEditTargetWeight] = useState<number>(() => member?.targetWeightKg || 75);
+  const [statsSavedToast, setStatsSavedToast] = useState<string | null>(null);
+
+  const handleOpenEditStats = () => {
+    setEditHeight(member?.heightCm || 172);
+    setEditWeight(member?.weightKg || 70);
+    setEditTargetWeight(member?.targetWeightKg || 75);
+    setIsEditStatsModalOpen(true);
+  };
+
+  const handleSaveMemberStats = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!member?.id) return;
+    const h = Number(editHeight) || 172;
+    const w = Number(editWeight) || 70;
+    const tw = Number(editTargetWeight) || 75;
+    const newBmi = Number((w / Math.pow(h / 100, 2)).toFixed(1));
+
+    updateMember(member.id, {
+      heightCm: h,
+      weightKg: w,
+      targetWeightKg: tw,
+      bmi: newBmi,
+    });
+
+    setIsEditStatsModalOpen(false);
+    setStatsSavedToast(`✅ शारीरिक माप (ऊंचाई: ${h}cm, वर्तमान वजन: ${w}kg, लक्ष्य वजन: ${tw}kg) सफलतापूर्वक अपडेट हो गया!`);
+    setTimeout(() => setStatsSavedToast(null), 4500);
+  };
 
   // Pre-generate custom workouts and diet
   const customWorkout = member?.id ? localDb.getMemberWorkout(member.id) : undefined;
@@ -328,61 +369,130 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
       {/* TAB 1: HOME (Simple, Visual, Friendly) */}
       {activeTab === 'home' && (
         <div className="space-y-6">
-          {/* Quick Member Stat Cards in Clean Light Colors */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Weight */}
-            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between">
-              <div className="flex justify-between items-start">
-                <span className="text-xs uppercase font-bold text-slate-500">Current Weight</span>
-                <Scale className="w-4 h-4 text-amber-500" />
+          {/* TOAST ON MEASUREMENT UPDATE */}
+          {statsSavedToast && (
+            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-bold flex items-center justify-between animate-in fade-in shadow-xs">
+              <div className="flex items-center gap-2.5">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                <span>{statsSavedToast}</span>
               </div>
-              <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono mt-1">
-                {member.weightKg} <span className="text-xs font-normal text-slate-400">kg</span>
+              <button
+                type="button"
+                onClick={() => setStatsSavedToast(null)}
+                className="text-emerald-700 hover:text-emerald-950 font-bold text-xs cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* PHYSICAL MEASUREMENTS HERO BANNER & STATS */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shadow-xs shrink-0">
+                  <Scale className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
+                    शारीरिक माप एवं फिटनेस लक्ष्य (Physical Stats: Height, Weight & Target)
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    आपकी ऊंचाई, वर्तमान वजन, लक्ष्य वजन और बीएमआई का लाइव व्यक्तिगत ट्रैकर
+                  </p>
+                </div>
               </div>
-              <div className="text-[11px] text-cyan-700 mt-1 font-medium">
-                Goal: {member.targetWeightKg || 80} kg
-              </div>
+
+              {/* Edit Measurements Action Button */}
+              <button
+                type="button"
+                onClick={handleOpenEditStats}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-sm transition-all flex items-center gap-2 cursor-pointer hover:scale-[1.02] active:scale-98"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-slate-950" />
+                <span>ऊंचाई व वजन बदलें / अपडेट करें</span>
+              </button>
             </div>
 
-            {/* Fitness Level */}
-            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between">
-              <div className="flex justify-between items-start">
-                <span className="text-xs uppercase font-bold text-slate-500">Fitness Level</span>
-                <Zap className="w-4 h-4 text-cyan-600" />
+            {/* 4 Stat Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              {/* 1. Height */}
+              <div
+                onClick={handleOpenEditStats}
+                className="p-4 rounded-2xl bg-gradient-to-br from-cyan-50/60 to-white border border-cyan-200/80 shadow-xs flex flex-col justify-between hover:border-cyan-400 transition-all cursor-pointer group"
+                title="ऊंचाई बदलने के लिए क्लिक करें"
+              >
+                <div className="flex justify-between items-start">
+                  <span className="text-[11px] uppercase font-bold text-slate-500">ऊंचाई (Height)</span>
+                  <Ruler className="w-4 h-4 text-cyan-600 group-hover:scale-110 transition-transform" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono mt-1">
+                  {member.heightCm || 172} <span className="text-xs font-normal text-slate-400">cm</span>
+                </div>
+                <div className="text-[11px] text-cyan-700 mt-1 font-semibold flex items-center justify-between">
+                  <span>~{((member.heightCm || 172) / 30.48).toFixed(1)} Feet</span>
+                  <span className="text-[10px] text-slate-400 group-hover:text-cyan-700">✏️ बदलें</span>
+                </div>
               </div>
-              <div className="text-2xl sm:text-3xl font-black text-cyan-700 mt-1">
-                {member.fitnessLevel || 'Athletic'}
-              </div>
-              <div className="text-[11px] text-emerald-700 mt-1 font-medium">
-                Score: {member.fitnessScore || 78}/100 • BMI {member.bmi || 24.6}
-              </div>
-            </div>
 
-            {/* Daily Diet Calories */}
-            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between">
-              <div className="flex justify-between items-start">
-                <span className="text-xs uppercase font-bold text-slate-500">Daily Calories</span>
-                <Flame className="w-4 h-4 text-orange-500" />
+              {/* 2. Current Weight */}
+              <div
+                onClick={handleOpenEditStats}
+                className="p-4 rounded-2xl bg-gradient-to-br from-amber-50/60 to-white border border-amber-200/80 shadow-xs flex flex-col justify-between hover:border-amber-400 transition-all cursor-pointer group"
+                title="वर्तमान वजन बदलने के लिए क्लिक करें"
+              >
+                <div className="flex justify-between items-start">
+                  <span className="text-[11px] uppercase font-bold text-slate-500">वर्तमान वजन (Wt)</span>
+                  <Scale className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono mt-1">
+                  {member.weightKg} <span className="text-xs font-normal text-slate-400">kg</span>
+                </div>
+                <div className="text-[11px] text-amber-800 mt-1 font-semibold flex items-center justify-between">
+                  <span>BMI: {member.bmi || (member.heightCm ? (member.weightKg / Math.pow(member.heightCm / 100, 2)).toFixed(1) : 24.6)}</span>
+                  <span className="text-[10px] text-slate-400 group-hover:text-amber-700">✏️ बदलें</span>
+                </div>
               </div>
-              <div className="text-2xl sm:text-3xl font-black text-amber-600 font-mono mt-1">
-                {member.targetDailyCalories || 2850} <span className="text-xs font-normal text-slate-400">kcal</span>
-              </div>
-              <div className="text-[11px] text-slate-500 mt-1 font-medium">
-                High Protein Meal Plan
-              </div>
-            </div>
 
-            {/* Hydration */}
-            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between">
-              <div className="flex justify-between items-start">
-                <span className="text-xs uppercase font-bold text-slate-500">Water Goal</span>
-                <Droplets className="w-4 h-4 text-blue-500" />
+              {/* 3. Target Weight */}
+              <div
+                onClick={handleOpenEditStats}
+                className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50/60 to-white border border-emerald-200/80 shadow-xs flex flex-col justify-between hover:border-emerald-400 transition-all cursor-pointer group"
+                title="लक्ष्य वजन बदलने के लिए क्लिक करें"
+              >
+                <div className="flex justify-between items-start">
+                  <span className="text-[11px] uppercase font-bold text-slate-500">लक्ष्य वजन (Target)</span>
+                  <Award className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-emerald-700 font-mono mt-1">
+                  {member.targetWeightKg || 75} <span className="text-xs font-normal text-slate-400">kg</span>
+                </div>
+                <div className="text-[11px] text-emerald-800 mt-1 font-semibold flex items-center justify-between">
+                  <span>
+                    {member.targetWeightKg
+                      ? member.weightKg > member.targetWeightKg
+                        ? `${(member.weightKg - member.targetWeightKg).toFixed(1)} kg घटाना है`
+                        : member.weightKg < member.targetWeightKg
+                        ? `${(member.targetWeightKg - member.weightKg).toFixed(1)} kg बढ़ाना है`
+                        : 'लक्ष्य हासिल! 🎉'
+                      : 'फिटनेस गोल'}
+                  </span>
+                  <span className="text-[10px] text-slate-400 group-hover:text-emerald-700">✏️ बदलें</span>
+                </div>
               </div>
-              <div className="text-2xl sm:text-3xl font-black text-blue-600 font-mono mt-1">
-                3.5 <span className="text-xs font-normal text-slate-400">Liters</span>
-              </div>
-              <div className="text-[11px] text-slate-500 mt-1 font-medium">
-                ~14 Glasses Daily
+
+              {/* 4. Daily Calories */}
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-50/60 to-white border border-orange-200/80 shadow-xs flex flex-col justify-between">
+                <div className="flex justify-between items-start">
+                  <span className="text-[11px] uppercase font-bold text-slate-500">दैनिक कैलोरी</span>
+                  <Flame className="w-4 h-4 text-orange-500" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-amber-600 font-mono mt-1">
+                  {member.targetDailyCalories || 2850} <span className="text-xs font-normal text-slate-400">kcal</span>
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1 font-medium">
+                  {member.fitnessGoal?.replace('_', ' ') || 'High Protein Plan'}
+                </div>
               </div>
             </div>
           </div>
@@ -785,6 +895,127 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
       {/* Printable Receipt Invoice Modal */}
       {isInvoiceOpen && (
         <InvoiceModal member={member} onClose={() => setIsInvoiceOpen(false)} />
+      )}
+
+      {/* MEMBER EDIT STATS MODAL (Height, Current Wt, Target Wt) */}
+      {isEditStatsModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full shadow-2xl overflow-hidden animate-in fade-in my-8">
+            <div className="bg-slate-900 text-white p-5 flex justify-between items-center">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                  <Scale className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">शारीरिक माप अपडेट करें</h3>
+                  <p className="text-xs text-slate-400">ऊंचाई, वर्तमान वजन एवं लक्ष्य वजन सेट करें</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditStatsModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center cursor-pointer transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveMemberStats} className="p-6 space-y-4">
+              {/* Height cm */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  ऊंचाई (Height cm) *
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="100"
+                    max="250"
+                    required
+                    value={editHeight}
+                    onChange={(e) => setEditHeight(Number(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                  <span className="absolute right-3.5 top-3 text-xs text-slate-400 font-semibold">cm</span>
+                </div>
+                <span className="text-[11px] text-slate-500 mt-1 block">
+                  ~{((editHeight || 172) / 30.48).toFixed(1)} Feet
+                </span>
+              </div>
+
+              {/* Current Weight kg */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  वर्तमान वजन (Current Weight kg) *
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="30"
+                    max="250"
+                    step="0.5"
+                    required
+                    value={editWeight}
+                    onChange={(e) => setEditWeight(Number(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                  <span className="absolute right-3.5 top-3 text-xs text-slate-400 font-semibold">kg</span>
+                </div>
+              </div>
+
+              {/* Target Weight kg */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  लक्ष्य वजन (Target Weight kg) *
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="30"
+                    max="250"
+                    step="0.5"
+                    required
+                    value={editTargetWeight}
+                    onChange={(e) => setEditTargetWeight(Number(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                  <span className="absolute right-3.5 top-3 text-xs text-slate-400 font-semibold">kg</span>
+                </div>
+                <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 mt-2 font-medium">
+                  {editWeight && editTargetWeight ? (
+                    editWeight > editTargetWeight ? (
+                      <span>🎯 <b>{(editWeight - editTargetWeight).toFixed(1)} kg</b> फैट लॉस / वजन घटाने का लक्ष्य</span>
+                    ) : editWeight < editTargetWeight ? (
+                      <span>🎯 <b>{(editTargetWeight - editWeight).toFixed(1)} kg</b> मसल गेन / वजन बढ़ाने का लक्ष्य</span>
+                    ) : (
+                      <span>🎯 आप बिल्कुल अपने लक्ष्य वजन पर हैं!</span>
+                    )
+                  ) : null}
+                  <div className="text-[11px] text-slate-600 mt-0.5">
+                    अनुमानित बीएमआई (BMI): <b>{(editWeight / Math.pow(editHeight / 100, 2)).toFixed(1)}</b>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-200 flex justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setIsEditStatsModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                >
+                  रद्द करें
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-950 text-xs font-black uppercase tracking-wider shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-slate-950" />
+                  <span>माप सेव करें</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

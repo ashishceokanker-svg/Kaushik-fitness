@@ -16,6 +16,8 @@ import {
   Clock,
   Dumbbell,
   CheckCircle2,
+  Scale,
+  Ruler,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { LiveCameraModal } from '../common/LiveCameraModal';
@@ -45,6 +47,7 @@ export const MemberSelfRegisterModal: React.FC<MemberSelfRegisterModalProps> = (
   const [gender, setGender] = useState<Gender>('male');
   const [heightCm, setHeightCm] = useState<number>(172);
   const [weightKg, setWeightKg] = useState<number>(70);
+  const [targetWeightKg, setTargetWeightKg] = useState<number>(68);
   const [fitnessGoal, setFitnessGoal] = useState<FitnessGoal>('muscle_building');
   const [emergencyContact, setEmergencyContact] = useState('');
   const [workoutSlot, setWorkoutSlot] = useState<string>('06:00 AM - 07:00 AM');
@@ -120,8 +123,10 @@ export const MemberSelfRegisterModal: React.FC<MemberSelfRegisterModalProps> = (
         email: `${phone.trim()}@kaushikfitness.com`,
         age,
         gender,
-        heightCm,
-        weightKg,
+        heightCm: Number(heightCm) || 172,
+        weightKg: Number(weightKg) || 70,
+        targetWeightKg: Number(targetWeightKg) || 68,
+        bmi: Number((Number(weightKg) / Math.pow((Number(heightCm) || 172) / 100, 2)).toFixed(1)),
         emergencyContact: emergencyContact.trim(),
         joiningDate,
         membershipDuration: '1_month',
@@ -369,6 +374,86 @@ export const MemberSelfRegisterModal: React.FC<MemberSelfRegisterModalProps> = (
                     ⚠️ 4 अंकों का पिन दर्ज करें ({pin.length}/4)
                   </span>
                 )}
+              </div>
+            </div>
+          </div>
+
+          {/* Physical Measurements: Height, Current Weight, Target Weight */}
+          <div className="p-4 bg-gradient-to-r from-amber-50/60 via-slate-50 to-cyan-50/60 border border-slate-200 rounded-2xl space-y-3">
+            <div className="flex items-center gap-2">
+              <Scale className="w-4 h-4 text-amber-600" />
+              <span className="text-xs font-black text-slate-900 uppercase tracking-wide">
+                शारीरिक माप (Physical Profile: Height & Weight)
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Height cm */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  ऊंचाई (Height cm) *
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="100"
+                    max="250"
+                    required
+                    value={heightCm}
+                    onChange={(e) => setHeightCm(Number(e.target.value))}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 font-mono font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                  />
+                  <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-semibold">cm</span>
+                </div>
+                <span className="text-[10px] text-slate-500 mt-0.5 block font-medium">
+                  ~{((heightCm || 172) / 30.48).toFixed(1)} Feet
+                </span>
+              </div>
+
+              {/* Current Weight kg */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  वर्तमान वजन (Wt kg) *
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="30"
+                    max="250"
+                    step="0.5"
+                    required
+                    value={weightKg}
+                    onChange={(e) => setWeightKg(Number(e.target.value))}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 font-mono font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                  />
+                  <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-semibold">kg</span>
+                </div>
+                <span className="text-[10px] text-slate-500 mt-0.5 block font-medium">
+                  वर्तमान शरीर वजन
+                </span>
+              </div>
+
+              {/* Target Weight kg */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  लक्ष्य वजन (Target kg) *
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="30"
+                    max="250"
+                    step="0.5"
+                    required
+                    value={targetWeightKg}
+                    onChange={(e) => setTargetWeightKg(Number(e.target.value))}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 font-mono font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                  />
+                  <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-semibold">kg</span>
+                </div>
+                <span className="text-[10px] text-emerald-700 font-bold mt-0.5 block">
+                  {Math.abs(weightKg - targetWeightKg).toFixed(1)} kg {weightKg > targetWeightKg ? 'कमी (Loss)' : 'बढ़ोतरी (Gain)'}
+                </span>
               </div>
             </div>
           </div>
