@@ -726,6 +726,7 @@ class LocalGymDatabase {
         expiryDate: membership.expiry_date,
         personalTraining: membership.is_personal_training,
         ptDuration: membership.pt_duration,
+        ptSessionsTotal: membership.pt_sessions_total || (membership.is_personal_training ? (membership.pt_duration === '2_months' ? 24 : membership.pt_duration === '3_months' ? 36 : 12) : undefined),
         assignedTrainerId: membership.is_personal_training ? membership.trainer_id : undefined,
         assignedTrainerName: membership.is_personal_training ? (trainer ? trainer.name : membership.trainer_name) : undefined,
         baseFee: membership.base_fee || 1200,
@@ -933,6 +934,7 @@ class LocalGymDatabase {
     duration: MembershipDuration;
     hasPT: boolean;
     ptDuration?: PTPackageDuration;
+    ptSessionsTotal?: number;
     assignedTrainerId?: string;
     discountType: 'flat' | 'percentage';
     discountValue: number;
@@ -1029,6 +1031,7 @@ class LocalGymDatabase {
       package_type: input.duration,
       is_personal_training: input.hasPT,
       pt_duration: input.ptDuration,
+      pt_sessions_total: input.ptSessionsTotal || (input.hasPT ? (input.ptDuration === '2_months' ? 24 : input.ptDuration === '3_months' ? 36 : 12) : undefined),
       trainer_id: input.assignedTrainerId,
       trainer_name: assignedTrainer?.name,
       joining_date: joiningDate,
@@ -1247,6 +1250,7 @@ class LocalGymDatabase {
       package_type: cloudMember.membershipDuration || '1_year',
       is_personal_training: !!cloudMember.personalTraining,
       pt_duration: cloudMember.ptDuration,
+      pt_sessions_total: cloudMember.ptSessionsTotal || (existingMshIdx >= 0 ? memberships[existingMshIdx].pt_sessions_total : undefined),
       trainer_id: cloudMember.assignedTrainerId,
       trainer_name: cloudMember.assignedTrainerName,
       joining_date: cloudMember.joiningDate || new Date().toISOString(),

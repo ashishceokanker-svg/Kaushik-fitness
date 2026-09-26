@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useGymData } from '../../context/GymDataContext';
 import { Gender, FitnessGoal, MembershipDuration, PTPackageDuration, PaymentMethod, Member } from '../../types';
 import { MEMBERSHIP_PRICING, PT_PRICING, formatINR, calculateExpiryDate } from '../../utils/formatters';
-import { X, UserPlus, Sparkles, Dumbbell, ShieldCheck, Tag, Camera, Upload, Smartphone, Eye, EyeOff } from 'lucide-react';
+import { X, UserPlus, Sparkles, Dumbbell, ShieldCheck, Tag, Camera, Upload, Smartphone, Eye, EyeOff, Award } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { LiveCameraModal } from '../common/LiveCameraModal';
 import { compressImageFile } from '../../utils/imageCompressor';
@@ -68,6 +68,7 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({
   const [duration, setDuration] = useState<MembershipDuration>('1_month');
   const [hasPT, setHasPT] = useState<boolean>(Boolean(lockedTrainerId));
   const [ptDuration, setPtDuration] = useState<PTPackageDuration>('1_month');
+  const [ptSessionsTotal, setPtSessionsTotal] = useState<number>(12);
   const [assignedTrainerId, setAssignedTrainerId] = useState<string>(
     lockedTrainerId || trainers[0]?.id || ''
   );
@@ -177,7 +178,8 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({
       membershipDuration: effectiveDuration,
       expiryDate,
       personalTraining: effectiveHasPT,
-      ptDuration: effectiveHasPT ? (isAdvanced ? ptDuration : '1_month') : undefined,
+      ptDuration: effectiveHasPT ? (lockedTrainerId ? ptDuration : (isAdvanced ? ptDuration : '1_month')) : undefined,
+      ptSessionsTotal: effectiveHasPT ? ptSessionsTotal : undefined,
       assignedTrainerId: effectiveHasPT ? effectiveTrainerId : undefined,
       assignedTrainerName: effectiveHasPT ? (effectiveTrainer?.name || lockedTrainerName) : undefined,
       baseFee: effectiveBaseFee,
@@ -247,35 +249,37 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Mode Switcher Pill */}
-            <div className="hidden sm:flex items-center p-1 bg-slate-100 border border-slate-200 rounded-xl">
-              <button
-                type="button"
-                onClick={() => localDb.setFormMode('simple')}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer ${
-                  !isAdvanced
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                title="साधारण मोड: अनावश्यक फ़ील्ड्स छुपाएं"
-              >
-                <EyeOff className="w-3 h-3" />
-                <span>साधारण मोड</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => localDb.setFormMode('advanced')}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer ${
-                  isAdvanced
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                title="विस्तृत मोड: सभी फ़ील्ड्स अनलॉक"
-              >
-                <Eye className="w-3 h-3" />
-                <span>विस्तृत मोड</span>
-              </button>
-            </div>
+            {/* Mode Switcher Pill (Hidden for Trainer) */}
+            {!lockedTrainerId && (
+              <div className="hidden sm:flex items-center p-1 bg-slate-100 border border-slate-200 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => localDb.setFormMode('simple')}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer ${
+                    !isAdvanced
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="साधारण मोड: अनावश्यक फ़ील्ड्स छुपाएं"
+                >
+                  <EyeOff className="w-3 h-3" />
+                  <span>साधारण मोड</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => localDb.setFormMode('advanced')}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer ${
+                    isAdvanced
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="विस्तृत मोड: सभी फ़ील्ड्स अनलॉक"
+                >
+                  <Eye className="w-3 h-3" />
+                  <span>विस्तृत मोड</span>
+                </button>
+              </div>
+            )}
 
             <button
               type="button"
@@ -616,9 +620,84 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({
                 </button>
               </div>
             </div>
+
+            {/* Dedicated PT Package & Sessions Selector for Trainer */}
+            {lockedTrainerId && (
+              <div className="p-4 bg-cyan-50/90 border-2 border-cyan-300 rounded-2xl space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-wider text-cyan-950 flex items-center gap-1.5">
+                    <Award className="w-4 h-4 text-cyan-600" />
+                    <span>कोच {lockedTrainerName} पर्सनल ट्रेनिंग (PT Package & Sessions) *</span>
+                  </span>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-cyan-200 text-cyan-900 font-mono">
+                    1-on-1 PT
+                  </span>
+                </div>
+
+                {/* PT Duration: 1 Month, 2 Months, 3 Months */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    PT पैकेज अवधि (PT Package Duration) *
+                  </label>
+                  <div className="grid grid-cols-3 gap-2.5">
+                    {[
+                      { id: '1_month', label: '1 Month PT', sub: '1 माह', defaultSessions: 12, price: 2500 },
+                      { id: '2_months', label: '2 Months PT', sub: '2 माह', defaultSessions: 24, price: 4500 },
+                      { id: '3_months', label: '3 Months PT', sub: '3 माह', defaultSessions: 36, price: 6500 },
+                    ].map((pkg) => (
+                      <button
+                        key={pkg.id}
+                        type="button"
+                        onClick={() => {
+                          setPtDuration(pkg.id as PTPackageDuration);
+                          setPtSessionsTotal(pkg.defaultSessions);
+                        }}
+                        className={`p-3 rounded-xl border-2 text-center transition-all cursor-pointer ${
+                          ptDuration === pkg.id
+                            ? 'border-cyan-600 bg-white text-cyan-950 shadow-sm ring-2 ring-cyan-500/20'
+                            : 'border-slate-200 bg-white/70 text-slate-700 hover:bg-white'
+                        }`}
+                      >
+                        <div className="font-black text-xs">{pkg.label}</div>
+                        <div className="text-[10px] text-slate-500 font-medium">{pkg.sub}</div>
+                        <div className="font-mono font-bold text-cyan-700 text-xs mt-1">₹{pkg.price.toLocaleString('en-IN')}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* PT Sessions: 12 / 24 / 36 Sessions */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    PT कुल सत्र (Sessions: 12 / 24 / 36 - अटेंडेंस कैलेंडर हेतु) *
+                  </label>
+                  <div className="grid grid-cols-3 gap-2.5">
+                    {[
+                      { count: 12, label: '12 Sessions', sub: '12 सत्र' },
+                      { count: 24, label: '24 Sessions', sub: '24 सत्र' },
+                      { count: 36, label: '36 Sessions', sub: '36 सत्र' },
+                    ].map((ses) => (
+                      <button
+                        key={ses.count}
+                        type="button"
+                        onClick={() => setPtSessionsTotal(ses.count)}
+                        className={`p-2.5 rounded-xl border-2 text-center transition-all cursor-pointer ${
+                          ptSessionsTotal === ses.count
+                            ? 'border-emerald-600 bg-emerald-50 text-emerald-950 font-black shadow-xs ring-2 ring-emerald-500/20'
+                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="text-xs font-bold">{ses.label}</div>
+                        <div className="text-[10px] text-slate-500">{ses.sub}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          {isAdvanced && (
+          {isAdvanced && !lockedTrainerId && (
             <>
               {/* Step 2: Membership Duration Selection */}
               <div className="space-y-3 pt-4 border-t border-slate-200">

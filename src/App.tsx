@@ -46,6 +46,8 @@ import {
   LogOut,
   ShoppingBag,
   Package,
+  KeyRound,
+  Trophy,
 } from 'lucide-react';
 
 const MainAppContent: React.FC = () => {
@@ -171,8 +173,9 @@ const MainAppContent: React.FC = () => {
     }
     return [
       { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
+      { id: 'attendance', label: 'Attendance', icon: KeyRound },
       { id: 'fitness', label: 'Fitness', icon: Dumbbell },
-      { id: 'developer', label: 'Dev', icon: CodeXml },
+      { id: 'progress', label: 'PRs', icon: Trophy },
       { id: 'logout', label: 'Logout', icon: LogOut, isAction: true },
     ];
   };
@@ -256,7 +259,7 @@ const MainAppContent: React.FC = () => {
         if (role === 'trainer') {
           return <TrainerDashboard onNavigate={(tab) => setActiveTab(tab)} />;
         }
-        return <ProgressTracker />;
+        return <ProgressTracker memberId={activeMember?.id} />;
 
       case 'database':
         if (!isDeveloper) {

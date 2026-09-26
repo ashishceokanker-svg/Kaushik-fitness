@@ -58,7 +58,7 @@ interface MobileAppSimulatorProps {
 
 export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMobileView }) => {
   const { currentUser, role, switchRole, logout, updateCurrentUserProfile } = useAuth();
-  const { members, staff, isCloudSynced, updateMember } = useGymData();
+  const { members, staff, isCloudSynced, updateMember, attendance, markAttendance } = useGymData();
 
   const isDeveloper = currentUser?.id === 'usr-dev' || currentUser?.phone === '9244249975';
   const [developerPhoto, setDeveloperPhoto] = useState<string>(() => {
@@ -172,6 +172,38 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
 
   const [selectedWorkoutDay, setSelectedWorkoutDay] = useState<number>(0);
   const [dietTick, setDietTick] = useState(0);
+
+  const todayDate = new Date().toISOString().split('T')[0];
+  const todayMemberAttendance = attendance?.find(
+    (a) =>
+      a.date === todayDate &&
+      (a.userId === member?.id ||
+        a.userId === member?.userId ||
+        (member?.memberCode && a.memberCode?.toLowerCase() === member.memberCode?.toLowerCase()) ||
+        (member?.name && a.userName?.toLowerCase() === member.name?.toLowerCase()))
+  );
+  const [mobileAttLoading, setMobileAttLoading] = useState(false);
+  const [mobileAttMsg, setMobileAttMsg] = useState<string | null>(null);
+
+  const handleMobileQuickCheckIn = async () => {
+    if (isMemberExpired) {
+      alert('सदस्यता समाप्त है। कृपया सदस्यता रिन्यू कराएं।');
+      return;
+    }
+    setMobileAttLoading(true);
+    try {
+      const res = await markAttendance(member.pin || member.memberCode, 'pin');
+      setMobileAttMsg(res.message);
+      if (res.success) {
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+      }
+    } catch {
+      setMobileAttMsg('हाजिरी दर्ज करने में त्रुटि आई। कृपया पुनः प्रयास करें।');
+    } finally {
+      setMobileAttLoading(false);
+      setTimeout(() => setMobileAttMsg(null), 4000);
+    }
+  };
 
   useEffect(() => {
     const handleUpdate = () => setDietTick((t) => t + 1);
@@ -636,13 +668,13 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
               </div>
             )}
 
-            {/* TAB 2: PASS (Official 4-Digit PIN Pass) - Only shown in Advanced Mode */}
-            {isAdvanced && mobileTab === 'pass' && (
-              <div className="space-y-4 text-center py-2 w-full max-w-full overflow-x-hidden">
-                <div className="p-5 rounded-3xl bg-white border-2 border-cyan-400 shadow-sm space-y-4">
+            {/* TAB 2: PASS (Official 4-Digit PIN Pass & Attendance Terminal) */}
+            {mobileTab === 'pass' && (
+              <div className="space-y-3.5 text-center py-2 w-full max-w-full overflow-x-hidden">
+                <div className="p-4 rounded-3xl bg-white border-2 border-cyan-400 shadow-sm space-y-3.5">
                   <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-cyan-50 border border-cyan-300 text-cyan-800 text-[10px] font-black uppercase tracking-wider">
                     <KeyRound className="w-3.5 h-3.5 text-cyan-600" />
-                    Official Gym PIN Pass
+                    4-Digit PIN Attendance Pass
                   </div>
 
                   <div>
@@ -669,28 +701,66 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                     )}
                   </div>
 
+                  {/* Attendance Check-in Status Card */}
+                  {todayMemberAttendance ? (
+                    <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-2xl text-left text-emerald-950 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                        <div>
+                          <div className="text-xs font-black">आज की हाजिरी दर्ज है</div>
+                          <div className="text-[10px] text-emerald-800">In: {todayMemberAttendance.checkInTime} • {todayMemberAttendance.date}</div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-black bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full">
+                        Present
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-amber-50 border border-amber-300 rounded-2xl text-left text-amber-950 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                        <div className="text-xs font-bold">आज की उपस्थिति दर्ज करें:</div>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={mobileAttLoading || isMemberExpired}
+                        onClick={handleMobileQuickCheckIn}
+                        className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs uppercase tracking-wider shadow-sm transition-all active:scale-95 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>{mobileAttLoading ? 'हाजिरी दर्ज हो रही है...' : 'अभी 1-Tap हाजिरी लगाएं'}</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {mobileAttMsg && (
+                    <div className="p-2.5 rounded-xl bg-cyan-50 border border-cyan-300 text-cyan-900 text-xs font-bold animate-fade-in">
+                      {mobileAttMsg}
+                    </div>
+                  )}
+
                   {/* High Contrast PIN Box */}
-                  <div className="p-4 bg-slate-50 rounded-2xl border-2 border-dashed border-cyan-300 text-center">
+                  <div className="p-3.5 bg-slate-50 rounded-2xl border-2 border-dashed border-cyan-300 text-center">
                     <span className="text-slate-600 block text-[10px] uppercase font-bold tracking-wider">
                       Gym Entry Security PIN
                     </span>
-                    <div className="flex justify-center items-center gap-2 my-2.5">
+                    <div className="flex justify-center items-center gap-2 my-2">
                       {(member.pin || '1234').split('').map((char: string, cIdx: number) => (
                         <div
                           key={cIdx}
-                          className="w-11 h-13 rounded-xl bg-white border-2 border-cyan-500 flex items-center justify-center text-2xl font-mono font-black text-cyan-900 shadow-xs"
+                          className="w-10 h-12 rounded-xl bg-white border-2 border-cyan-500 flex items-center justify-center text-2xl font-mono font-black text-cyan-900 shadow-xs"
                         >
                           {char}
                         </div>
                       ))}
                     </div>
-                    <span className="text-[11px] text-emerald-800 font-semibold flex items-center justify-center gap-1">
+                    <span className="text-[10px] text-emerald-800 font-semibold flex items-center justify-center gap-1">
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                       Active Kanker Member
                     </span>
 
                     {/* Change PIN Action inside Pass Tab */}
-                    <div className="pt-3">
+                    <div className="pt-2.5">
                       <button
                         type="button"
                         onClick={() => {
@@ -700,16 +770,16 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                           setConfirmPin('');
                           setIsChangePinModalOpen(true);
                         }}
-                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer mx-auto active:scale-95"
+                        className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer mx-auto active:scale-95"
                       >
                         <KeyRound className="w-3.5 h-3.5" />
-                        <span>पिन बदलें (Change 4-Digit PIN)</span>
+                        <span>पिन बदलें (Change PIN)</span>
                       </button>
                     </div>
                   </div>
 
-                  <p className="text-[11px] text-slate-500">
-                    Front desk kiosk terminal par ye 4-digit PIN enter karke direct entrance karein.
+                  <p className="text-[10px] text-slate-500">
+                    Front desk kiosk terminal par ye 4-digit PIN enter karke entrance karein ya upar diye button se turant attendance mark karein.
                   </p>
                 </div>
               </div>
@@ -1128,17 +1198,15 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                 <span className="truncate">Home</span>
               </button>
 
-              {isAdvanced && (
-                <button
-                  onClick={() => setMobileTab('pass')}
-                  className={`flex flex-col items-center gap-0.5 text-[9px] font-bold transition-colors flex-1 min-w-0 cursor-pointer ${
-                    mobileTab === 'pass' ? 'text-cyan-700' : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  <KeyRound className="w-4 h-4" />
-                  <span className="truncate">Pass</span>
-                </button>
-              )}
+              <button
+                onClick={() => setMobileTab('pass')}
+                className={`flex flex-col items-center gap-0.5 text-[9px] font-bold transition-colors flex-1 min-w-0 cursor-pointer ${
+                  mobileTab === 'pass' ? 'text-cyan-700' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <KeyRound className="w-4 h-4" />
+                <span className="truncate">Pass</span>
+              </button>
 
               <button
                 onClick={() => setMobileTab('photos')}

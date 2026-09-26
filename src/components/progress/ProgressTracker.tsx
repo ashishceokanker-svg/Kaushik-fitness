@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useGymData } from '../../context/GymDataContext';
 import { formatDate } from '../../utils/formatters';
+import { localDb } from '../../db/localDatabase';
+import { ProgressLog } from '../../types';
 import {
   Trophy,
   TrendingUp,
@@ -21,45 +23,152 @@ interface ProgressTrackerProps {
 }
 
 export const ProgressTracker: React.FC<ProgressTrackerProps> = ({ memberId = 'mem-1' }) => {
-  const { progressLogs, addProgressLog, members } = useGymData();
+  const { progressLogs, addProgressLog, members, updateMember } = useGymData();
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
 
-  // Form states
-  const [weightKg, setWeightKg] = useState<number>(78);
-  const [chestInches, setChestInches] = useState<number>(41);
-  const [waistInches, setWaistInches] = useState<number>(32);
-  const [bicepsInches, setBicepsInches] = useState<number>(15.5);
-  const [benchPressPR, setBenchPressPR] = useState<number>(95);
-  const [squatPR, setSquatPR] = useState<number>(125);
-  const [deadliftPR, setDeadliftPR] = useState<number>(155);
-  const [notes, setNotes] = useState('');
+  const activeMember = members.find((m) => m.id === memberId || m.userId === memberId) || members[0];
 
-  const activeMember = members.find((m) => m.id === memberId) || members[0];
-  const logs = progressLogs.filter((p) => p.memberId === activeMember.id);
+  // Merge bodyIndexLogs from local database and progressLogs for activeMember
+  const logs = React.useMemo(() => {
+    if (!activeMember) return [];
+    const bodyLogs = localDb.getBodyIndexLogs(activeMember.id);
+    const allLogsMap = new Map<string, ProgressLog>();
+
+    bodyLogs.forEach((b: any) => {
+      allLogsMap.set(b.date, {
+        id: b.id,
+        memberId: b.memberId,
+        date: b.date,
+        weightKg: b.weightKg,
+        chestInches: b.chestInches,
+        waistInches: b.waistInches,
+        bicepsInches: b.bicepsInches,
+        thighsInches: b.thighsInches,
+        hipsInches: b.hipsInches,
+        bodyFatPercentage: b.bodyFatPercentage,
+        bmi: b.bmi,
+        benchPressPR: b.benchPressPR,
+        squatPR: b.squatPR,
+        deadliftPR: b.deadliftPR,
+        notes: b.notes,
+      });
+    });
+
+    progressLogs
+      .filter((p) => p.memberId === activeMember.id)
+      .forEach((p) => {
+        allLogsMap.set(p.date, { ...allLogsMap.get(p.date), ...p });
+      });
+
+    return Array.from(allLogsMap.values()).sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+  }, [activeMember, progressLogs]);
+
+  // Form states initialized to member's actual stats or empty
+  const [weightKg, setWeightKg] = useState<string>(() => String(activeMember?.weightKg || ''));
+  const [chestInches, setChestInches] = useState<string>(() => String(activeMember?.measurements?.chest || ''));
+  const [waistInches, setWaistInches] = useState<string>(() => String(activeMember?.measurements?.waist || ''));
+  const [bicepsInches, setBicepsInches] = useState<string>(() => String(activeMember?.measurements?.biceps || ''));
+  const [benchPressPR, setBenchPressPR] = useState<string>('');
+  const [squatPR, setSquatPR] = useState<string>('');
+  const [deadliftPR, setDeadliftPR] = useState<string>('');
+  const [notes, setNotes] = useState('');
 
   const latestLog = logs[logs.length - 1];
   const firstLog = logs[0];
   const weightChange = latestLog && firstLog ? latestLog.weightKg - firstLog.weightKg : 0;
 
+  // Real member PR values (no fake 95, 125, 155 defaults)
+  const benchPrs = logs.map((l) => l.benchPressPR).filter((v): v is number => Boolean(v && v > 0));
+  const squatPrs = logs.map((l) => l.squatPR).filter((v): v is number => Boolean(v && v > 0));
+  const deadliftPrs = logs.map((l) => l.deadliftPR).filter((v): v is number => Boolean(v && v > 0));
+
+  const currentBenchPr = benchPrs.length > 0 ? benchPrs[benchPrs.length - 1] : undefined;
+  const currentSquatPr = squatPrs.length > 0 ? squatPrs[squatPrs.length - 1] : undefined;
+  const currentDeadliftPr = deadliftPrs.length > 0 ? deadliftPrs[deadliftPrs.length - 1] : undefined;
+
+  const benchGain = benchPrs.length > 1 ? benchPrs[benchPrs.length - 1] - benchPrs[0] : 0;
+  const squatGain = squatPrs.length > 1 ? squatPrs[squatPrs.length - 1] - squatPrs[0] : 0;
+  const deadliftGain = deadliftPrs.length > 1 ? deadliftPrs[deadliftPrs.length - 1] - deadliftPrs[0] : 0;
+
+  const latestChest = latestLog?.chestInches ?? (activeMember?.measurements?.chest || undefined);
+  const initialChest = firstLog?.chestInches ?? (activeMember?.measurements?.chest || undefined);
+  const chestDiff = latestChest && initialChest && logs.length > 1 ? Number((latestChest - initialChest).toFixed(1)) : 0;
+
+  const latestBiceps = latestLog?.bicepsInches ?? (activeMember?.measurements?.biceps || undefined);
+  const initialBiceps = firstLog?.bicepsInches ?? (activeMember?.measurements?.biceps || undefined);
+  const bicepsDiff = latestBiceps && initialBiceps && logs.length > 1 ? Number((latestBiceps - initialBiceps).toFixed(1)) : 0;
+
+  const latestWaist = latestLog?.waistInches ?? (activeMember?.measurements?.waist || undefined);
+  const initialWaist = firstLog?.waistInches ?? (activeMember?.measurements?.waist || undefined);
+  const waistDiff = latestWaist && initialWaist && logs.length > 1 ? Number((latestWaist - initialWaist).toFixed(1)) : 0;
+
+  const latestThighs = latestLog?.thighsInches ?? (activeMember?.measurements?.thighs || undefined);
+  const initialThighs = firstLog?.thighsInches ?? (activeMember?.measurements?.thighs || undefined);
+  const thighsDiff = latestThighs && initialThighs && logs.length > 1 ? Number((latestThighs - initialThighs).toFixed(1)) : 0;
+
   const handleSaveProgress = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!activeMember) return;
+
+    const wNum = Number(weightKg) || activeMember.weightKg || 70;
+    const cNum = chestInches ? Number(chestInches) : undefined;
+    const waNum = waistInches ? Number(waistInches) : undefined;
+    const bNum = bicepsInches ? Number(bicepsInches) : undefined;
+    const bpNum = benchPressPR ? Number(benchPressPR) : undefined;
+    const sqNum = squatPR ? Number(squatPR) : undefined;
+    const dlNum = deadliftPR ? Number(deadliftPR) : undefined;
+    const dateStr = new Date().toISOString();
+
     addProgressLog({
       memberId: activeMember.id,
-      date: new Date().toISOString(),
-      weightKg,
-      chestInches,
-      waistInches,
-      bicepsInches,
-      benchPressPR,
-      squatPR,
-      deadliftPR,
-      notes: notes || 'Regular weekly weigh-in check.',
+      date: dateStr,
+      weightKg: wNum,
+      chestInches: cNum,
+      waistInches: waNum,
+      bicepsInches: bNum,
+      benchPressPR: bpNum,
+      squatPR: sqNum,
+      deadliftPR: dlNum,
+      notes: notes || 'Member personal progression check-in.',
     });
+
+    const hVal = activeMember.heightCm || 172;
+    const bmiVal = Number((wNum / Math.pow(hVal / 100, 2)).toFixed(1));
+
+    localDb.addBodyIndexLog({
+      memberId: activeMember.id,
+      date: dateStr,
+      weightKg: wNum,
+      heightCm: hVal,
+      bmi: bmiVal,
+      chestInches: cNum ?? (activeMember.measurements?.chest || 0),
+      waistInches: waNum ?? (activeMember.measurements?.waist || 0),
+      bicepsInches: bNum ?? (activeMember.measurements?.biceps || 0),
+      thighsInches: activeMember.measurements?.thighs || 0,
+      notes: notes || 'Member personal progression check-in.',
+    });
+
+    if (wNum || cNum || waNum || bNum) {
+      updateMember(activeMember.id, {
+        weightKg: wNum,
+        measurements: {
+          chest: cNum || activeMember.measurements?.chest || 0,
+          waist: waNum || activeMember.measurements?.waist || 0,
+          biceps: bNum || activeMember.measurements?.biceps || 0,
+          thighs: activeMember.measurements?.thighs || 0,
+        },
+        notes: notes || activeMember.notes,
+      });
+    }
 
     try {
       confetti({ particleCount: 50, spread: 60 });
     } catch {}
 
+    window.dispatchEvent(new Event('kf_body_index_updated'));
+    window.dispatchEvent(new Event('storage'));
     setIsLogModalOpen(false);
   };
 
@@ -73,24 +182,25 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({ memberId = 'me
             Athlete Progress & PR Hall of Fame
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Tracking body recomposition, muscular measurements, and heavy lift PRs for {activeMember.name}
+            {activeMember?.name} का व्यक्तिगत शारीरिक रूपांतरण, माप व लिफ्ट पीआर (Personal Records):
           </p>
         </div>
 
         <button
           onClick={() => setIsLogModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase shadow-sm transition-all cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold text-xs uppercase shadow-sm transition-all cursor-pointer"
         >
           <PlusCircle className="w-4 h-4" />
-          Log New Body Stats / PR
+          <span>नया माप / लिफ्ट PR दर्ज करें</span>
         </button>
       </div>
 
       {/* Visual Graphical Progress Charts */}
       <MemberProgressChart
         logs={logs}
-        memberName={activeMember.name}
-        targetWeightKg={activeMember.targetWeightKg || 82}
+        memberName={activeMember?.name || 'Member'}
+        targetWeightKg={activeMember?.targetWeightKg || 80}
+        onOpenLogModal={() => setIsLogModalOpen(true)}
       />
 
       {/* Lift PR Cards */}
@@ -102,10 +212,16 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({ memberId = 'me
             <Award className="w-4 h-4 text-amber-500" />
           </div>
           <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono mt-2">
-            {latestLog?.benchPressPR || 95} <span className="text-sm font-normal text-slate-400">kg</span>
+            {currentBenchPr ? (
+              <>
+                {currentBenchPr} <span className="text-sm font-normal text-slate-400">kg</span>
+              </>
+            ) : (
+              <span className="text-sm text-slate-400 font-sans font-bold">दर्ज नहीं (No PR)</span>
+            )}
           </div>
           <div className="text-[11px] text-emerald-600 font-semibold mt-1">
-            +30 kg gained since start
+            {benchGain > 0 ? `+${benchGain} kg gained since start` : currentBenchPr ? 'वर्तमान पीआर' : 'माप दर्ज करें'}
           </div>
         </div>
 
@@ -116,10 +232,16 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({ memberId = 'me
             <Award className="w-4 h-4 text-cyan-600" />
           </div>
           <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono mt-2">
-            {latestLog?.squatPR || 125} <span className="text-sm font-normal text-slate-400">kg</span>
+            {currentSquatPr ? (
+              <>
+                {currentSquatPr} <span className="text-sm font-normal text-slate-400">kg</span>
+              </>
+            ) : (
+              <span className="text-sm text-slate-400 font-sans font-bold">दर्ज नहीं (No PR)</span>
+            )}
           </div>
           <div className="text-[11px] text-emerald-600 font-semibold mt-1">
-            +45 kg power gain
+            {squatGain > 0 ? `+${squatGain} kg power gain` : currentSquatPr ? 'वर्तमान पीआर' : 'माप दर्ज करें'}
           </div>
         </div>
 
@@ -130,10 +252,16 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({ memberId = 'me
             <Award className="w-4 h-4 text-rose-500" />
           </div>
           <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono mt-2">
-            {latestLog?.deadliftPR || 155} <span className="text-sm font-normal text-slate-400">kg</span>
+            {currentDeadliftPr ? (
+              <>
+                {currentDeadliftPr} <span className="text-sm font-normal text-slate-400">kg</span>
+              </>
+            ) : (
+              <span className="text-sm text-slate-400 font-sans font-bold">दर्ज नहीं (No PR)</span>
+            )}
           </div>
           <div className="text-[11px] text-emerald-600 font-semibold mt-1">
-            150kg Club Member 🏆
+            {deadliftGain > 0 ? `+${deadliftGain} kg power gain` : currentDeadliftPr ? 'वर्तमान पीआर' : 'माप दर्ज करें'}
           </div>
         </div>
 
@@ -144,102 +272,19 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({ memberId = 'me
             <Scale className="w-4 h-4 text-purple-500" />
           </div>
           <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono mt-2">
-            {latestLog?.weightKg || 78} <span className="text-sm font-normal text-slate-400">kg</span>
+            {latestLog?.weightKg || activeMember?.weightKg ? (
+              <>
+                {latestLog?.weightKg || activeMember?.weightKg} <span className="text-sm font-normal text-slate-400">kg</span>
+              </>
+            ) : (
+              <span className="text-sm text-slate-400 font-sans font-bold">—</span>
+            )}
           </div>
           <div className="text-[11px] text-slate-500 mt-1">
-            {weightChange >= 0 ? `+${weightChange.toFixed(1)} kg lean bulk` : `${weightChange.toFixed(1)} kg fat loss`}
+            {logs.length > 1
+              ? (weightChange >= 0 ? `+${weightChange.toFixed(1)} kg बदलाव` : `${weightChange.toFixed(1)} kg वजन घटा`)
+              : 'वर्तमान शरीर वजन'}
           </div>
-        </div>
-      </div>
-
-      {/* Visual SVG Progression Graph Card */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-amber-500" />
-              Weight Progression Timeline (kg)
-            </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Target Weight: {activeMember.targetWeightKg || 82} kg
-            </p>
-          </div>
-          <span className="text-xs font-mono px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-cyan-800 font-bold">
-            {logs.length} weigh-in checkpoints
-          </span>
-        </div>
-
-        {/* Custom SVG Line Chart */}
-        <div className="w-full h-48 relative">
-          <svg className="w-full h-full overflow-visible" viewBox="0 0 500 150">
-            <defs>
-              <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.3" />
-                <stop offset="100%" stopColor="#F59E0B" stopOpacity="0.0" />
-              </linearGradient>
-            </defs>
-
-            {/* Target weight dotted line */}
-            <line
-              x1="0"
-              y1="50"
-              x2="500"
-              y2="50"
-              stroke="#06B6D4"
-              strokeWidth="1.5"
-              strokeDasharray="4 4"
-              opacity="0.6"
-            />
-            <text x="4" y="44" fill="#0891B2" fontSize="10" fontWeight="bold">
-              Target: {activeMember.targetWeightKg || 82}kg
-            </text>
-
-            {/* Area under curve */}
-            <path
-              d="M 20 120 L 100 110 L 180 95 L 260 85 L 340 75 L 420 65 L 480 60 L 480 140 L 20 140 Z"
-              fill="url(#chartGrad)"
-            />
-
-            {/* Line graph */}
-            <path
-              d="M 20 120 L 100 110 L 180 95 L 260 85 L 340 75 L 420 65 L 480 60"
-              fill="none"
-              stroke="#F59E0B"
-              strokeWidth="3"
-              strokeLinecap="round"
-            />
-
-            {/* Data points */}
-            {[
-              { cx: 20, cy: 120, label: '70kg' },
-              { cx: 100, cy: 110, label: '71.5kg' },
-              { cx: 180, cy: 95, label: '73kg' },
-              { cx: 260, cy: 85, label: '75kg' },
-              { cx: 340, cy: 75, label: '76.5kg' },
-              { cx: 420, cy: 65, label: '77.5kg' },
-              { cx: 480, cy: 60, label: '78kg' },
-            ].map((pt, i) => (
-              <g key={i}>
-                <circle cx={pt.cx} cy={pt.cy} r="5" fill="#F59E0B" stroke="#FFFFFF" strokeWidth="2" />
-                <text
-                  x={pt.cx}
-                  y={pt.cy - 10}
-                  fill="#475569"
-                  fontSize="9"
-                  fontWeight="bold"
-                  textAnchor="middle"
-                >
-                  {pt.label}
-                </text>
-              </g>
-            ))}
-          </svg>
-        </div>
-
-        <div className="flex justify-between text-xs text-slate-500 mt-4 pt-3 border-t border-slate-100">
-          <span>Joined: May 2024 (70kg)</span>
-          <span className="font-semibold text-emerald-600">Total Gain: +8.0 kg (Lean Mass Recomposition)</span>
-          <span>Current: Today (78kg)</span>
         </div>
       </div>
 
@@ -257,33 +302,51 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({ memberId = 'me
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <span className="text-xs text-slate-500">Chest</span>
+              <span className="text-xs text-slate-500 font-medium">Chest</span>
               <div className="text-xl font-black text-slate-900 font-mono mt-1">
-                {latestLog?.chestInches || 41}"
+                {latestChest ? `${latestChest}"` : '—'}
               </div>
-              <div className="text-[10px] text-emerald-600 mt-0.5">+3.0" gained</div>
+              <div className="text-[10px] text-emerald-600 mt-0.5">
+                {logs.length > 1 && chestDiff !== 0
+                  ? `${chestDiff > 0 ? `+${chestDiff}` : chestDiff}" बदलाव`
+                  : latestChest ? 'माप दर्ज है' : 'दर्ज नहीं'}
+              </div>
             </div>
 
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <span className="text-xs text-slate-500">Arms (Biceps)</span>
+              <span className="text-xs text-slate-500 font-medium">Arms (Biceps)</span>
               <div className="text-xl font-black text-slate-900 font-mono mt-1">
-                {latestLog?.bicepsInches || 15.5}"
+                {latestBiceps ? `${latestBiceps}"` : '—'}
               </div>
-              <div className="text-[10px] text-emerald-600 mt-0.5">+2.0" peak expansion</div>
+              <div className="text-[10px] text-emerald-600 mt-0.5">
+                {logs.length > 1 && bicepsDiff !== 0
+                  ? `${bicepsDiff > 0 ? `+${bicepsDiff}` : bicepsDiff}" बदलाव`
+                  : latestBiceps ? 'माप दर्ज है' : 'दर्ज नहीं'}
+              </div>
             </div>
 
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <span className="text-xs text-slate-500">Waist</span>
+              <span className="text-xs text-slate-500 font-medium">Waist</span>
               <div className="text-xl font-black text-slate-900 font-mono mt-1">
-                {latestLog?.waistInches || 32}"
+                {latestWaist ? `${latestWaist}"` : '—'}
               </div>
-              <div className="text-[10px] text-emerald-600 mt-0.5">-1.0" lean taper</div>
+              <div className="text-[10px] text-emerald-600 mt-0.5">
+                {logs.length > 1 && waistDiff !== 0
+                  ? `${waistDiff > 0 ? `+${waistDiff}` : waistDiff}" बदलाव`
+                  : latestWaist ? 'माप दर्ज है' : 'दर्ज नहीं'}
+              </div>
             </div>
 
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <span className="text-xs text-slate-500">Thighs</span>
-              <div className="text-xl font-black text-slate-900 font-mono mt-1">23"</div>
-              <div className="text-[10px] text-emerald-600 mt-0.5">+2.5" quad sweep</div>
+              <span className="text-xs text-slate-500 font-medium">Thighs</span>
+              <div className="text-xl font-black text-slate-900 font-mono mt-1">
+                {latestThighs ? `${latestThighs}"` : '—'}
+              </div>
+              <div className="text-[10px] text-emerald-600 mt-0.5">
+                {logs.length > 1 && thighsDiff !== 0
+                  ? `${thighsDiff > 0 ? `+${thighsDiff}` : thighsDiff}" बदलाव`
+                  : latestThighs ? 'माप दर्ज है' : 'दर्ज नहीं'}
+              </div>
             </div>
           </div>
         </div>
@@ -297,32 +360,50 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({ memberId = 'me
 
           <div className="space-y-2.5">
             <div className="p-3 rounded-xl bg-amber-50/60 border border-amber-200 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
-                150
+              <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-xs font-mono">
+                {currentDeadliftPr ? `${currentDeadliftPr}k` : 'DL'}
               </div>
               <div>
-                <div className="font-bold text-xs text-slate-900">150kg Deadlift Club</div>
-                <div className="text-[11px] text-slate-500">Achieved 155kg heavy pull with Coach Vikram</div>
+                <div className="font-bold text-xs text-slate-900">
+                  {currentDeadliftPr ? `${currentDeadliftPr}kg Deadlift Personal Record` : 'Deadlift Record Goal'}
+                </div>
+                <div className="text-[11px] text-slate-500">
+                  {currentDeadliftPr
+                    ? `सत्यापित व्यक्तिगत सर्वश्रेष्ठ लिफ्ट: ${currentDeadliftPr} kg`
+                    : 'नया माप दर्ज कर अपना पहला डेडलिफ्ट पीआर अनलॉक करें'}
+                </div>
               </div>
             </div>
 
             <div className="p-3 rounded-xl bg-cyan-50/60 border border-cyan-200 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-cyan-100 text-cyan-800 flex items-center justify-center font-bold">
-                30d
+              <div className="w-9 h-9 rounded-lg bg-cyan-100 text-cyan-800 flex items-center justify-center font-bold text-xs font-mono">
+                {currentBenchPr ? `${currentBenchPr}k` : 'BP'}
               </div>
               <div>
-                <div className="font-bold text-xs text-slate-900">Consistency Master</div>
-                <div className="text-[11px] text-slate-500">Completed 30+ gym sessions in last 45 days</div>
+                <div className="font-bold text-xs text-slate-900">
+                  {currentBenchPr ? `${currentBenchPr}kg Bench Press Personal Record` : 'Bench Press Record Goal'}
+                </div>
+                <div className="text-[11px] text-slate-500">
+                  {currentBenchPr
+                    ? `सत्यापित व्यक्तिगत सर्वश्रेष्ठ बेंच प्रेस: ${currentBenchPr} kg`
+                    : 'बेंच प्रेस PR दर्ज करें और अपनी ताकत का रिकॉर्ड बनाएं'}
+                </div>
               </div>
             </div>
 
             <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-200 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
-                90kg
+              <div className="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs font-mono">
+                {logs.length > 0 ? `${logs.length}x` : '0x'}
               </div>
               <div>
-                <div className="font-bold text-xs text-slate-900">Heavy Bench Milestone</div>
-                <div className="text-[11px] text-slate-500">Pressed bodyweight + 17kg for 3 clean reps</div>
+                <div className="font-bold text-xs text-slate-900">
+                  {logs.length > 0 ? `${logs.length} Consistency Checkpoints` : 'Consistency Journey'}
+                </div>
+                <div className="text-[11px] text-slate-500">
+                  {logs.length > 0
+                    ? `कुल ${logs.length} बार शारीरिक माप व प्रोग्रेस रिकॉर्ड दर्ज की गई है`
+                    : 'शारीरिक माप व प्रोग्रेस का नियमित रिकॉर्ड रखना शुरू करें'}
+                </div>
               </div>
             </div>
           </div>
@@ -353,8 +434,9 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({ memberId = 'me
                   <input
                     type="number"
                     step="0.1"
+                    placeholder="e.g. 72.5"
                     value={weightKg}
-                    onChange={(e) => setWeightKg(Number(e.target.value))}
+                    onChange={(e) => setWeightKg(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-900 font-mono focus:bg-white focus:border-cyan-500 focus:outline-none"
                   />
                 </div>
@@ -362,8 +444,9 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({ memberId = 'me
                   <label className="block text-xs text-slate-600 font-medium mb-1">Bench PR (kg)</label>
                   <input
                     type="number"
+                    placeholder="e.g. 80"
                     value={benchPressPR}
-                    onChange={(e) => setBenchPressPR(Number(e.target.value))}
+                    onChange={(e) => setBenchPressPR(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-900 font-mono focus:bg-white focus:border-cyan-500 focus:outline-none"
                   />
                 </div>
@@ -374,8 +457,9 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({ memberId = 'me
                   <label className="block text-xs text-slate-600 font-medium mb-1">Squat PR (kg)</label>
                   <input
                     type="number"
+                    placeholder="e.g. 100"
                     value={squatPR}
-                    onChange={(e) => setSquatPR(Number(e.target.value))}
+                    onChange={(e) => setSquatPR(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-900 font-mono focus:bg-white focus:border-cyan-500 focus:outline-none"
                   />
                 </div>
@@ -383,8 +467,9 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({ memberId = 'me
                   <label className="block text-xs text-slate-600 font-medium mb-1">Deadlift PR (kg)</label>
                   <input
                     type="number"
+                    placeholder="e.g. 120"
                     value={deadliftPR}
-                    onChange={(e) => setDeadliftPR(Number(e.target.value))}
+                    onChange={(e) => setDeadliftPR(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-900 font-mono focus:bg-white focus:border-cyan-500 focus:outline-none"
                   />
                 </div>
@@ -396,8 +481,9 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({ memberId = 'me
                   <input
                     type="number"
                     step="0.1"
+                    placeholder="e.g. 38"
                     value={chestInches}
-                    onChange={(e) => setChestInches(Number(e.target.value))}
+                    onChange={(e) => setChestInches(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 font-mono focus:bg-white focus:border-cyan-500 focus:outline-none"
                   />
                 </div>
@@ -406,8 +492,9 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({ memberId = 'me
                   <input
                     type="number"
                     step="0.1"
+                    placeholder="e.g. 32"
                     value={waistInches}
-                    onChange={(e) => setWaistInches(Number(e.target.value))}
+                    onChange={(e) => setWaistInches(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 font-mono focus:bg-white focus:border-cyan-500 focus:outline-none"
                   />
                 </div>
@@ -416,8 +503,9 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({ memberId = 'me
                   <input
                     type="number"
                     step="0.1"
+                    placeholder="e.g. 14"
                     value={bicepsInches}
-                    onChange={(e) => setBicepsInches(Number(e.target.value))}
+                    onChange={(e) => setBicepsInches(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 font-mono focus:bg-white focus:border-cyan-500 focus:outline-none"
                   />
                 </div>

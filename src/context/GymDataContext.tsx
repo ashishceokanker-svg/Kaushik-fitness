@@ -486,6 +486,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       duration: memberData.membershipDuration,
       hasPT: memberData.personalTraining,
       ptDuration: memberData.ptDuration,
+      ptSessionsTotal: memberData.ptSessionsTotal,
       assignedTrainerId: memberData.assignedTrainerId,
       discountType: memberData.discountType,
       discountValue: memberData.discountValue,

@@ -47,7 +47,7 @@ interface MemberDashboardProps {
 
 export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) => {
   const { currentUser, updateCurrentUserProfile } = useAuth();
-  const { members, updateMember } = useGymData();
+  const { members, updateMember, attendance, markAttendance } = useGymData();
 
   // Form Mode (Simple vs Advanced)
   const [formMode, setFormMode] = useState<'simple' | 'advanced'>(() => localDb.getFormMode());
@@ -96,6 +96,39 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [completedExercises, setCompletedExercises] = useState<Record<string, boolean>>({});
   const [selectedWorkoutDay, setSelectedWorkoutDay] = useState<number>(0);
+
+  const todayDate = new Date().toISOString().split('T')[0];
+  const todayMemberAttendance = attendance.find(
+    (a) =>
+      a.date === todayDate &&
+      (a.userId === member?.id ||
+        a.userId === member?.userId ||
+        (member?.memberCode && a.memberCode?.toLowerCase() === member.memberCode?.toLowerCase()) ||
+        (member?.name && a.userName?.toLowerCase() === member.name?.toLowerCase()))
+  );
+
+  const [attLoading, setAttLoading] = useState(false);
+  const [attFeedback, setAttFeedback] = useState<string | null>(null);
+
+  const handleMemberQuickCheckIn = async () => {
+    if (isMemberExpired) {
+      alert('सदस्यता समाप्त है। कृपया सदस्यता रिन्यू कराएं।');
+      return;
+    }
+    setAttLoading(true);
+    try {
+      const res = await markAttendance(member.pin || member.memberCode, 'pin');
+      setAttFeedback(res.message);
+      if (res.success) {
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+      }
+    } catch {
+      setAttFeedback('हाजिरी दर्ज करने में त्रुटि आई। कृपया पुनः प्रयास करें।');
+    } finally {
+      setAttLoading(false);
+      setTimeout(() => setAttFeedback(null), 5000);
+    }
+  };
 
   // Change PIN State
   const [isChangePinModalOpen, setIsChangePinModalOpen] = useState(false);
@@ -465,19 +498,17 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
           <span>Diet Chart (डाइट)</span>
         </button>
 
-        {isAdvanced && (
-          <button
-            onClick={() => setActiveTab('pass')}
-            className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === 'pass'
-                ? 'bg-white text-cyan-800 shadow-sm border border-slate-200/80 font-black'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-            }`}
-          >
-            <KeyRound className="w-4 h-4 text-cyan-600" />
-            <span>PIN Pass (पिन)</span>
-          </button>
-        )}
+        <button
+          onClick={() => setActiveTab('pass')}
+          className={`flex-1 min-w-[130px] flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'pass'
+              ? 'bg-white text-cyan-800 shadow-sm border border-slate-200/80 font-black'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+          }`}
+        >
+          <KeyRound className="w-4 h-4 text-cyan-600" />
+          <span>4-Digit PIN Pass (हाजिरी)</span>
+        </button>
 
         <button
           onClick={() => setActiveTab('body_index')}
@@ -972,13 +1003,13 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
         </div>
       )}
 
-      {/* TAB 4: PASS (Official 4-Digit PIN Entry Pass) - Only shown in Advanced Mode */}
-      {isAdvanced && activeTab === 'pass' && (
-        <div className="max-w-md mx-auto py-2">
+      {/* TAB 4: PASS & 4-DIGIT PIN ATTENDANCE TERMINAL */}
+      {activeTab === 'pass' && (
+        <div className="max-w-lg mx-auto py-2 space-y-4">
           <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm text-center space-y-5 relative overflow-hidden">
             <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-800 text-xs font-bold uppercase tracking-widest">
               <KeyRound className="w-3.5 h-3.5" />
-              Official Digital Entry Pass
+              Official Digital Entry Pass & Attendance Terminal
             </div>
 
             {/* Member Profile Avatar & Info */}
@@ -991,6 +1022,54 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
                 Member ID: {member.memberCode}
               </div>
             </div>
+
+            {/* Attendance Status Banner */}
+            {todayMemberAttendance ? (
+              <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-2xl text-emerald-950 flex items-center justify-between shadow-xs text-left">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-black">आज की हाजिरी दर्ज है (Attendance Marked)</div>
+                    <div className="text-[11px] text-emerald-800">
+                      Check-In: <strong>{todayMemberAttendance.checkInTime}</strong> • {todayMemberAttendance.date}
+                    </div>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-full bg-emerald-200 text-emerald-900 text-[10px] font-black uppercase tracking-wider">
+                  Present
+                </span>
+              </div>
+            ) : (
+              <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-2xl text-amber-950 flex flex-col sm:flex-row items-center justify-between gap-3 text-left shadow-xs">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold">
+                    <Clock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-black">आज की हाजिरी बाकी है</div>
+                    <div className="text-[11px] text-amber-800">अपने 4-अंकीय पिन से अभी उपस्थिति दर्ज करें</div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={attLoading || isMemberExpired}
+                  onClick={handleMemberQuickCheckIn}
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs uppercase tracking-wider shadow-sm transition-all active:scale-95 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{attLoading ? 'दर्ज हो रहा है...' : 'अभी हाजिरी लगाएं'}</span>
+                </button>
+              </div>
+            )}
+
+            {attFeedback && (
+              <div className="p-3 rounded-xl bg-cyan-50 border border-cyan-300 text-cyan-900 text-xs font-bold text-center animate-fade-in">
+                {attFeedback}
+              </div>
+            )}
 
             {/* Glowing 4-Digit PIN Pass Display */}
             <div className="p-6 bg-slate-50 rounded-2xl border-2 border-dashed border-cyan-300 text-center shadow-inner">
@@ -1018,7 +1097,7 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
                   Verified Active Membership Pass
                 </span>
               )}
-              <div className="pt-2">
+              <div className="pt-3 flex flex-wrap items-center justify-center gap-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -1028,10 +1107,19 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
                     setConfirmPin('');
                     setIsChangePinModalOpen(true);
                   }}
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer mx-auto active:scale-95"
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer active:scale-95"
                 >
                   <KeyRound className="w-3.5 h-3.5" />
-                  <span>पिन बदलें (Change 4-Digit PIN)</span>
+                  <span>पिन बदलें (Change PIN)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onNavigate('attendance')}
+                  className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer active:scale-95"
+                >
+                  <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                  <span>कियोस्क टर्मिनल खोलें</span>
                 </button>
               </div>
             </div>
@@ -1041,7 +1129,7 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
                 Kaushik Fitness Kanker entrance par kiosk pad par apna <strong>4-digit PIN ({member.pin})</strong> enter karein.
               </p>
               <p className="text-[11px] text-slate-500">
-                Attendance automatic mark ho jayegi. Kisi physical card ki jarurat nahi hai.
+                Attendance automatic mark ho jayegi aur trainer ke attendance calendar me live dikhegi.
               </p>
             </div>
           </div>

@@ -18,6 +18,8 @@ import {
   CheckCircle,
   CheckCircle2,
   Calendar,
+  CalendarCheck,
+  ChevronLeft,
   Utensils,
   PlusCircle,
   Edit3,
@@ -145,6 +147,47 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
     return localDb.getStaffDailyAttendance().find((a) => (a.staffId === trainer.id || a.staffId === 'usr-2') && a.date === todayDate);
   });
   const [attFeedback, setAttFeedback] = useState<string | null>(null);
+
+  // Calendar month state for PT Attendance Calendar
+  const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
+
+  // Filter attendance logs for selected client
+  const clientAttendanceLogs = selectedClient
+    ? attendance.filter((a) => {
+        if (a.userId && (a.userId === selectedClient.id || a.userId === selectedClient.userId)) return true;
+        if (a.memberCode && selectedClient.memberCode && a.memberCode.toLowerCase() === selectedClient.memberCode.toLowerCase()) return true;
+        if (a.userName && selectedClient.name && a.userName.toLowerCase() === selectedClient.name.toLowerCase()) return true;
+        return false;
+      })
+    : [];
+
+  const attendedDatesMap = new Map<string, typeof clientAttendanceLogs[0]>();
+  clientAttendanceLogs.forEach((l) => {
+    if (l.date && !attendedDatesMap.has(l.date)) {
+      attendedDatesMap.set(l.date, l);
+    }
+  });
+
+  const attendedSessionsCount = attendedDatesMap.size;
+  const totalSessions = selectedClient?.ptSessionsTotal || (
+    selectedClient?.ptDuration === '3_months' ? 36 :
+    selectedClient?.ptDuration === '2_months' ? 24 : 12
+  );
+  const remainingSessions = Math.max(0, totalSessions - attendedSessionsCount);
+  const sessionPct = Math.min(100, Math.round((attendedSessionsCount / totalSessions) * 100));
+
+  const isClientAttendedToday = attendedDatesMap.has(todayDate);
+
+  const handleTrainerQuickMarkAttendance = async () => {
+    if (!selectedClient) return;
+    try {
+      const res = await markAttendance(selectedClient.pin || selectedClient.memberCode || selectedClient.id, 'pin');
+      setAutoDietToast(`✅ ${selectedClient.name} की उपस्थिति दर्ज: ${res.message}`);
+      setTimeout(() => setAutoDietToast(null), 5000);
+    } catch {
+      alert('हाजिरी दर्ज करने में त्रुटि आई।');
+    }
+  };
 
   // Find active live gym floor occupancy record for this trainer
   const trainerFloorRecord = attendance.find(
@@ -794,6 +837,236 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
             targetWeightKg={selectedClient.targetWeightKg || 82}
             onOpenLogModal={handleOpenLogModal}
           />
+
+          {/* 2.3. MEMBER PT ATTENDANCE CALENDAR & SESSIONS TRACKER */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-3">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-800 text-[10px] font-bold uppercase tracking-wider">
+                    <CalendarCheck className="w-3.5 h-3.5 text-cyan-600" />
+                    PT Attendance & Session Tracker
+                  </div>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    {selectedClient.ptDuration?.replace('_', ' ').toUpperCase() || '1 MONTH'} • {totalSessions} SESSIONS
+                  </span>
+                </div>
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <span>{selectedClient.name} का हाजिरी कैलेंडर एवं पीटी सत्र</span>
+                </h3>
+                <p className="text-xs text-slate-500">
+                  सदस्य द्वारा 4-अंकीय पिन से दर्ज की गई हाजिरी यहाँ कैलेंडर में रियल-टाइम ऑटो-अपडेट होती है।
+                </p>
+              </div>
+
+              {/* Quick Today Mark / Status */}
+              <div className="flex items-center gap-2">
+                {isClientAttendedToday ? (
+                  <span className="px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-900 font-bold text-xs flex items-center gap-1.5 shadow-2xs">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>आज उपस्थित ({attendedDatesMap.get(todayDate)?.checkInTime})</span>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleTrainerQuickMarkAttendance}
+                    className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    <span>आज की हाजिरी लगाएं</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Session Quota Metrics Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-[10px] text-slate-500 font-bold uppercase block">कुल आवंटित सत्र (Total)</span>
+                <div className="text-xl font-black text-slate-900 font-mono mt-0.5">
+                  {totalSessions} <span className="text-xs font-normal text-slate-500">Sessions</span>
+                </div>
+                <div className="text-[10px] text-cyan-700 mt-0.5">पैकेज: {selectedClient.ptDuration?.replace('_', ' ') || '1 Month'}</div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200">
+                <span className="text-[10px] text-emerald-800 font-bold uppercase block">उपस्थित सत्र (Attended)</span>
+                <div className="text-xl font-black text-emerald-700 font-mono mt-0.5">
+                  {attendedSessionsCount} <span className="text-xs font-normal text-emerald-600">सत्र पूर्ण</span>
+                </div>
+                <div className="text-[10px] text-emerald-800 font-semibold mt-0.5">{sessionPct}% कोटा पूर्ण</div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200">
+                <span className="text-[10px] text-amber-800 font-bold uppercase block">बचे हुए सत्र (Remaining)</span>
+                <div className="text-xl font-black text-amber-700 font-mono mt-0.5">
+                  {remainingSessions} <span className="text-xs font-normal text-amber-600">सत्र शेष</span>
+                </div>
+                <div className="text-[10px] text-amber-800 font-semibold mt-0.5">कोच ट्रेनिंग शेष</div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-cyan-50/70 border border-cyan-200">
+                <span className="text-[10px] text-cyan-800 font-bold uppercase block">4-अंक पिन (Member PIN)</span>
+                <div className="text-xl font-black text-cyan-900 font-mono mt-0.5 tracking-wider">
+                  {selectedClient.pin || '2222'}
+                </div>
+                <div className="text-[10px] text-cyan-800 mt-0.5">कियोस्क चेक-इन कोड</div>
+              </div>
+            </div>
+
+            {/* Progress Bar for Session Completion */}
+            <div className="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
+              <div className="flex justify-between text-xs font-bold text-slate-700">
+                <span>पीटी सत्र पूर्णता प्रगति (Session Progress)</span>
+                <span className="font-mono text-cyan-800">{attendedSessionsCount} / {totalSessions} सत्र ({sessionPct}%)</span>
+              </div>
+              <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-emerald-500 to-cyan-500 h-full rounded-full transition-all duration-500"
+                  style={{ width: `${sessionPct}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Calendar Controls & Month Grid */}
+            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
+              {/* Calendar Month Header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-black text-sm text-slate-900 capitalize">
+                    {calendarMonth.toLocaleDateString('hi-IN', { month: 'long', year: 'numeric' })}
+                  </h4>
+                  <span className="text-[11px] text-slate-500 font-mono">
+                    ({new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' }).format(calendarMonth)})
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1));
+                    }}
+                    className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 cursor-pointer shadow-2xs"
+                    title="पिछला महीना"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setCalendarMonth(new Date())}
+                    className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-[11px] font-bold text-slate-700 cursor-pointer shadow-2xs"
+                  >
+                    आज (Current Month)
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1));
+                    }}
+                    className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 cursor-pointer shadow-2xs"
+                    title="अगला महीना"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Calendar Grid */}
+              {(() => {
+                const year = calendarMonth.getFullYear();
+                const month = calendarMonth.getMonth();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const firstDay = new Date(year, month, 1).getDay();
+                // Monday as day 0:
+                const offset = (firstDay + 6) % 7;
+                const weekdays = ['सोम', 'मंगल', 'बुध', 'गुरु', 'शुक्र', 'शनि', 'रवि'];
+
+                return (
+                  <div className="space-y-1">
+                    {/* Weekdays */}
+                    <div className="grid grid-cols-7 gap-1 text-center font-bold text-[11px] text-slate-500 pb-1 border-b border-slate-200">
+                      {weekdays.map((w, wIdx) => (
+                        <div key={wIdx} className={wIdx >= 5 ? 'text-amber-700' : ''}>
+                          {w}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Days */}
+                    <div className="grid grid-cols-7 gap-1 pt-1">
+                      {Array.from({ length: offset }).map((_, i) => (
+                        <div key={`empty-${i}`} className="h-12 rounded-lg bg-slate-100/50" />
+                      ))}
+
+                      {Array.from({ length: daysInMonth }).map((_, i) => {
+                        const dayNum = i + 1;
+                        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+                        const isAttended = attendedDatesMap.has(dateStr);
+                        const record = attendedDatesMap.get(dateStr);
+                        const isToday = dateStr === todayDate;
+
+                        return (
+                          <div
+                            key={dateStr}
+                            className={`min-h-12 p-1 rounded-lg border flex flex-col justify-between text-left transition-all ${
+                              isAttended
+                                ? 'bg-emerald-50 border-emerald-300 text-emerald-950 font-bold shadow-2xs'
+                                : isToday
+                                ? 'bg-amber-50/60 border-amber-300 text-slate-900 ring-2 ring-amber-400/40'
+                                : 'bg-white border-slate-200/80 text-slate-700'
+                            }`}
+                          >
+                            <div className="flex justify-between items-center text-[11px] leading-none">
+                              <span className={`font-mono font-bold ${isToday ? 'text-amber-700' : ''}`}>
+                                {dayNum}
+                              </span>
+                              {isAttended && (
+                                <span className="w-3.5 h-3.5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[9px] font-black">
+                                  ✓
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="text-[9px] mt-0.5 truncate">
+                              {isAttended ? (
+                                <span className="text-emerald-700 font-semibold block truncate font-mono">
+                                  {record?.checkInTime || 'Present'}
+                                </span>
+                              ) : isToday ? (
+                                <span className="text-amber-700 font-bold block">आज</span>
+                              ) : null}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Attendance Log Table */}
+              <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs text-slate-500 gap-2">
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center gap-1">
+                    <span className="w-3 h-3 rounded-md bg-emerald-50 border border-emerald-300 inline-block text-center text-[8px] font-bold text-emerald-800">✓</span>
+                    <span>उपस्थित (Present)</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-3 h-3 rounded-md bg-amber-50 border border-amber-300 inline-block text-center text-[8px] font-bold text-amber-800">•</span>
+                    <span>आज का दिन (Today)</span>
+                  </span>
+                </div>
+
+                <div className="text-[11px] font-mono text-cyan-800 font-semibold">
+                  कुल लॉग रिकॉर्ड: {clientAttendanceLogs.length} प्रविष्टियां
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* 2.5. CLIENT WEEKLY WORKOUT ROUTINE VIEWER & MODIFIER */}
           <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">

@@ -7,7 +7,7 @@ export type StaffType = 'instructor' | 'regular';
 
 export type MembershipDuration = '1_month' | '3_months' | '6_months' | '1_year' | (string & {});
 
-export type PTPackageDuration = '1_month' | '3_months' | '6_months' | 'none' | (string & {});
+export type PTPackageDuration = '1_month' | '2_months' | '3_months' | '6_months' | 'none' | (string & {});
 
 export type PaymentStatus = 'paid' | 'pending' | 'partial' | 'due';
 
@@ -71,6 +71,7 @@ export interface DbMembership {
   package_type: MembershipDuration;
   is_personal_training: boolean;
   pt_duration?: PTPackageDuration;
+  pt_sessions_total?: number;
   trainer_id?: string;
   trainer_name?: string;
   joining_date: string;
@@ -209,6 +210,7 @@ export interface Member {
   expiryDate: string;
   personalTraining: boolean;
   ptDuration?: PTPackageDuration;
+  ptSessionsTotal?: number;
   assignedTrainerId?: string;
   assignedTrainerName?: string;
   workoutSlot?: string; // 1-hour schedule slot (e.g. '06:00 AM - 07:00 AM')

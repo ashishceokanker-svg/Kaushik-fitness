@@ -288,8 +288,9 @@ export const DeveloperPage: React.FC<DeveloperPageProps> = ({ onBack }) => {
         </div>
       </div>
 
-      {/* DEVELOPER SYSTEM & FORM MODE CONTROLS */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xl space-y-6">
+      {/* DEVELOPER SYSTEM & FORM MODE CONTROLS (DEVELOPER ONLY) */}
+      {isDeveloper && (
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xl space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-5">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-cyan-50 border border-cyan-200 flex items-center justify-center text-cyan-600 shadow-xs shrink-0">
@@ -507,6 +508,7 @@ export const DeveloperPage: React.FC<DeveloperPageProps> = ({ onBack }) => {
           </div>
         </div>
       </div>
+      )}
 
       <LiveCameraModal
         isOpen={showCameraModal}

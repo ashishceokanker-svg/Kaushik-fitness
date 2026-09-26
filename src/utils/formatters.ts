@@ -56,6 +56,17 @@ export const DEFAULT_PT_PLANS: PTPlan[] = [
     isActive: true,
   },
   {
+    id: '2_months',
+    name: '2 Months Intensive PT (2 माह व्यक्तिगत प्रशिक्षण)',
+    durationMonths: 2,
+    price: 4500,
+    badge: 'Popular PT',
+    sessionsPerWeek: 6,
+    description: '2 महीने का व्यक्तिगत प्रशिक्षण एवं सघन ट्रांसफॉर्मेशन सत्र',
+    features: ['1-ऑन-1 ट्रेनर मार्गदर्शन', 'सघन वर्कआउट रूटीन', 'साप्ताहिक प्रोग्रेस मॉनिटरिंग'],
+    isActive: true,
+  },
+  {
     id: '3_months',
     name: '3 Months Transformation PT (3 माह बॉडी ट्रांसफॉर्मेशन)',
     durationMonths: 3,
