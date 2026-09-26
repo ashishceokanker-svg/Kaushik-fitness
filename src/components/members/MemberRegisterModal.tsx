@@ -448,23 +448,13 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({
 
             {/* PIN Generation & Customization Box */}
             <div className="p-3 bg-amber-500/10 border border-amber-300/80 rounded-xl">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
-                <div>
-                  <label className="block text-xs font-bold text-amber-950">
-                    सदस्य ऐप लॉगिन व अटेंडेंस 4-अंक पिन (Member Security PIN) *
-                  </label>
-                  <p className="text-[11px] text-amber-800">
-                    सदस्य मोबाइल ऐप लॉगिन और जिम अटेंडेंस के लिए इसी 4-अंक पिन का उपयोग करेंगे।
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleGeneratePin}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white text-xs font-bold rounded-lg shadow-sm transition-all cursor-pointer self-start sm:self-auto"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  नया पिन बनाएं
-                </button>
+              <div className="mb-1.5">
+                <label className="block text-xs font-bold text-amber-950">
+                  सदस्य ऐप लॉगिन व अटेंडेंस 4-अंक पिन (Member Security PIN) *
+                </label>
+                <p className="text-[11px] text-amber-800">
+                  सदस्य मोबाइल ऐप लॉगिन और जिम अटेंडेंस के लिए यह 4-अंक पिन स्वतः जनरेट हुआ है:
+                </p>
               </div>
               <div className="flex items-center gap-3">
                 <input
@@ -497,35 +487,18 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({
               {/* Height cm */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">ऊंचाई (Height cm)</label>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setHeightCm((prev) => Math.max(100, (Number(prev) || 172) - 1))}
-                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-800 active:scale-95 flex items-center justify-center border border-slate-300 transition-all font-black select-none shrink-0 cursor-pointer"
-                    title="1 cm कम करें"
-                  >
-                    <Minus className="w-3.5 h-3.5" />
-                  </button>
-                  <div className="relative flex-1">
-                    <input
-                      type="number"
-                      min="100"
-                      max="250"
-                      value={heightCm}
-                      onChange={(e) => setHeightCm(Number(e.target.value))}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-1.5 py-1.5 text-center text-xs text-slate-900 font-mono font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setHeightCm((prev) => Math.min(250, (Number(prev) || 172) + 1))}
-                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-800 active:scale-95 flex items-center justify-center border border-slate-300 transition-all font-black select-none shrink-0 cursor-pointer"
-                    title="1 cm बढ़ाएं"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="100"
+                    max="250"
+                    value={heightCm}
+                    onChange={(e) => setHeightCm(Number(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 pr-10 text-sm text-slate-900 font-mono font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                  />
+                  <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-bold pointer-events-none">cm</span>
                 </div>
-                <span className="text-[10px] text-slate-400 mt-0.5 block font-medium text-center">
+                <span className="text-[10px] text-slate-400 mt-1 block font-medium">
                   ~{((heightCm || 172) / 30.48).toFixed(1)} ft
                 </span>
               </div>
@@ -533,36 +506,19 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({
               {/* Current Weight kg */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">वर्तमान वजन (Wt kg)</label>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setWeightKg((prev) => +(Math.max(30, (Number(prev) || 68) - 0.5)).toFixed(1))}
-                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-800 active:scale-95 flex items-center justify-center border border-slate-300 transition-all font-black select-none shrink-0 cursor-pointer"
-                    title="0.5 kg कम करें"
-                  >
-                    <Minus className="w-3.5 h-3.5" />
-                  </button>
-                  <div className="relative flex-1">
-                    <input
-                      type="number"
-                      min="30"
-                      max="250"
-                      step="0.5"
-                      value={weightKg}
-                      onChange={(e) => setWeightKg(Number(e.target.value))}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-1.5 py-1.5 text-center text-xs text-slate-900 font-mono font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setWeightKg((prev) => +(Math.min(250, (Number(prev) || 68) + 0.5)).toFixed(1))}
-                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-800 active:scale-95 flex items-center justify-center border border-slate-300 transition-all font-black select-none shrink-0 cursor-pointer"
-                    title="0.5 kg बढ़ाएं"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="30"
+                    max="250"
+                    step="0.5"
+                    value={weightKg}
+                    onChange={(e) => setWeightKg(Number(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 pr-10 text-sm text-slate-900 font-mono font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                  />
+                  <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-bold pointer-events-none">kg</span>
                 </div>
-                <span className="text-[10px] text-slate-400 mt-0.5 block font-medium text-center">
+                <span className="text-[10px] text-slate-400 mt-1 block font-medium">
                   वजन (kg)
                 </span>
               </div>
@@ -570,36 +526,19 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({
               {/* Target Weight kg */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">लक्ष्य वजन (Target kg)</label>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setTargetWeightKg((prev) => +(Math.max(30, (Number(prev) || 72) - 0.5)).toFixed(1))}
-                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-800 active:scale-95 flex items-center justify-center border border-slate-300 transition-all font-black select-none shrink-0 cursor-pointer"
-                    title="0.5 kg कम करें"
-                  >
-                    <Minus className="w-3.5 h-3.5" />
-                  </button>
-                  <div className="relative flex-1">
-                    <input
-                      type="number"
-                      min="30"
-                      max="250"
-                      step="0.5"
-                      value={targetWeightKg}
-                      onChange={(e) => setTargetWeightKg(Number(e.target.value))}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-1.5 py-1.5 text-center text-xs text-slate-900 font-mono font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setTargetWeightKg((prev) => +(Math.min(250, (Number(prev) || 72) + 0.5)).toFixed(1))}
-                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-800 active:scale-95 flex items-center justify-center border border-slate-300 transition-all font-black select-none shrink-0 cursor-pointer"
-                    title="0.5 kg बढ़ाएं"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="30"
+                    max="250"
+                    step="0.5"
+                    value={targetWeightKg}
+                    onChange={(e) => setTargetWeightKg(Number(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 pr-10 text-sm text-slate-900 font-mono font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                  />
+                  <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-bold pointer-events-none">kg</span>
                 </div>
-                <span className="text-[10px] text-emerald-700 font-bold mt-0.5 block text-center">
+                <span className="text-[10px] text-emerald-700 font-bold mt-1 block">
                   {Math.abs(weightKg - targetWeightKg).toFixed(1)} kg {weightKg > targetWeightKg ? 'कमी' : 'वृद्धि'}
                 </span>
               </div>

@@ -270,9 +270,13 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
   useEffect(() => {
     const handleUpdate = () => setDietTick((t) => t + 1);
     window.addEventListener('kf_body_index_updated', handleUpdate);
+    window.addEventListener('kf_attendance_marked', handleUpdate);
+    window.addEventListener('kf_member_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
     return () => {
       window.removeEventListener('kf_body_index_updated', handleUpdate);
+      window.removeEventListener('kf_attendance_marked', handleUpdate);
+      window.removeEventListener('kf_member_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
   }, []);

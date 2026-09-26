@@ -248,9 +248,13 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
   useEffect(() => {
     const handleUpdate = () => setDietTick((t) => t + 1);
     window.addEventListener('kf_body_index_updated', handleUpdate);
+    window.addEventListener('kf_attendance_marked', handleUpdate);
+    window.addEventListener('kf_member_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
     return () => {
       window.removeEventListener('kf_body_index_updated', handleUpdate);
+      window.removeEventListener('kf_attendance_marked', handleUpdate);
+      window.removeEventListener('kf_member_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
   }, []);
@@ -1205,12 +1209,6 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                       <Trash2 className="w-3 h-3" />
                       <span>Remove Photo</span>
                     </button>
-                  )}
-
-                  {!isDeveloper && (
-                    <div className="text-[10px] text-slate-400">
-                      (फोटो संपादन केवल डेवलपर लॉगिन में उपलब्ध)
-                    </div>
                   )}
 
                   <div>

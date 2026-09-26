@@ -154,12 +154,29 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
   // Calendar month state for PT Attendance Calendar
   const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
 
+  // Real-time listener for attendance updates across tabs & mobile simulator
+  const [attTick, setAttTick] = useState(0);
+  useEffect(() => {
+    const handleAttUpdate = () => setAttTick((t) => t + 1);
+    window.addEventListener('kf_attendance_marked', handleAttUpdate);
+    window.addEventListener('storage', handleAttUpdate);
+    return () => {
+      window.removeEventListener('kf_attendance_marked', handleAttUpdate);
+      window.removeEventListener('storage', handleAttUpdate);
+    };
+  }, []);
+
   // Filter attendance logs for selected client
   const clientAttendanceLogs = selectedClient
     ? attendance.filter((a) => {
+        if (!a) return false;
         if (a.userId && (a.userId === selectedClient.id || a.userId === selectedClient.userId)) return true;
-        if (a.memberCode && selectedClient.memberCode && a.memberCode.toLowerCase() === selectedClient.memberCode.toLowerCase()) return true;
-        if (a.userName && selectedClient.name && a.userName.toLowerCase() === selectedClient.name.toLowerCase()) return true;
+        const aNum = (a.userId || '').replace('mem-', '').replace('prof-', '').replace('usr-', '');
+        const cNum = (selectedClient.id || '').replace('mem-', '').replace('prof-', '').replace('usr-', '');
+        if (aNum && cNum && aNum === cNum) return true;
+        if (a.memberCode && selectedClient.memberCode && a.memberCode.trim().toLowerCase() === selectedClient.memberCode.trim().toLowerCase()) return true;
+        if (a.userName && selectedClient.name && a.userName.trim().toLowerCase() === selectedClient.name.trim().toLowerCase()) return true;
+        if ((a as any).pin && selectedClient.pin && (a as any).pin === selectedClient.pin) return true;
         return false;
       })
     : [];
@@ -181,17 +198,47 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
   const isClientAttendedToday = attendedDatesMap.has(todayDate);
 
   // Joining Date / Start Date of PT Cycle
-  const clientJoiningDateStr = selectedClient?.joiningDate || selectedClient?.joinDate || todayDate;
+  const rawJoinDate = selectedClient?.joiningDate || selectedClient?.joinDate || todayDate;
+  const clientJoiningDateStr = (rawJoinDate ? rawJoinDate.split('T')[0] : todayDate) || todayDate;
 
-  // Build Month 1, Month 2, Month 3 cycle periods from joining date
+  // Determine active cycle start date
+  const getCycleBaseDate = () => {
+    let [jYear, jMonth, jDay] = clientJoiningDateStr.split('-').map(Number);
+    if (!jYear || isNaN(jYear)) jYear = new Date().getFullYear();
+    if (!jMonth || isNaN(jMonth)) jMonth = new Date().getMonth() + 1;
+    if (!jDay || isNaN(jDay)) jDay = new Date().getDate();
+
+    // If member has active lastPaymentDate
+    if (selectedClient?.lastPaymentDate) {
+      const lpClean = selectedClient.lastPaymentDate.split('T')[0];
+      const [lpY, lpM, lpD] = lpClean.split('-').map(Number);
+      if (lpY && !isNaN(lpY)) {
+        const lpEnd = new Date(lpY, lpM - 1 + ptMonthsTotal, lpD);
+        if (new Date() <= lpEnd) {
+          return new Date(lpY, lpM - 1, lpD);
+        }
+      }
+    }
+
+    // If joining date was in a previous cycle older than total package months, advance to current active cycle
+    const nowObj = new Date();
+    let curCycleStart = new Date(jYear, jMonth - 1, jDay);
+    let curCycleEnd = new Date(jYear, jMonth - 1 + ptMonthsTotal, jDay);
+
+    if (nowObj > curCycleEnd) {
+      while (new Date(curCycleStart.getFullYear(), curCycleStart.getMonth() + ptMonthsTotal, jDay) < nowObj) {
+        curCycleStart = new Date(curCycleStart.getFullYear(), curCycleStart.getMonth() + ptMonthsTotal, jDay);
+      }
+    }
+    return curCycleStart;
+  };
+
+  const cycleBase = getCycleBaseDate();
+
+  // Build Month 1, Month 2, Month 3 cycle periods from active cycle base date
   const ptPeriods = Array.from({ length: ptMonthsTotal }).map((_, idx) => {
-    const parts = (clientJoiningDateStr || todayDate).split('-').map(Number);
-    const startYear = parts[0] || new Date().getFullYear();
-    const startMonth = (parts[1] || (new Date().getMonth() + 1)) - 1;
-    const startDay = parts[2] || new Date().getDate();
-
-    const pStart = new Date(startYear, startMonth + idx, startDay);
-    const pEnd = new Date(startYear, startMonth + idx + 1, startDay);
+    const pStart = new Date(cycleBase.getFullYear(), cycleBase.getMonth() + idx, cycleBase.getDate());
+    const pEnd = new Date(cycleBase.getFullYear(), cycleBase.getMonth() + idx + 1, cycleBase.getDate());
     pEnd.setDate(pEnd.getDate() - 1);
 
     const sStr = `${pStart.getFullYear()}-${String(pStart.getMonth() + 1).padStart(2, '0')}-${String(pStart.getDate()).padStart(2, '0')}`;
@@ -228,11 +275,12 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
   const [activePtTab, setActivePtTab] = useState<'0' | '1' | '2' | 'goswara'>('0');
 
   useEffect(() => {
-    setActivePtTab('0');
-    if (ptPeriods[0]?.startDateObj) {
-      setCalendarMonth(new Date(ptPeriods[0].startDateObj));
-    }
-  }, [selectedClient?.id, ptMonthsTotal]);
+    // Focus in-progress period or default to first
+    const inProgIdx = ptPeriods.findIndex((p) => p.status === 'in_progress');
+    const defaultIdx = inProgIdx >= 0 ? inProgIdx : 0;
+    setActivePtTab(String(defaultIdx) as any);
+    setCalendarMonth(new Date());
+  }, [selectedClient?.id, ptMonthsTotal, attTick]);
 
   const selectedPeriodIdx = activePtTab === 'goswara' ? 0 : Math.min(Number(activePtTab), ptPeriods.length - 1);
   const activePeriod = ptPeriods[selectedPeriodIdx] || ptPeriods[0];
@@ -1069,10 +1117,10 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
                           {ptMonthlyQuota * ptMonthsTotal} सत्र
                         </td>
                         <td className="py-3 px-3 text-center font-mono font-black text-emerald-800">
-                          {ptPeriods.reduce((acc, curr) => acc + curr.attendedCount, 0)} सत्र
+                          {Math.max(attendedSessionsCount, ptPeriods.reduce((acc, curr) => acc + curr.attendedCount, 0))} सत्र
                         </td>
                         <td className="py-3 px-3 text-center font-mono font-black text-amber-800">
-                          {ptPeriods.reduce((acc, curr) => acc + curr.remaining, 0)} सत्र
+                          {Math.max(0, totalSessions - Math.max(attendedSessionsCount, ptPeriods.reduce((acc, curr) => acc + curr.attendedCount, 0)))} सत्र
                         </td>
                         <td className="py-3 px-3 text-center font-mono font-black text-cyan-900">
                           {sessionPct}%
@@ -1119,11 +1167,11 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-cyan-50/70 border border-cyan-200">
-                    <span className="text-[10px] text-cyan-800 font-bold uppercase block">4-अंक पिन (Member PIN)</span>
+                    <span className="text-[10px] text-cyan-800 font-bold uppercase block">कुल पैकेज उपस्थिति (Overall)</span>
                     <div className="text-xl font-black text-cyan-900 font-mono mt-0.5 tracking-wider">
-                      {selectedClient.pin || '2222'}
+                      {attendedSessionsCount} / {totalSessions}
                     </div>
-                    <div className="text-[10px] text-cyan-800 mt-0.5">कियोस्क चेक-इन कोड</div>
+                    <div className="text-[10px] text-cyan-800 mt-0.5 font-bold">{sessionPct}% सत्र पूर्ण</div>
                   </div>
                 </div>
 

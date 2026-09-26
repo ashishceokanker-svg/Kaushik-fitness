@@ -228,12 +228,6 @@ export const DeveloperPage: React.FC<DeveloperPageProps> = ({ onBack }) => {
                 <span>Remove Photo</span>
               </button>
             )}
-
-            {!isDeveloper && (
-              <span className="text-[10px] text-slate-400 pt-0.5">
-                (फोटो संपादन केवल डेवलपर के लिए उपलब्ध)
-              </span>
-            )}
           </div>
 
           {/* Core Info */}

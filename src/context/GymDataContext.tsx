@@ -529,6 +529,9 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       });
     }
 
+    window.dispatchEvent(new Event('kf_member_updated'));
+    window.dispatchEvent(new Event('storage'));
+
     return registered;
   };
 
@@ -545,6 +548,8 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         syncDocToFirestore(FIRESTORE_COLLECTIONS.USERS, userId, { pin: data.pin });
       }
     }
+    window.dispatchEvent(new Event('kf_member_updated'));
+    window.dispatchEvent(new Event('storage'));
   };
 
   const deleteMember = (id: string) => {
@@ -788,6 +793,8 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
           prev.map((a) => (a.id === existingToday.id ? { ...a, checkOutTime: nowTime } : a))
         );
         syncDocToFirestore(FIRESTORE_COLLECTIONS.ATTENDANCE, existingToday.id, { checkOutTime: nowTime });
+        window.dispatchEvent(new CustomEvent('kf_attendance_marked', { detail: { ...existingToday, checkOutTime: nowTime } }));
+        window.dispatchEvent(new Event('storage'));
         return {
           success: true,
           message: `Checked out successfully! Have a great recovery, ${matchedMember.name}! 👋`,
@@ -810,6 +817,8 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       setAttendance((prev) => [newRecord, ...prev]);
       syncDocToFirestore(FIRESTORE_COLLECTIONS.ATTENDANCE, newRecord.id, newRecord);
+      window.dispatchEvent(new CustomEvent('kf_attendance_marked', { detail: newRecord }));
+      window.dispatchEvent(new Event('storage'));
 
       return {
         success: true,
@@ -841,6 +850,8 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
           prev.map((a) => (a.id === existingToday.id ? { ...a, checkOutTime: nowTime } : a))
         );
         syncDocToFirestore(FIRESTORE_COLLECTIONS.ATTENDANCE, existingToday.id, { checkOutTime: nowTime });
+        window.dispatchEvent(new CustomEvent('kf_attendance_marked', { detail: { ...existingToday, checkOutTime: nowTime } }));
+        window.dispatchEvent(new Event('storage'));
         return {
           success: true,
           message: `Staff shift completed! Clocked out: ${matchedStaff.name} (${matchedStaff.designation})`,
@@ -863,6 +874,8 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       setAttendance((prev) => [newRecord, ...prev]);
       syncDocToFirestore(FIRESTORE_COLLECTIONS.ATTENDANCE, newRecord.id, newRecord);
+      window.dispatchEvent(new CustomEvent('kf_attendance_marked', { detail: newRecord }));
+      window.dispatchEvent(new Event('storage'));
 
       return {
         success: true,
