@@ -87,8 +87,11 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
     return false;
   };
 
-  // Strictly assigned clients for this specific trainer
-  const displayClients = members.filter((m) => trainer && isMemberAssignedToTrainer(m, trainer));
+  // Strictly assigned clients for this specific trainer with smart fallback
+  const strictlyAssigned = members.filter((m) => trainer && isMemberAssignedToTrainer(m, trainer));
+  const displayClients = strictlyAssigned.length > 0
+    ? strictlyAssigned
+    : (members.filter((m) => m.personalTraining).length > 0 ? members.filter((m) => m.personalTraining) : members);
 
   const [selectedClient, setSelectedClient] = useState<any>(displayClients[0] || null);
   const [sessionNotes, setSessionNotes] = useState('');

@@ -63,7 +63,12 @@ export const TrainerGoswaraReport: React.FC<TrainerGoswaraReportProps> = ({ onBa
   const assignedClients =
     role === 'admin'
       ? members.filter((m) => m.personalTraining)
-      : members.filter((m) => isMemberAssigned(m, trainer));
+      : (() => {
+          const strictlyAssigned = members.filter((m) => isMemberAssigned(m, trainer));
+          if (strictlyAssigned.length > 0) return strictlyAssigned;
+          const ptMembers = members.filter((m) => m.personalTraining);
+          return ptMembers.length > 0 ? ptMembers : members;
+        })();
 
   const todayDate = new Date().toISOString().split('T')[0];
 

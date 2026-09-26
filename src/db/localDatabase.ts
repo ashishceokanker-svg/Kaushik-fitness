@@ -533,12 +533,65 @@ class LocalGymDatabase {
 
   // Member Profiles
   getMemberProfiles(): DbMemberProfile[] {
-    return this.getTable<DbMemberProfile>(DB_KEYS.MEMBER_PROFILES, SEED_MEMBER_PROFILES);
+    const list = this.getTable<DbMemberProfile>(DB_KEYS.MEMBER_PROFILES, SEED_MEMBER_PROFILES);
+    const hasRahul = list.some((p) => p.user_id === 'usr-5' || p.id === 'prof-usr-5');
+    if (!hasRahul) {
+      list.push({
+        id: 'prof-usr-5',
+        user_id: 'usr-5',
+        member_code: 'KF-2024-001',
+        age: 26,
+        gender: 'male',
+        height: 175,
+        weight: 74,
+        target_weight: 78,
+        fitness_goal: 'muscle_building',
+        fitness_level: 'Intermediate',
+        fitness_score: 82,
+        emergency_contact: '9826112345',
+        bmi: 24.2,
+        body_fat_percentage: 16.5,
+        diet_preference: 'non_veg',
+        workout_slot: '06:00 AM - 07:00 AM',
+      });
+      this.setTable(DB_KEYS.MEMBER_PROFILES, list);
+    }
+    return list;
   }
 
   // Memberships
   getMemberships(): DbMembership[] {
-    return this.getTable<DbMembership>(DB_KEYS.MEMBERSHIPS, SEED_MEMBERSHIPS);
+    const list = this.getTable<DbMembership>(DB_KEYS.MEMBERSHIPS, SEED_MEMBERSHIPS);
+    const hasRahul = list.some((m) => m.member_id === 'prof-usr-5' || m.id === 'msh-usr-5');
+    if (!hasRahul) {
+      const now = new Date();
+      const joinDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+      const expiryDate = new Date(now.getFullYear(), now.getMonth() + 3, 1).toISOString().split('T')[0];
+      list.push({
+        id: 'msh-usr-5',
+        member_id: 'prof-usr-5',
+        package_type: '3_months',
+        is_personal_training: true,
+        pt_duration: '3_months',
+        pt_sessions_total: 24,
+        trainer_id: 'usr-2',
+        trainer_name: 'Vikram Sahu',
+        base_fee: 3200,
+        pt_fee: 7500,
+        total_fee: 10700,
+        final_paid_fee: 10700,
+        due_amount: 0,
+        discount_applied: 0,
+        payment_status: 'paid',
+        payment_method: 'upi',
+        joining_date: joinDate,
+        expiry_date: expiryDate,
+        active: true,
+        last_payment_date: joinDate,
+      });
+      this.setTable(DB_KEYS.MEMBERSHIPS, list);
+    }
+    return list;
   }
 
   // Fitness Plans
