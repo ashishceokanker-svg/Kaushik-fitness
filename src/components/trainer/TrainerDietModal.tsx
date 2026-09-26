@@ -23,6 +23,8 @@ interface TrainerDietModalProps {
   memberName: string;
   trainerId: string;
   trainerName: string;
+  dietPreference?: 'veg' | 'non_veg';
+  isDeveloperMode?: boolean;
   memberStats?: {
     weightKg: number;
     heightCm: number;
@@ -42,6 +44,8 @@ export const TrainerDietModal: React.FC<TrainerDietModalProps> = ({
   memberName,
   trainerId,
   trainerName,
+  dietPreference,
+  isDeveloperMode,
   memberStats,
   existingDiet,
   onSave,
@@ -101,7 +105,8 @@ export const TrainerDietModal: React.FC<TrainerDietModalProps> = ({
   const [targetProtein, setTargetProtein] = useState<number>(existingDiet?.targetProtein || 150);
   const [targetCarbs, setTargetCarbs] = useState<number>(existingDiet?.targetCarbs || 280);
   const [targetFats, setTargetFats] = useState<number>(existingDiet?.targetFats || 65);
-  const [selectedDietType, setSelectedDietType] = useState<'veg' | 'non_veg' | 'eggitarian'>(existingDiet?.dietType || 'veg');
+  const initialDietType: 'veg' | 'non_veg' | 'eggitarian' = existingDiet?.dietType || (dietPreference === 'non_veg' ? 'non_veg' : 'veg');
+  const [selectedDietType, setSelectedDietType] = useState<'veg' | 'non_veg' | 'eggitarian'>(initialDietType);
   const [autoNotice, setAutoNotice] = useState<string | null>(null);
   const [notes, setNotes] = useState<string>(
     existingDiet?.notes || 'Follow strictly. Drink 3.5 Liters of water daily. No outside junk food.'
@@ -256,44 +261,50 @@ export const TrainerDietModal: React.FC<TrainerDietModalProps> = ({
               </div>
 
               <div className="flex flex-wrap items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => handleAutoGenerate('veg')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                    selectedDietType === 'veg'
-                      ? 'bg-emerald-600 text-white shadow-md'
-                      : 'bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300'
-                  }`}
-                >
-                  <Apple className="w-3.5 h-3.5" />
-                  <span>🥗 शाकाहारी (Veg)</span>
-                </button>
+                {(isDeveloperMode || dietPreference !== 'non_veg') && (
+                  <button
+                    type="button"
+                    onClick={() => handleAutoGenerate('veg')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      selectedDietType === 'veg'
+                        ? 'bg-emerald-600 text-white shadow-md'
+                        : 'bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300'
+                    }`}
+                  >
+                    <Apple className="w-3.5 h-3.5" />
+                    <span>🥗 शाकाहारी (Veg)</span>
+                  </button>
+                )}
 
-                <button
-                  type="button"
-                  onClick={() => handleAutoGenerate('non_veg')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                    selectedDietType === 'non_veg'
-                      ? 'bg-rose-600 text-white shadow-md'
-                      : 'bg-white hover:bg-rose-50 text-rose-800 border border-rose-300'
-                  }`}
-                >
-                  <Drumstick className="w-3.5 h-3.5" />
-                  <span>🍗 मांसाहारी (Non-Veg)</span>
-                </button>
+                {(isDeveloperMode || dietPreference === 'non_veg') && (
+                  <button
+                    type="button"
+                    onClick={() => handleAutoGenerate('non_veg')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      selectedDietType === 'non_veg'
+                        ? 'bg-rose-600 text-white shadow-md'
+                        : 'bg-white hover:bg-rose-50 text-rose-800 border border-rose-300'
+                    }`}
+                  >
+                    <Drumstick className="w-3.5 h-3.5" />
+                    <span>🍗 मांसाहारी (Non-Veg)</span>
+                  </button>
+                )}
 
-                <button
-                  type="button"
-                  onClick={() => handleAutoGenerate('eggitarian')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                    selectedDietType === 'eggitarian'
-                      ? 'bg-amber-600 text-white shadow-md'
-                      : 'bg-white hover:bg-amber-50 text-amber-800 border border-amber-300'
-                  }`}
-                >
-                  <Egg className="w-3.5 h-3.5" />
-                  <span>🥚 अंडा (Eggitarian)</span>
-                </button>
+                {isDeveloperMode && (
+                  <button
+                    type="button"
+                    onClick={() => handleAutoGenerate('eggitarian')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      selectedDietType === 'eggitarian'
+                        ? 'bg-amber-600 text-white shadow-md'
+                        : 'bg-white hover:bg-amber-50 text-amber-800 border border-amber-300'
+                    }`}
+                  >
+                    <Egg className="w-3.5 h-3.5" />
+                    <span>🥚 अंडा (Eggitarian)</span>
+                  </button>
+                )}
               </div>
             </div>
 

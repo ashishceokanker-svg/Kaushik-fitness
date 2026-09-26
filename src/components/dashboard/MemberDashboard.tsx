@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useGymData } from '../../context/GymDataContext';
 import { useAuth } from '../../context/AuthContext';
 import { formatINR, formatDate, MEMBERSHIP_PRICING, PT_PRICING } from '../../utils/formatters';
@@ -10,7 +10,9 @@ import { generateWorkoutRoutine, generateDietPlan, generateAutomaticCustomDiet }
 import { localDb } from '../../db/localDatabase';
 import { CustomDietPlan } from '../../types';
 import confetti from 'canvas-confetti';
+import { compressImageFile } from '../../utils/imageCompressor';
 import {
+  Camera,
   User,
   Clock,
   KeyRound,
@@ -221,6 +223,48 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
     setTimeout(() => setStatsSavedToast(null), 4500);
   };
 
+  // Member Profile Photo Upload Handler
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !member?.id) return;
+    setIsUploadingPhoto(true);
+    try {
+      const compressed = await compressImageFile(file, { maxWidth: 600, maxHeight: 600, quality: 0.85 });
+      updateMember(member.id, { avatarUrl: compressed });
+      updateCurrentUserProfile({ avatarUrl: compressed });
+      setStatsSavedToast('📸 आपकी प्रोफ़ाइल फ़ोटो सफलतापूर्वक अपडेट हो गई!');
+      setTimeout(() => setStatsSavedToast(null), 4000);
+    } catch (err) {
+      alert('फ़ोटो अपलोड करने में त्रुटि आई। कृपया पुनः प्रयास करें।');
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  // Monthly Sessions Calculation: calculate sessions completed strictly according to the current month
+  const now = new Date();
+  const currentMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const currentMonthHindi = now.toLocaleDateString('hi-IN', { month: 'long', year: 'numeric' });
+
+  const monthlyAttendanceRecords = attendance.filter((a) => {
+    const isThisMember =
+      (a.userId && (a.userId === member.id || a.userId === member.userId)) ||
+      (a.memberCode && member.memberCode && a.memberCode.toLowerCase() === member.memberCode.toLowerCase()) ||
+      (a.userName && member.name && a.userName.toLowerCase() === member.name.toLowerCase());
+    return isThisMember && a.date && a.date.startsWith(currentMonthPrefix);
+  });
+
+  const uniqueMonthlyDates = Array.from(new Set(monthlyAttendanceRecords.map((a) => a.date)));
+  const completedMonthSessions = uniqueMonthlyDates.length;
+  // If PT plan: 12 or 24 quota per month, otherwise standard 24 days/month
+  const memberMonthlyQuota = member.personalTraining
+    ? (member.ptSessionsTotal ? (member.ptSessionsTotal % 24 === 0 && member.ptSessionsTotal >= 24 ? 24 : 12) : 12)
+    : 24;
+  const monthSessionPct = Math.min(100, Math.round((completedMonthSessions / memberMonthlyQuota) * 100));
+
   const [dietTick, setDietTick] = useState(0);
 
   useEffect(() => {
@@ -328,8 +372,8 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm relative overflow-hidden">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-4">
-            {/* Avatar */}
-            <div className="relative">
+            {/* Avatar with Photo Update Option */}
+            <div className="relative group shrink-0">
               {member.avatarUrl ? (
                 <img
                   src={member.avatarUrl}
@@ -341,6 +385,37 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
                   {member.name.slice(0, 2).toUpperCase()}
                 </div>
               )}
+
+              {/* Photo Change Overlay Button */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingPhoto}
+                className="absolute inset-0 rounded-2xl bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white cursor-pointer"
+                title="अपनी प्रोफ़ाइल फ़ोटो अपडेट करें"
+              >
+                <Camera className="w-5 h-5 text-amber-300" />
+                <span className="text-[9px] font-bold">बदलें</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingPhoto}
+                className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 flex items-center justify-center shadow-md border-2 border-white transition-all cursor-pointer"
+                title="फ़ोटो बदलें"
+              >
+                <Camera className="w-3 h-3 stroke-[2.5]" />
+              </button>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoUpload}
+                className="hidden"
+              />
+
               <span className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white ${
                 isMemberExpired ? 'bg-rose-500' : 'bg-emerald-500'
               }`}>
@@ -568,6 +643,47 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
               </button>
             </div>
           )}
+
+          {/* MONTHLY SESSIONS COMPLETED TRACKER CARD */}
+          <div className="bg-gradient-to-r from-emerald-500/10 via-cyan-500/10 to-transparent border-2 border-emerald-400/80 rounded-3xl p-5 shadow-xs space-y-3">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md font-mono font-black text-xl shrink-0">
+                  {completedMonthSessions}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black uppercase tracking-wider text-emerald-950">
+                      🎯 इस माह के सत्र (Monthly Sessions Completed)
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 font-bold text-[10px] capitalize">
+                      {currentMonthHindi}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 mt-0.5">
+                    आपने {currentMonthHindi} में कुल <strong className="text-emerald-800">{completedMonthSessions} सत्र</strong> पूरे किए हैं।
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-left sm:text-right">
+                <div className="text-xl font-black text-emerald-700 font-mono">
+                  {completedMonthSessions} / {memberMonthlyQuota} <span className="text-xs font-semibold text-slate-500">सत्र पूर्ण</span>
+                </div>
+                <div className="text-[11px] font-bold text-emerald-800">
+                  {monthSessionPct}% मासिक कोटा पूर्ण
+                </div>
+              </div>
+            </div>
+
+            {/* Progress bar */}
+            <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-emerald-500 to-cyan-500 h-full rounded-full transition-all duration-500"
+                style={{ width: `${monthSessionPct}%` }}
+              />
+            </div>
+          </div>
 
           {/* PHYSICAL MEASUREMENTS HERO BANNER & STATS */}
           <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">

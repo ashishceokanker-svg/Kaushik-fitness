@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useGymData } from '../../context/GymDataContext';
 import { Gender, FitnessGoal, MembershipDuration, PTPackageDuration, PaymentMethod, Member } from '../../types';
 import { MEMBERSHIP_PRICING, PT_PRICING, formatINR, calculateExpiryDate } from '../../utils/formatters';
-import { X, UserPlus, Sparkles, Dumbbell, ShieldCheck, Tag, Camera, Upload, Smartphone, Eye, EyeOff, Award } from 'lucide-react';
+import { X, UserPlus, Sparkles, Dumbbell, ShieldCheck, Tag, Camera, Upload, Smartphone, Eye, EyeOff, Award, Minus, Plus } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { LiveCameraModal } from '../common/LiveCameraModal';
 import { compressImageFile } from '../../utils/imageCompressor';
@@ -493,34 +493,118 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-1">
+              {/* Height cm */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">ऊंचाई (Height cm)</label>
-                <input
-                  type="number"
-                  value={heightCm}
-                  onChange={(e) => setHeightCm(Number(e.target.value))}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                />
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setHeightCm((prev) => Math.max(100, (Number(prev) || 172) - 1))}
+                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-800 active:scale-95 flex items-center justify-center border border-slate-300 transition-all font-black select-none shrink-0 cursor-pointer"
+                    title="1 cm कम करें"
+                  >
+                    <Minus className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="relative flex-1">
+                    <input
+                      type="number"
+                      min="100"
+                      max="250"
+                      value={heightCm}
+                      onChange={(e) => setHeightCm(Number(e.target.value))}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-1.5 py-1.5 text-center text-xs text-slate-900 font-mono font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setHeightCm((prev) => Math.min(250, (Number(prev) || 172) + 1))}
+                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-800 active:scale-95 flex items-center justify-center border border-slate-300 transition-all font-black select-none shrink-0 cursor-pointer"
+                    title="1 cm बढ़ाएं"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <span className="text-[10px] text-slate-400 mt-0.5 block font-medium text-center">
+                  ~{((heightCm || 172) / 30.48).toFixed(1)} ft
+                </span>
               </div>
+
+              {/* Current Weight kg */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">वर्तमान वजन (Wt kg)</label>
-                <input
-                  type="number"
-                  value={weightKg}
-                  onChange={(e) => setWeightKg(Number(e.target.value))}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                />
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setWeightKg((prev) => +(Math.max(30, (Number(prev) || 68) - 0.5)).toFixed(1))}
+                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-800 active:scale-95 flex items-center justify-center border border-slate-300 transition-all font-black select-none shrink-0 cursor-pointer"
+                    title="0.5 kg कम करें"
+                  >
+                    <Minus className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="relative flex-1">
+                    <input
+                      type="number"
+                      min="30"
+                      max="250"
+                      step="0.5"
+                      value={weightKg}
+                      onChange={(e) => setWeightKg(Number(e.target.value))}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-1.5 py-1.5 text-center text-xs text-slate-900 font-mono font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setWeightKg((prev) => +(Math.min(250, (Number(prev) || 68) + 0.5)).toFixed(1))}
+                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-800 active:scale-95 flex items-center justify-center border border-slate-300 transition-all font-black select-none shrink-0 cursor-pointer"
+                    title="0.5 kg बढ़ाएं"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <span className="text-[10px] text-slate-400 mt-0.5 block font-medium text-center">
+                  वजन (kg)
+                </span>
               </div>
+
+              {/* Target Weight kg */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">लक्ष्य वजन (Target kg)</label>
-                <input
-                  type="number"
-                  value={targetWeightKg}
-                  onChange={(e) => setTargetWeightKg(Number(e.target.value))}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                />
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setTargetWeightKg((prev) => +(Math.max(30, (Number(prev) || 72) - 0.5)).toFixed(1))}
+                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-800 active:scale-95 flex items-center justify-center border border-slate-300 transition-all font-black select-none shrink-0 cursor-pointer"
+                    title="0.5 kg कम करें"
+                  >
+                    <Minus className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="relative flex-1">
+                    <input
+                      type="number"
+                      min="30"
+                      max="250"
+                      step="0.5"
+                      value={targetWeightKg}
+                      onChange={(e) => setTargetWeightKg(Number(e.target.value))}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-1.5 py-1.5 text-center text-xs text-slate-900 font-mono font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setTargetWeightKg((prev) => +(Math.min(250, (Number(prev) || 72) + 0.5)).toFixed(1))}
+                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-800 active:scale-95 flex items-center justify-center border border-slate-300 transition-all font-black select-none shrink-0 cursor-pointer"
+                    title="0.5 kg बढ़ाएं"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <span className="text-[10px] text-emerald-700 font-bold mt-0.5 block text-center">
+                  {Math.abs(weightKg - targetWeightKg).toFixed(1)} kg {weightKg > targetWeightKg ? 'कमी' : 'वृद्धि'}
+                </span>
               </div>
+
+              {/* Fitness Goal */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">फिटनेस लक्ष्य</label>
                 <select
@@ -641,57 +725,87 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({
                   </label>
                   <div className="grid grid-cols-3 gap-2.5">
                     {[
-                      { id: '1_month', label: '1 Month PT', sub: '1 माह', defaultSessions: 12, price: 2500 },
-                      { id: '2_months', label: '2 Months PT', sub: '2 माह', defaultSessions: 24, price: 4500 },
-                      { id: '3_months', label: '3 Months PT', sub: '3 माह', defaultSessions: 36, price: 6500 },
-                    ].map((pkg) => (
-                      <button
-                        key={pkg.id}
-                        type="button"
-                        onClick={() => {
-                          setPtDuration(pkg.id as PTPackageDuration);
-                          setPtSessionsTotal(pkg.defaultSessions);
-                        }}
-                        className={`p-3 rounded-xl border-2 text-center transition-all cursor-pointer ${
-                          ptDuration === pkg.id
-                            ? 'border-cyan-600 bg-white text-cyan-950 shadow-sm ring-2 ring-cyan-500/20'
-                            : 'border-slate-200 bg-white/70 text-slate-700 hover:bg-white'
-                        }`}
-                      >
-                        <div className="font-black text-xs">{pkg.label}</div>
-                        <div className="text-[10px] text-slate-500 font-medium">{pkg.sub}</div>
-                        <div className="font-mono font-bold text-cyan-700 text-xs mt-1">₹{pkg.price.toLocaleString('en-IN')}</div>
-                      </button>
-                    ))}
+                      { id: '1_month', label: '1 Month PT', sub: '1 माह', months: 1, price: 2500 },
+                      { id: '2_months', label: '2 Months PT', sub: '2 माह', months: 2, price: 4500 },
+                      { id: '3_months', label: '3 Months PT', sub: '3 माह', months: 3, price: 6500 },
+                    ].map((pkg) => {
+                      const curMonths = ptDuration === '3_months' ? 3 : ptDuration === '2_months' ? 2 : 1;
+                      const is24 = (ptSessionsTotal || 12) / curMonths === 24;
+                      return (
+                        <button
+                          key={pkg.id}
+                          type="button"
+                          onClick={() => {
+                            setPtDuration(pkg.id as PTPackageDuration);
+                            setPtSessionsTotal((is24 ? 24 : 12) * pkg.months);
+                          }}
+                          className={`p-3 rounded-xl border-2 text-center transition-all cursor-pointer ${
+                            ptDuration === pkg.id
+                              ? 'border-cyan-600 bg-white text-cyan-950 shadow-sm ring-2 ring-cyan-500/20'
+                              : 'border-slate-200 bg-white/70 text-slate-700 hover:bg-white'
+                          }`}
+                        >
+                          <div className="font-black text-xs">{pkg.label}</div>
+                          <div className="text-[10px] text-slate-500 font-medium">{pkg.sub}</div>
+                          <div className="font-mono font-bold text-cyan-700 text-xs mt-1">₹{pkg.price.toLocaleString('en-IN')}</div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* PT Sessions: 12 / 24 / 36 Sessions */}
+                {/* PT Sessions: 12 or 24 Sessions Per Month */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                    PT कुल सत्र (Sessions: 12 / 24 / 36 - अटेंडेंस कैलेंडर हेतु) *
-                  </label>
-                  <div className="grid grid-cols-3 gap-2.5">
-                    {[
-                      { count: 12, label: '12 Sessions', sub: '12 सत्र' },
-                      { count: 24, label: '24 Sessions', sub: '24 सत्र' },
-                      { count: 36, label: '36 Sessions', sub: '36 सत्र' },
-                    ].map((ses) => (
-                      <button
-                        key={ses.count}
-                        type="button"
-                        onClick={() => setPtSessionsTotal(ses.count)}
-                        className={`p-2.5 rounded-xl border-2 text-center transition-all cursor-pointer ${
-                          ptSessionsTotal === ses.count
-                            ? 'border-emerald-600 bg-emerald-50 text-emerald-950 font-black shadow-xs ring-2 ring-emerald-500/20'
-                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                        }`}
-                      >
-                        <div className="text-xs font-bold">{ses.label}</div>
-                        <div className="text-[10px] text-slate-500">{ses.sub}</div>
-                      </button>
-                    ))}
-                  </div>
+                  {(() => {
+                    const monthsCount = ptDuration === '3_months' ? 3 : ptDuration === '2_months' ? 2 : 1;
+                    const is24 = (ptSessionsTotal || 12) / monthsCount === 24;
+
+                    return (
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="block text-xs font-bold text-slate-700">
+                            मासिक सत्र विकल्प (12 या 24 सत्र / माह) *
+                          </label>
+                          <span className="text-[11px] font-bold text-cyan-800 font-mono">
+                            कुल: {ptSessionsTotal} सत्र ({monthsCount} माह)
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setPtSessionsTotal(12 * monthsCount)}
+                            className={`p-3 rounded-xl border-2 text-center transition-all cursor-pointer ${
+                              !is24
+                                ? 'border-emerald-600 bg-emerald-50 text-emerald-950 font-black shadow-xs ring-2 ring-emerald-500/20'
+                                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            <div className="text-xs font-black">12 Sessions / माह</div>
+                            <div className="text-[11px] text-emerald-800 font-bold mt-0.5">
+                              {monthsCount === 1 ? 'कुल 12 सत्र' : `कुल ${12 * monthsCount} सत्र (${monthsCount} माह)`}
+                            </div>
+                            <div className="text-[10px] text-slate-500 mt-0.5">12 सत्र / माह कोटा</div>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setPtSessionsTotal(24 * monthsCount)}
+                            className={`p-3 rounded-xl border-2 text-center transition-all cursor-pointer ${
+                              is24
+                                ? 'border-emerald-600 bg-emerald-50 text-emerald-950 font-black shadow-xs ring-2 ring-emerald-500/20'
+                                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            <div className="text-xs font-black">24 Sessions / माह</div>
+                            <div className="text-[11px] text-emerald-800 font-bold mt-0.5">
+                              {monthsCount === 1 ? 'कुल 24 सत्र' : `कुल ${24 * monthsCount} सत्र (${monthsCount} माह)`}
+                            </div>
+                            <div className="text-[10px] text-slate-500 mt-0.5">24 सत्र / माह कोटा</div>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             )}

@@ -1,14 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGymData } from '../../context/GymDataContext';
+import { useAuth } from '../../context/AuthContext';
+import { localDb } from '../../db/localDatabase';
 import { KeyRound, CheckCircle, CheckCircle2, AlertCircle, Users, Clock, ShieldCheck, Delete, ArrowRight, LogOut } from 'lucide-react';
 import { LiveFloorRosterModal } from './LiveFloorRosterModal';
 
 export const AttendanceScanner: React.FC = () => {
+  const { currentUser, role } = useAuth();
   const { attendance, markAttendance, liveGymCount, checkOutPerson } = useGymData();
   const [pinVal, setPinVal] = useState('');
   const [feedback, setFeedback] = useState<{ success: boolean; message: string; personName?: string } | null>(null);
   const [isLiveFloorModalOpen, setIsLiveFloorModalOpen] = useState(false);
   const [tableTab, setTableTab] = useState<'on_floor' | 'all'>('on_floor');
+
+  const isDeveloper = currentUser?.id === 'usr-dev' || currentUser?.phone === '9244249975';
+  const [isAdvanced, setIsAdvanced] = useState<boolean>(() => localDb.getFormMode() === 'advanced');
+
+  useEffect(() => {
+    const handleModeChange = () => setIsAdvanced(localDb.getFormMode() === 'advanced');
+    window.addEventListener('kf_form_mode_change', handleModeChange);
+    return () => window.removeEventListener('kf_form_mode_change', handleModeChange);
+  }, []);
+
+  // Live floor occupancy & Today's check-in activity log are hidden for members,
+  // and only enableable via developer advance option (isDeveloper && isAdvanced) or admin
+  const showAdminTerminalDetails = role === 'admin' || (isDeveloper && isAdvanced);
 
   const todayDate = new Date().toISOString().split('T')[0];
   const todayAttendance = attendance.filter((a) => a.date === todayDate);
@@ -45,8 +61,8 @@ export const AttendanceScanner: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header & Live Occupancy Meter */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="md:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+      <div className={`grid gap-4 ${showAdminTerminalDetails ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1'}`}>
+        <div className={`${showAdminTerminalDetails ? 'md:col-span-2' : 'col-span-1'} bg-white border border-slate-200 rounded-2xl p-6 shadow-sm`}>
           <div className="flex items-center gap-2 text-amber-700 font-bold text-xs uppercase tracking-wider mb-2">
             <ShieldCheck className="w-4 h-4 text-amber-600" />
             फ्रंट डेस्क चेक-इन कियोस्क • PIN Entry Kiosk
@@ -61,45 +77,47 @@ export const AttendanceScanner: React.FC = () => {
           </p>
         </div>
 
-        {/* Live Gym Occupancy Meter */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden">
-          <div className="flex justify-between items-start">
-            <span className="text-xs uppercase font-bold text-slate-500 flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-cyan-600" />
-              लाइव फ्लोर उपस्थिति
-            </span>
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-          </div>
+        {/* Live Gym Occupancy Meter - Hidden for members unless developer advance option */}
+        {showAdminTerminalDetails && (
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden">
+            <div className="flex justify-between items-start">
+              <span className="text-xs uppercase font-bold text-slate-500 flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-cyan-600" />
+                लाइव फ्लोर उपस्थिति
+              </span>
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+            </div>
 
-          <div className="my-2">
-            <div className="flex items-baseline justify-between">
-              <div className="text-4xl font-black text-slate-900 font-mono tracking-tight flex items-baseline gap-2">
-                {liveGymCount}
-                <span className="text-sm font-normal text-slate-500">अंदर उपस्थित</span>
+            <div className="my-2">
+              <div className="flex items-baseline justify-between">
+                <div className="text-4xl font-black text-slate-900 font-mono tracking-tight flex items-baseline gap-2">
+                  {liveGymCount}
+                  <span className="text-sm font-normal text-slate-500">अंदर उपस्थित</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsLiveFloorModalOpen(true)}
+                  className="px-2.5 py-1 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-200 text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                  title="लाइव फ्लोर रोस्टर सूची देखें"
+                >
+                  <Users className="w-3.5 h-3.5 text-cyan-600" />
+                  <span>रोस्टर देखें</span>
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsLiveFloorModalOpen(true)}
-                className="px-2.5 py-1 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-200 text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
-                title="लाइव फ्लोर रोस्टर सूची देखें"
-              >
-                <Users className="w-3.5 h-3.5 text-cyan-600" />
-                <span>रोस्टर देखें</span>
-              </button>
+              <div className="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
+                <div
+                  className="bg-amber-500 h-full rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, (liveGymCount / 40) * 100)}%` }}
+                />
+              </div>
             </div>
-            <div className="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
-              <div
-                className="bg-amber-500 h-full rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(100, (liveGymCount / 40) * 100)}%` }}
-              />
-            </div>
-          </div>
 
-          <div className="text-[11px] text-slate-500 flex justify-between">
-            <span>अधिकतम क्षमता: 40</span>
-            <span className="text-emerald-600 font-bold">{Math.max(0, 40 - liveGymCount)} जगह खाली</span>
+            <div className="text-[11px] text-slate-500 flex justify-between">
+              <span>अधिकतम क्षमता: 40</span>
+              <span className="text-emerald-600 font-bold">{Math.max(0, 40 - liveGymCount)} जगह खाली</span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* PIN Terminal & Fast Taps Grid */}
@@ -298,146 +316,148 @@ export const AttendanceScanner: React.FC = () => {
         </div>
       </div>
 
-      {/* Today's Attendance Activity Table */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-          <div>
-            <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-600" />
-              आज का पिन चेक-इन लॉग (Today's PIN Entry Activity Log)
-            </h3>
-            <span className="text-xs text-slate-500 font-mono">दिनांक: {todayDate}</span>
+      {/* Today's Attendance Activity Table - Hidden for members unless developer advance option */}
+      {showAdminTerminalDetails && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+            <div>
+              <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-600" />
+                आज का पिन चेक-इन लॉग (Today's PIN Entry Activity Log)
+              </h3>
+              <span className="text-xs text-slate-500 font-mono">दिनांक: {todayDate}</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsLiveFloorModalOpen(true)}
+                className="px-3 py-1.5 rounded-xl bg-cyan-700 hover:bg-cyan-800 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>लाइव रोस्टर ({todayAttendance.filter((a) => !a.checkOutTime).length})</span>
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Tab switchers */}
+          <div className="flex border-b border-slate-200 space-x-3 mb-4 text-xs">
             <button
               type="button"
-              onClick={() => setIsLiveFloorModalOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-cyan-700 hover:bg-cyan-800 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              onClick={() => setTableTab('on_floor')}
+              className={`pb-2.5 px-2 font-bold transition-all cursor-pointer border-b-2 ${
+                tableTab === 'on_floor'
+                  ? 'border-amber-600 text-amber-900'
+                  : 'border-transparent text-slate-500 hover:text-slate-900'
+              }`}
             >
-              <Users className="w-3.5 h-3.5" />
-              <span>लाइव रोस्टर ({todayAttendance.filter((a) => !a.checkOutTime).length})</span>
+              🔴 वर्तमान में फ्लोर पर ({todayAttendance.filter((a) => !a.checkOutTime).length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setTableTab('all')}
+              className={`pb-2.5 px-2 font-bold transition-all cursor-pointer border-b-2 ${
+                tableTab === 'all'
+                  ? 'border-amber-600 text-amber-900'
+                  : 'border-transparent text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              आज के सभी चेक-इन ({todayAttendance.length})
             </button>
           </div>
-        </div>
 
-        {/* Tab switchers */}
-        <div className="flex border-b border-slate-200 space-x-3 mb-4 text-xs">
-          <button
-            type="button"
-            onClick={() => setTableTab('on_floor')}
-            className={`pb-2.5 px-2 font-bold transition-all cursor-pointer border-b-2 ${
-              tableTab === 'on_floor'
-                ? 'border-amber-600 text-amber-900'
-                : 'border-transparent text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            🔴 वर्तमान में फ्लोर पर ({todayAttendance.filter((a) => !a.checkOutTime).length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setTableTab('all')}
-            className={`pb-2.5 px-2 font-bold transition-all cursor-pointer border-b-2 ${
-              tableTab === 'all'
-                ? 'border-amber-600 text-amber-900'
-                : 'border-transparent text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            आज के सभी चेक-इन ({todayAttendance.length})
-          </button>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm border-collapse">
-            <thead>
-              <tr className="bg-slate-50 text-slate-600 text-[11px] uppercase border-b border-slate-200 font-bold tracking-wider">
-                <th className="py-2.5 px-3">नाम (Name)</th>
-                <th className="py-2.5 px-3">प्रकार व कोड</th>
-                <th className="py-2.5 px-3">चेक-इन समय</th>
-                <th className="py-2.5 px-3">चेक-आउट समय</th>
-                <th className="py-2.5 px-3">माध्यम</th>
-                <th className="py-2.5 px-3 text-right">फ्लोर स्थिति व एक्शन</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {(tableTab === 'on_floor'
-                ? todayAttendance.filter((a) => !a.checkOutTime)
-                : todayAttendance
-              ).length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-8 text-center text-xs text-slate-400">
-                    {tableTab === 'on_floor'
-                      ? 'वर्तमान में कोई भी व्यक्ति जिम फ्लोर पर उपस्थित नहीं है'
-                      : 'आज कोई चेक-इन नहीं हुआ है'}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead>
+                <tr className="bg-slate-50 text-slate-600 text-[11px] uppercase border-b border-slate-200 font-bold tracking-wider">
+                  <th className="py-2.5 px-3">नाम (Name)</th>
+                  <th className="py-2.5 px-3">प्रकार व कोड</th>
+                  <th className="py-2.5 px-3">चेक-इन समय</th>
+                  <th className="py-2.5 px-3">चेक-आउट समय</th>
+                  <th className="py-2.5 px-3">माध्यम</th>
+                  <th className="py-2.5 px-3 text-right">फ्लोर स्थिति व एक्शन</th>
                 </tr>
-              ) : (
-                (tableTab === 'on_floor'
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {(tableTab === 'on_floor'
                   ? todayAttendance.filter((a) => !a.checkOutTime)
                   : todayAttendance
-                ).map((record) => (
-                  <tr key={record.id} className="hover:bg-slate-50/75 transition-colors">
-                    <td className="py-3 px-3 font-bold text-slate-900">
-                      {record.userName}
-                    </td>
-                    <td className="py-3 px-3">
-                      <span
-                        className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${
-                          record.userType === 'staff'
-                            ? 'bg-cyan-50 text-cyan-800 border border-cyan-200'
-                            : 'bg-slate-100 text-slate-700 border border-slate-200'
-                        }`}
-                      >
-                        {record.userType.toUpperCase()} • {record.memberCode || record.staffCode || '-'}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3 font-mono text-xs text-slate-700">
-                      {record.checkInTime}
-                    </td>
-                    <td className="py-3 px-3 font-mono text-xs text-slate-500">
-                      {record.checkOutTime || '—'}
-                    </td>
-                    <td className="py-3 px-3">
-                      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-amber-700 font-mono">
-                        <KeyRound className="w-3.5 h-3.5 text-amber-600" />
-                        4-DIGIT PIN
-                      </span>
-                    </td>
-                    <td className="py-3 px-3 text-right">
-                      {!record.checkOutTime ? (
-                        <div className="inline-flex items-center gap-2">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            Inside Gym
-                          </span>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (confirm(`क्या आप ${record.userName} को लाइव जिम फ्लोर से चेक-आउट करना चाहते हैं?`)) {
-                                checkOutPerson(record.id);
-                              }
-                            }}
-                            className="px-2 py-0.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1 shadow-2xs active:scale-95"
-                            title="फ्लोर से चेक-आउट करें"
-                          >
-                            <LogOut className="w-3 h-3 text-rose-600" />
-                            <span>चेक-आउट</span>
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="text-[11px] text-slate-500">
-                          Left at {record.checkOutTime}
-                        </span>
-                      )}
+                ).length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-xs text-slate-400">
+                      {tableTab === 'on_floor'
+                        ? 'वर्तमान में कोई भी व्यक्ति जिम फ्लोर पर उपस्थित नहीं है'
+                        : 'आज कोई चेक-इन नहीं हुआ है'}
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  (tableTab === 'on_floor'
+                    ? todayAttendance.filter((a) => !a.checkOutTime)
+                    : todayAttendance
+                  ).map((record) => (
+                    <tr key={record.id} className="hover:bg-slate-50/75 transition-colors">
+                      <td className="py-3 px-3 font-bold text-slate-900">
+                        {record.userName}
+                      </td>
+                      <td className="py-3 px-3">
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${
+                            record.userType === 'staff'
+                              ? 'bg-cyan-50 text-cyan-800 border border-cyan-200'
+                              : 'bg-slate-100 text-slate-700 border border-slate-200'
+                          }`}
+                        >
+                          {record.userType.toUpperCase()} • {record.memberCode || record.staffCode || '-'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 font-mono text-xs text-slate-700">
+                        {record.checkInTime}
+                      </td>
+                      <td className="py-3 px-3 font-mono text-xs text-slate-500">
+                        {record.checkOutTime || '—'}
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-amber-700 font-mono">
+                          <KeyRound className="w-3.5 h-3.5 text-amber-600" />
+                          4-DIGIT PIN
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        {!record.checkOutTime ? (
+                          <div className="inline-flex items-center gap-2">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                              Inside Gym
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (confirm(`क्या आप ${record.userName} को लाइव जिम फ्लोर से चेक-आउट करना चाहते हैं?`)) {
+                                  checkOutPerson(record.id);
+                                }
+                              }}
+                              className="px-2 py-0.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1 shadow-2xs active:scale-95"
+                              title="फ्लोर से चेक-आउट करें"
+                            >
+                              <LogOut className="w-3 h-3 text-rose-600" />
+                              <span>चेक-आउट</span>
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-slate-500">
+                            Left at {record.checkOutTime}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Live Floor Roster Modal */}
       {isLiveFloorModalOpen && (

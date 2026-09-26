@@ -205,6 +205,46 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
     }
   };
 
+  // Member photo upload in mobile app
+  const memberPhotoInputRef = React.useRef<HTMLInputElement>(null);
+  const [memberPhotoUploading, setMemberPhotoUploading] = useState(false);
+
+  const handleMemberPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !member?.id) return;
+    setMemberPhotoUploading(true);
+    try {
+      const compressed = await compressImageFile(file, { maxWidth: 600, maxHeight: 600, quality: 0.85 });
+      updateMember(member.id, { avatarUrl: compressed });
+      updateCurrentUserProfile({ avatarUrl: compressed });
+      alert('📸 आपकी प्रोफ़ाइल फ़ोटो सफलतापूर्वक अपडेट हो गई!');
+    } catch {
+      alert('फ़ोटो अपलोड करने में त्रुटि आई। कृपया पुनः प्रयास करें।');
+    } finally {
+      setMemberPhotoUploading(false);
+    }
+  };
+
+  // Monthly sessions calculation strictly for current month
+  const nowMobile = new Date();
+  const currentMonthPrefix = `${nowMobile.getFullYear()}-${String(nowMobile.getMonth() + 1).padStart(2, '0')}`;
+  const currentMonthHindi = nowMobile.toLocaleDateString('hi-IN', { month: 'long', year: 'numeric' });
+
+  const monthlyAttendanceRecords = (attendance || []).filter((a) => {
+    const isThisMember =
+      (a.userId && (a.userId === member?.id || a.userId === member?.userId)) ||
+      (a.memberCode && member?.memberCode && a.memberCode.toLowerCase() === member.memberCode.toLowerCase()) ||
+      (a.userName && member?.name && a.userName.toLowerCase() === member.name.toLowerCase());
+    return isThisMember && a.date && a.date.startsWith(currentMonthPrefix);
+  });
+
+  const uniqueMonthlyDates = Array.from(new Set(monthlyAttendanceRecords.map((a) => a.date)));
+  const completedMonthSessions = uniqueMonthlyDates.length;
+  const memberMonthlyQuota = member?.personalTraining
+    ? (member.ptSessionsTotal ? (member.ptSessionsTotal % 24 === 0 && member.ptSessionsTotal >= 24 ? 24 : 12) : 12)
+    : 24;
+  const monthSessionPct = Math.min(100, Math.round((completedMonthSessions / memberMonthlyQuota) * 100));
+
   useEffect(() => {
     const handleUpdate = () => setDietTick((t) => t + 1);
     window.addEventListener('kf_body_index_updated', handleUpdate);
@@ -503,17 +543,35 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                 {/* Member Profile Hero Card */}
                 <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
                   <div className="flex items-center gap-3">
-                    {member.avatarUrl ? (
-                      <img
-                        src={member.avatarUrl}
-                        alt={member.name}
-                        className="w-12 h-12 rounded-2xl object-cover border-2 border-amber-400 shadow-sm shrink-0"
+                    <div className="relative group shrink-0">
+                      {member.avatarUrl ? (
+                        <img
+                          src={member.avatarUrl}
+                          alt={member.name}
+                          className="w-12 h-12 rounded-2xl object-cover border-2 border-amber-400 shadow-sm shrink-0"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-slate-950 font-black text-lg shadow-sm shrink-0">
+                          {member.name.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => memberPhotoInputRef.current?.click()}
+                        disabled={memberPhotoUploading}
+                        className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 flex items-center justify-center shadow-xs border border-white cursor-pointer active:scale-95"
+                        title="फ़ोटो बदलें"
+                      >
+                        <Camera className="w-2.5 h-2.5 stroke-[2.5]" />
+                      </button>
+                      <input
+                        ref={memberPhotoInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleMemberPhotoUpload}
+                        className="hidden"
                       />
-                    ) : (
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-slate-950 font-black text-lg shadow-sm shrink-0">
-                        {member.name.slice(0, 2).toUpperCase()}
-                      </div>
-                    )}
+                    </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-1">
                         <h2 className="text-sm font-black text-slate-900 leading-snug truncate">{member.name}</h2>
@@ -551,6 +609,34 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                     <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-full shrink-0">
                       सक्रिय (Active)
                     </span>
+                  </div>
+                </div>
+
+                {/* Monthly Sessions Tracker Card for Mobile */}
+                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-cyan-500/10 to-transparent border border-emerald-300 shadow-2xs space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-xl bg-emerald-600 text-white font-mono font-black text-xs flex items-center justify-center shadow-xs">
+                        {completedMonthSessions}
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-black uppercase text-emerald-950 block leading-tight">
+                          🎯 इस माह के सत्र ({currentMonthHindi})
+                        </span>
+                        <span className="text-[10px] text-slate-500">
+                          {completedMonthSessions} / {memberMonthlyQuota} सत्र पूर्ण
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                      {monthSessionPct}% पूर्ण
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                    <div
+                      className="bg-gradient-to-r from-emerald-500 to-cyan-500 h-full rounded-full transition-all duration-500"
+                      style={{ width: `${monthSessionPct}%` }}
+                    />
                   </div>
                 </div>
 
