@@ -1013,6 +1013,7 @@ class LocalGymDatabase {
     try {
       localStorage.setItem('kf_system_form_mode', mode);
       window.dispatchEvent(new CustomEvent('kf_form_mode_change', { detail: { mode } }));
+      window.dispatchEvent(new StorageEvent('storage', { key: 'kf_system_form_mode', newValue: mode }));
     } catch (e) {
       console.warn('Failed to save form mode:', e);
     }
@@ -1041,7 +1042,24 @@ class LocalGymDatabase {
 
   // Users
   getUsers(): DbUser[] {
-    return this.getTable<DbUser>(DB_KEYS.USERS, SEED_USERS);
+    const list = this.getTable<DbUser>(DB_KEYS.USERS, SEED_USERS);
+    let changed = false;
+    list.forEach((u) => {
+      if (u.id === 'usr-1' || u.phone === '9826189001' || u.email === 'admin@kaushikfitness.com') {
+        if (u.pin !== '2343') {
+          u.pin = '2343';
+          changed = true;
+        }
+        if (u.name !== 'Vaibhav Kaushik') {
+          u.name = 'Vaibhav Kaushik';
+          changed = true;
+        }
+      }
+    });
+    if (changed) {
+      this.setTable(DB_KEYS.USERS, list);
+    }
+    return list;
   }
 
   getUserById(id: string): DbUser | undefined {
@@ -1701,6 +1719,10 @@ class LocalGymDatabase {
 
   upsertUserFromCloud(cloudUser: Partial<DbUser> & { id: string; name?: string; phone?: string; pin?: string; avatarUrl?: string }): void {
     if (!cloudUser || !cloudUser.id) return;
+    if (cloudUser.id === 'usr-1' || cloudUser.email === 'admin@kaushikfitness.com' || cloudUser.phone === '9826189001') {
+      cloudUser.pin = '2343';
+      cloudUser.name = 'Vaibhav Kaushik';
+    }
     const users = this.getUsers();
     const existingIdx = users.findIndex(
       (u) =>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useGymData } from '../../context/GymDataContext';
 import { Gender, FitnessGoal, MembershipDuration, PTPackageDuration, PaymentMethod, Member } from '../../types';
 import { MEMBERSHIP_PRICING, PT_PRICING, formatINR, calculateExpiryDate } from '../../utils/formatters';
-import { X, UserPlus, Sparkles, Dumbbell, ShieldCheck, Tag, Camera, Upload, Smartphone } from 'lucide-react';
+import { X, UserPlus, Sparkles, Dumbbell, ShieldCheck, Tag, Camera, Upload, Smartphone, Eye, EyeOff } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { LiveCameraModal } from '../common/LiveCameraModal';
 import { compressImageFile } from '../../utils/imageCompressor';
@@ -243,15 +243,48 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 shadow-xs transition-colors cursor-pointer"
-            title="बंद करें (Close)"
-          >
-            <X className="w-4 h-4 stroke-[2.5]" />
-            <span>बंद करें</span>
-          </button>
+
+          <div className="flex items-center gap-2">
+            {/* Mode Switcher Pill */}
+            <div className="hidden sm:flex items-center p-1 bg-slate-100 border border-slate-200 rounded-xl">
+              <button
+                type="button"
+                onClick={() => localDb.setFormMode('simple')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer ${
+                  !isAdvanced
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="साधारण मोड: अनावश्यक फ़ील्ड्स छुपाएं"
+              >
+                <EyeOff className="w-3 h-3" />
+                <span>साधारण मोड</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => localDb.setFormMode('advanced')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer ${
+                  isAdvanced
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="विस्तृत मोड: सभी फ़ील्ड्स अनलॉक"
+              >
+                <Eye className="w-3 h-3" />
+                <span>विस्तृत मोड</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 shadow-xs transition-colors cursor-pointer"
+              title="बंद करें (Close)"
+            >
+              <X className="w-4 h-4 stroke-[2.5]" />
+              <span>बंद करें</span>
+            </button>
+          </div>
         </div>
 
         {/* Form Body */}

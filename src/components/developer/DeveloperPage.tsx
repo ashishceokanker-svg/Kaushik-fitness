@@ -401,6 +401,10 @@ export const DeveloperPage: React.FC<DeveloperPageProps> = ({ onBack }) => {
 
             <button
               type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleMode('simple');
+              }}
               className={`w-full mt-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
                 formMode === 'simple'
                   ? 'bg-emerald-600 text-white shadow-sm'
@@ -460,6 +464,10 @@ export const DeveloperPage: React.FC<DeveloperPageProps> = ({ onBack }) => {
 
             <button
               type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleMode('advanced');
+              }}
               className={`w-full mt-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
                 formMode === 'advanced'
                   ? 'bg-indigo-600 text-white shadow-sm'

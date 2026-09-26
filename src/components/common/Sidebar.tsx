@@ -50,6 +50,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const isDeveloper = currentUser?.id === 'usr-dev' || currentUser?.phone === '9244249975';
   const newEnquiriesCount = enquiries.filter((e) => e.status === 'new').length;
 
+  const [formMode, setFormMode] = React.useState<'simple' | 'advanced'>(() => localDb.getFormMode());
+
+  React.useEffect(() => {
+    const handleModeChange = () => {
+      setFormMode(localDb.getFormMode());
+    };
+    window.addEventListener('kf_form_mode_change', handleModeChange);
+    window.addEventListener('storage', handleModeChange);
+    return () => {
+      window.removeEventListener('kf_form_mode_change', handleModeChange);
+      window.removeEventListener('storage', handleModeChange);
+    };
+  }, []);
+
   const handleTabClick = (tabId: string) => {
     onSelectTab(tabId);
   };
@@ -100,7 +114,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     // TRAINER: Clients, progress tracking & diet plans
     if (role === 'trainer') {
-      const isAdvanced = localDb.getFormMode() === 'advanced';
+      const isAdvanced = formMode === 'advanced';
       const trainerClients = members.filter((m) => {
         if (!currentUser) return false;
         if (m.assignedTrainerId && (m.assignedTrainerId === currentUser.id || m.assignedTrainerId === currentUser.staffId)) return true;

@@ -33,6 +33,9 @@ import {
   Cloud,
   Package,
   LogOut,
+  Eye,
+  EyeOff,
+  SlidersHorizontal,
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -51,6 +54,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isLiveFloorModalOpen, setIsLiveFloorModalOpen] = useState(false);
   const [activeFloorTab, setActiveFloorTab] = useState<'on_floor' | 'all_today'>('on_floor');
+  const [formMode, setFormMode] = useState<'simple' | 'advanced'>(() => localDb.getFormMode());
+
+  React.useEffect(() => {
+    const handleModeChange = () => {
+      setFormMode(localDb.getFormMode());
+    };
+    window.addEventListener('kf_form_mode_change', handleModeChange);
+    window.addEventListener('storage', handleModeChange);
+    return () => {
+      window.removeEventListener('kf_form_mode_change', handleModeChange);
+      window.removeEventListener('storage', handleModeChange);
+    };
+  }, []);
+
+  const handleToggleFormMode = (newMode: 'simple' | 'advanced') => {
+    localDb.setFormMode(newMode);
+    setFormMode(newMode);
+  };
   const {
     isCloudSynced,
     members,
@@ -161,6 +182,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <span>{isCloudSynced ? '🟢 Firebase Live' : '☁️ Cloud Setup'}</span>
               </button>
             )}
+            {/* System Form Mode Switcher Pill (Simple vs Advanced) */}
+            <div className="flex items-center p-1 bg-slate-100 border border-slate-300 rounded-xl shadow-xs">
+              <button
+                type="button"
+                onClick={() => handleToggleFormMode('simple')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+                  formMode === 'simple'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="साधारण मोड: अनावश्यक फ़ील्ड्स छुपाएं (त्वरित एंट्री)"
+              >
+                <EyeOff className="w-3.5 h-3.5" />
+                <span>साधारण मोड</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleToggleFormMode('advanced')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+                  formMode === 'advanced'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="विस्तृत मोड: सभी फ़ील्ड्स (सैलरी, KYC, प्लान, डिस्काउंट) अनलॉक"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>विस्तृत मोड</span>
+              </button>
+            </div>
+
             <button
               onClick={() => onNavigate('developer')}
               className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-slate-900 via-slate-800 to-cyan-900 hover:brightness-110 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer border border-cyan-500/30"

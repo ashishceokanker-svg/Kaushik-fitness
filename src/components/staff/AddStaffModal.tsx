@@ -19,6 +19,8 @@ import {
   Upload,
   KeyRound,
   RefreshCw,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { LiveCameraModal } from '../common/LiveCameraModal';
 import { compressImageFile } from '../../utils/imageCompressor';
@@ -206,15 +208,47 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose }) => {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 shadow-xs transition-colors cursor-pointer"
-            title="बंद करें (Close)"
-          >
-            <X className="w-4 h-4 stroke-[2.5]" />
-            <span>बंद करें</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Mode Switcher */}
+            <div className="flex items-center p-0.5 bg-slate-200/80 border border-slate-300 rounded-xl shadow-xs">
+              <button
+                type="button"
+                onClick={() => localDb.setFormMode('simple')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer ${
+                  !isAdvanced
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="साधारण मोड: केवल 4 फ़ील्ड्स"
+              >
+                <EyeOff className="w-3 h-3" />
+                <span>साधारण (4 फ़ील्ड्स)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => localDb.setFormMode('advanced')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer ${
+                  isAdvanced
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="विस्तृत मोड: सभी फ़ील्ड्स अनलॉक"
+              >
+                <Eye className="w-3 h-3" />
+                <span>विस्तृत (All Fields)</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 shadow-xs transition-colors cursor-pointer"
+              title="बंद करें (Close)"
+            >
+              <X className="w-4 h-4 stroke-[2.5]" />
+              <span>बंद करें</span>
+            </button>
+          </div>
         </div>
 
         {/* Form Body */}
