@@ -11,7 +11,9 @@ import {
   CheckCircle2,
   ChevronRight,
   ShieldCheck,
+  Sparkles,
 } from 'lucide-react';
+import { MemberSelfRegisterModal } from './MemberSelfRegisterModal';
 
 interface LoginModalProps {
   onClose: () => void;
@@ -22,9 +24,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSuccess }) =>
   const { loginWithCredentials, switchRole, loginAsSpecificMember } = useAuth();
   const { members } = useGymData();
 
+  const [showSelfRegisterModal, setShowSelfRegisterModal] = useState<boolean>(false);
   const [portalType, setPortalType] = useState<'member' | 'staff'>('member');
   const [identifier, setIdentifier] = useState('9826112345');
-  const [password, setPassword] = useState('1111');
+  const [password, setPassword] = useState('1234');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -45,6 +48,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSuccess }) =>
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
+
+    if (identifier.trim() === '1111' || password.trim() === '1111') {
+      setShowSelfRegisterModal(true);
+      return;
+    }
 
     const res = await loginWithCredentials(identifier.trim(), password.trim());
     if (res.success) {
@@ -108,7 +116,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSuccess }) =>
             onClick={() => {
               setPortalType('member');
               setIdentifier('9826112345');
-              setPassword('1111');
+              setPassword('1234');
               setErrorMsg('');
             }}
             className={`py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
@@ -192,10 +200,20 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSuccess }) =>
             </div>
             {portalType === 'member' && (
               <span className="text-[11px] text-slate-500 mt-1 block">
-                💡 डेमो मेंबर राहुल का PIN <strong className="text-amber-800 font-mono">1111</strong> है
+                💡 डेमो मेंबर राहुल का PIN <strong className="text-amber-800 font-mono">1234</strong> है
               </span>
             )}
           </div>
+
+          {/* Direct Self Registration Action */}
+          <button
+            type="button"
+            onClick={() => setShowSelfRegisterModal(true)}
+            className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-500/10 via-cyan-500/10 to-amber-500/10 border border-emerald-500/30 hover:border-emerald-500 text-emerald-800 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all hover:bg-emerald-50"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            <span>नया सदस्य? <b>PIN: 1111</b> दर्ज करें या यहाँ क्लिक करें &rarr;</span>
+          </button>
 
           <button
             type="submit"
@@ -272,6 +290,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSuccess }) =>
           </div>
         )}
       </div>
+
+      {showSelfRegisterModal && (
+        <MemberSelfRegisterModal
+          onClose={() => setShowSelfRegisterModal(false)}
+          onSuccess={() => {
+            setShowSelfRegisterModal(false);
+            if (onSuccess) onSuccess();
+            onClose();
+          }}
+        />
+      )}
     </div>
   );
 };

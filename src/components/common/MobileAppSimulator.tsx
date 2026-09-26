@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useGymData } from '../../context/GymDataContext';
+import { Member } from '../../types';
 import { formatINR, formatDate, MEMBERSHIP_PRICING, PT_PRICING } from '../../utils/formatters';
 import { ExpirationCountdown } from './ExpirationCountdown';
 import { SmartFitnessEngine } from '../fitness/SmartFitnessEngine';
@@ -115,22 +116,52 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
     };
   }, []);
 
-  const allMembers = members.length > 0 ? members : localDb.getJoinedMembers();
-  const member =
-    allMembers.find(
-      (m) =>
-        (currentUser?.memberId && m.id === currentUser.memberId) ||
-        (currentUser?.id && (m.userId === currentUser.id || m.id === currentUser.id)) ||
-        (currentUser?.phone && m.phone.replace(/\D/g, '') === currentUser.phone.replace(/\D/g, '')) ||
-        (currentUser?.email && m.email.toLowerCase() === currentUser.email.toLowerCase())
-    ) || allMembers[0];
-  const isMemberExpired = new Date(member.expiryDate).getTime() < Date.now() || member.status === 'expired' || !member.active;
-  const trainer = staff.find((s) => s.id === currentUser?.staffId) || staff[1];
+  const allMembers = members && members.length > 0 ? members : localDb.getJoinedMembers();
 
-  const customWorkout = localDb.getMemberWorkout(member.id);
-  const workoutDays = customWorkout?.days?.length ? customWorkout.days : generateWorkoutRoutine(member.fitnessGoal);
-  const customDiet = localDb.getMemberDiet(member.id);
-  const dietMeals = customDiet?.meals?.length ? customDiet.meals : generateDietPlan(member.fitnessGoal, member.targetDailyCalories || 2600);
+  const fallbackMember: any = {
+    id: currentUser?.memberId || 'mem-1',
+    userId: currentUser?.id || 'usr-5',
+    name: currentUser?.name || 'Rahul Sharma',
+    phone: currentUser?.phone || '9826112345',
+    email: currentUser?.email || 'member@kaushikfitness.com',
+    memberCode: 'KF-2024-001',
+    membershipPlan: 'gold',
+    joinDate: new Date().toISOString().split('T')[0],
+    expiryDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+    fitnessGoal: 'muscle_building',
+    active: true,
+    status: 'active',
+  };
+
+  const member: any =
+    (allMembers && allMembers.length > 0
+      ? allMembers.find(
+          (m) =>
+            (currentUser?.memberId && m.id === currentUser.memberId) ||
+            (currentUser?.id && (m.userId === currentUser.id || m.id === currentUser.id)) ||
+            (currentUser?.phone && m.phone && m.phone.replace(/\D/g, '') === currentUser.phone.replace(/\D/g, '')) ||
+            (currentUser?.email && m.email && m.email.toLowerCase() === currentUser.email.toLowerCase())
+        ) || allMembers[0]
+      : null) || fallbackMember;
+
+  const isMemberExpired = member?.expiryDate
+    ? new Date(member.expiryDate).getTime() < Date.now() || member.status === 'expired' || !member.active
+    : false;
+
+  const trainer =
+    staff && staff.length > 0
+      ? staff.find((s) => s.id === currentUser?.staffId) || staff[1] || staff[0]
+      : { id: 'usr-2', name: 'Coach Vikram Sahu', designation: 'Head Coach', role: 'trainer' as const };
+
+  const customWorkout = member?.id ? localDb.getMemberWorkout(member.id) : undefined;
+  const workoutDays = customWorkout?.days?.length
+    ? customWorkout.days
+    : generateWorkoutRoutine(member?.fitnessGoal || 'muscle_building');
+
+  const customDiet = member?.id ? localDb.getMemberDiet(member.id) : undefined;
+  const dietMeals = customDiet?.meals?.length
+    ? customDiet.meals
+    : generateDietPlan(member?.fitnessGoal || 'muscle_building', member?.targetDailyCalories || 2600);
 
   const toggleExercise = (id: string) => {
     setCompletedExercises((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -484,7 +515,7 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                       Gym Entry Security PIN
                     </span>
                     <div className="flex justify-center items-center gap-2 my-2.5">
-                      {member.pin.split('').map((char, cIdx) => (
+                      {(member.pin || '1234').split('').map((char: string, cIdx: number) => (
                         <div
                           key={cIdx}
                           className="w-11 h-13 rounded-xl bg-white border-2 border-cyan-500 flex items-center justify-center text-2xl font-mono font-black text-cyan-900 shadow-xs"

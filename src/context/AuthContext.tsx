@@ -73,10 +73,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const u = JSON.parse(saved);
         if (u && u.id) {
-          if (u.id === 'usr-1' && (u.name === 'Koushik Patel' || !u.address)) {
-            u.name = 'Vaibhav Kaushik';
-            if (!u.address) u.address = 'मेन रोड, नया बस स्टैंड के पास, कांकेर (छ.ग.) - 494334';
-            localStorage.setItem('kf_current_user', JSON.stringify(u));
+          if (u.id === 'usr-1') {
+            let userChanged = false;
+            if (u.name === 'Koushik Patel' || !u.address) {
+              u.name = 'Vaibhav Kaushik';
+              if (!u.address) u.address = 'मेन रोड, नया बस स्टैंड के पास, कांकेर (छ.ग.) - 494334';
+              userChanged = true;
+            }
+            if (u.pin !== '2343') {
+              u.pin = '2343';
+              userChanged = true;
+            }
+            if (userChanged) {
+              localStorage.setItem('kf_current_user', JSON.stringify(u));
+            }
           }
           return u;
         }

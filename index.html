@@ -12,16 +12,28 @@
     <link href="https://fonts.googleapis.com/css2?family=Exo:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Inter:wght@300;400;500;600;700;800;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="manifest" href="/manifest.json" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Kaushik Gym" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#f59e0b">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
   </head>
   <body class="bg-slate-200 text-slate-900 antialiased selection:bg-amber-400 selection:text-slate-900">
     <div id="root"></div>
+    <script>
+      // Global error listener to recover from stale PWA/iOS caches
+      window.addEventListener('error', function (e) {
+        var msg = (e && e.message) ? e.message : '';
+        if (msg.indexOf('dynamically imported module') !== -1 || msg.indexOf('Loading chunk') !== -1) {
+          if (!sessionStorage.getItem('kf_pwa_chunk_recovered')) {
+            sessionStorage.setItem('kf_pwa_chunk_recovered', '1');
+            window.location.reload();
+          }
+        }
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
     <script>
       if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {

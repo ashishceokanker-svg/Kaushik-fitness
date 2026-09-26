@@ -107,7 +107,7 @@ export const INITIAL_MEMBERS: Member[] = [
       thighs: 23,
       hips: 38,
     },
-    pin: '1111',
+    pin: '1234',
     notes: 'Consistent lifter under Coach Vikram. Focus on progressive overload on Squat and Bench.',
     medicalConditions: 'None',
     active: true,

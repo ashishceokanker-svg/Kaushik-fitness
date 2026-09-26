@@ -69,7 +69,7 @@ const SEED_USERS: DbUser[] = [
     password_hash: '$2a$12$adminHashKanker2024',
     role: 'admin',
     created_at: '2022-01-01T00:00:00.000Z',
-    pin: '1001',
+    pin: '2343',
     avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
     address: 'मेन रोड, नया बस स्टैंड के पास, कांकेर (छ.ग.) - 494334',
   },
@@ -114,7 +114,7 @@ const SEED_USERS: DbUser[] = [
     password_hash: '$2a$12$memberHashKanker2024',
     role: 'member',
     created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
-    pin: '1111',
+    pin: '1234',
     avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
   },
   {
@@ -957,9 +957,19 @@ class LocalGymDatabase {
           const users: DbUser[] = JSON.parse(rawUsers);
           let changed = false;
           users.forEach((u) => {
-            if (u.id === 'usr-1' && (u.name === 'Koushik Patel' || !u.address)) {
-              u.name = 'Vaibhav Kaushik';
-              if (!u.address) u.address = 'मेन रोड, नया बस स्टैंड के पास, कांकेर (छ.ग.) - 494334';
+            if (u.id === 'usr-1') {
+              if (u.name === 'Koushik Patel' || !u.address) {
+                u.name = 'Vaibhav Kaushik';
+                if (!u.address) u.address = 'मेन रोड, नया बस स्टैंड के पास, कांकेर (छ.ग.) - 494334';
+                changed = true;
+              }
+              if (u.pin !== '2343') {
+                u.pin = '2343';
+                changed = true;
+              }
+            }
+            if (u.id === 'usr-5' && u.pin === '1111') {
+              u.pin = '1234';
               changed = true;
             }
           });
@@ -986,6 +996,25 @@ class LocalGymDatabase {
       }
     } catch (e) {
       console.warn('Local database migration notice:', e);
+    }
+  }
+
+  // System Form Mode (Simple vs Advanced Toggle for Dev)
+  getFormMode(): 'simple' | 'advanced' {
+    try {
+      const mode = localStorage.getItem('kf_system_form_mode');
+      return mode === 'advanced' ? 'advanced' : 'simple';
+    } catch {
+      return 'simple';
+    }
+  }
+
+  setFormMode(mode: 'simple' | 'advanced'): void {
+    try {
+      localStorage.setItem('kf_system_form_mode', mode);
+      window.dispatchEvent(new CustomEvent('kf_form_mode_change', { detail: { mode } }));
+    } catch (e) {
+      console.warn('Failed to save form mode:', e);
     }
   }
 

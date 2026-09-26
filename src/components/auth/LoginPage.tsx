@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   Smartphone,
 } from 'lucide-react';
+import { MemberSelfRegisterModal } from './MemberSelfRegisterModal';
 
 interface LoginPageProps {
   onOpenEnquiry?: () => void;
@@ -22,6 +23,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
   const { loginWithCredentials, error: authError } = useAuth();
   
   const [pin, setPin] = useState<string>('');
+  const [showSelfRegisterModal, setShowSelfRegisterModal] = useState<boolean>(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [geofenceFeedback, setGeofenceFeedback] = useState<{
@@ -47,6 +49,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
       setLocalError('कृपया वैध 4-अंकीय पिन दर्ज करें (Please enter a valid 4-digit PIN)');
       return;
     }
+
+    // Default PIN 1111 for Member Self-Registration
+    if (pin.trim() === '1111') {
+      setShowSelfRegisterModal(true);
+      setPin('');
+      return;
+    }
+
     setLoading(true);
     setLocalError(null);
     setGeofenceFeedback(null);
@@ -396,6 +406,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
                 </button>
               </div>
             )}
+
+            {/* PIN 1111 Self-Registration Prompt */}
+            <div className="pt-2 text-center border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowSelfRegisterModal(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-xs border border-amber-300 transition-all cursor-pointer shadow-2xs hover:shadow-xs active:scale-95"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-700" />
+                <span>नया सदस्य? <b>PIN: 1111</b> दर्ज करें या यहाँ क्लिक करें</span>
+              </button>
+            </div>
           </div>
 
           {/* Card Footer Bar */}
@@ -437,6 +459,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenEnquiry, onOpenAppIn
       <footer className="relative z-10 text-center py-1 sm:py-1.5 text-[10px] sm:text-[11px] text-slate-600 border-t border-slate-300/80 bg-slate-100/80 backdrop-blur-xs shrink-0">
         Kaushik Fitness Kanker, Chhattisgarh • Built for Strength, Body Index Tracking & Management
       </footer>
+
+      {/* Member Self-Registration Modal (PIN 1111) */}
+      {showSelfRegisterModal && (
+        <MemberSelfRegisterModal
+          onClose={() => setShowSelfRegisterModal(false)}
+        />
+      )}
     </div>
   );
 };

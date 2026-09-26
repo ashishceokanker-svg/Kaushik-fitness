@@ -43,9 +43,30 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
   const { currentUser } = useAuth();
   const { members } = useGymData();
 
+  const fallbackMember: any = {
+    id: currentUser?.memberId || 'mem-1',
+    userId: currentUser?.id || 'usr-5',
+    name: currentUser?.name || 'Rahul Sharma',
+    phone: currentUser?.phone || '9826112345',
+    email: currentUser?.email || 'member@kaushikfitness.com',
+    memberCode: 'KF-2024-001',
+    membershipPlan: 'gold',
+    joinDate: new Date().toISOString().split('T')[0],
+    expiryDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+    fitnessGoal: 'muscle_building',
+    active: true,
+    status: 'active',
+  };
+
   // Find active member info
-  const member = members.find((m) => m.id === currentUser?.memberId) || members[0];
-  const isMemberExpired = new Date(member.expiryDate).getTime() < Date.now() || member.status === 'expired' || !member.active;
+  const member =
+    (members && members.length > 0
+      ? members.find((m) => m.id === currentUser?.memberId) || members[0]
+      : null) || fallbackMember;
+
+  const isMemberExpired = member?.expiryDate
+    ? new Date(member.expiryDate).getTime() < Date.now() || member.status === 'expired' || !member.active
+    : false;
 
   const [activeTab, setActiveTab] = useState<'home' | 'workout' | 'diet' | 'pass' | 'body_index' | 'receipt' | '3d'>('home');
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
@@ -53,14 +74,14 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
   const [selectedWorkoutDay, setSelectedWorkoutDay] = useState<number>(0);
 
   // Pre-generate custom workouts and diet
-  const customWorkout = localDb.getMemberWorkout(member.id);
+  const customWorkout = member?.id ? localDb.getMemberWorkout(member.id) : undefined;
   const workoutDays = customWorkout && customWorkout.days && customWorkout.days.length > 0
     ? customWorkout.days
-    : generateWorkoutRoutine(member.fitnessGoal);
-  const customDiet = localDb.getMemberDiet(member.id);
+    : generateWorkoutRoutine(member?.fitnessGoal || 'muscle_building');
+  const customDiet = member?.id ? localDb.getMemberDiet(member.id) : undefined;
   const dietMeals = customDiet && customDiet.meals && customDiet.meals.length > 0
     ? customDiet.meals
-    : generateDietPlan(member.fitnessGoal, member.targetDailyCalories || 2600);
+    : generateDietPlan(member?.fitnessGoal || 'muscle_building', member?.targetDailyCalories || 2600);
 
   const toggleExercise = (id: string) => {
     setCompletedExercises((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -644,7 +665,7 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
                 Gym Entrance Check-In PIN
               </span>
               <div className="flex justify-center items-center gap-3 my-3">
-                {member.pin.split('').map((char, cIdx) => (
+                {((member.pin || '1234') as string).split('').map((char: string, cIdx: number) => (
                   <div
                     key={cIdx}
                     className="w-12 h-14 rounded-xl bg-white border-2 border-cyan-500 flex items-center justify-center text-3xl font-mono font-black text-cyan-800 shadow-sm"

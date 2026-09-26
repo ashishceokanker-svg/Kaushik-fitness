@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { LiveCameraModal } from '../common/LiveCameraModal';
 import { compressImageFile } from '../../utils/imageCompressor';
+import { localDb } from '../../db/localDatabase';
 
 interface AddStaffModalProps {
   onClose: () => void;
@@ -29,6 +30,17 @@ interface AddStaffModalProps {
 
 export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose }) => {
   const { addStaff } = useGymData();
+
+  // Form Mode (Simple vs Advanced)
+  const [isAdvanced, setIsAdvanced] = useState<boolean>(() => localDb.getFormMode() === 'advanced');
+
+  useEffect(() => {
+    const handleModeChange = () => {
+      setIsAdvanced(localDb.getFormMode() === 'advanced');
+    };
+    window.addEventListener('kf_form_mode_change', handleModeChange);
+    return () => window.removeEventListener('kf_form_mode_change', handleModeChange);
+  }, []);
 
   // Photo
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
@@ -129,37 +141,42 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose }) => {
     e.preventDefault();
 
     // Relaxed Validation - Anyone can submit without being blocked
-    const finalName = name.trim() || (staffType === 'instructor' ? 'नया ट्रेनर' : 'नया स्टाफ');
+    const effectiveStaffType = isAdvanced ? staffType : 'instructor';
+    const finalName = name.trim() || (effectiveStaffType === 'instructor' ? 'नया ट्रेनर' : 'नया स्टाफ');
     const finalPhone = phone.trim() || `9244${Math.floor(100000 + Math.random() * 900000)}`;
     const finalPin = (pin.trim() && pin.trim().length === 4)
       ? pin.trim()
       : Math.floor(1000 + Math.random() * 9000).toString();
-    const finalSalary = Number(salaryMonthly) > 0 ? Number(salaryMonthly) : 15000;
+    const finalSalary = Number(salaryMonthly) > 0 ? Number(salaryMonthly) : 25000;
 
     addStaff({
       name: finalName,
-      fatherName: fatherName.trim() || undefined,
-      dob: dob || undefined,
+      fatherName: isAdvanced ? (fatherName.trim() || undefined) : undefined,
+      dob: isAdvanced ? (dob || undefined) : undefined,
       phone: finalPhone,
-      email: email.trim() || `${finalPhone}@koushikfitness.com`,
-      address: address.trim() || undefined,
-      role: staffType === 'instructor' ? 'trainer' : 'staff',
-      staffType,
-      designation: designation.trim() || (staffType === 'instructor' ? 'Gym Instructor & PT Coach' : 'Front Desk & Operations Officer'),
+      email: isAdvanced ? (email.trim() || `${finalPhone}@kaushikfitness.com`) : `${finalPhone}@kaushikfitness.com`,
+      address: isAdvanced ? (address.trim() || undefined) : undefined,
+      role: effectiveStaffType === 'instructor' ? 'trainer' : 'staff',
+      staffType: effectiveStaffType,
+      designation: isAdvanced
+        ? (designation.trim() || (effectiveStaffType === 'instructor' ? 'Gym Instructor & PT Coach' : 'Front Desk & Operations Officer'))
+        : 'Gym Trainer & PT Coach',
       joiningDate: new Date().toISOString().split('T')[0],
       salaryMonthly: finalSalary,
-      specialization: specializations.split(',').map((s) => s.trim()).filter(Boolean),
+      specialization: isAdvanced
+        ? specializations.split(',').map((s) => s.trim()).filter(Boolean)
+        : ['Gym Trainer', 'Fitness Coach'],
       status: 'active',
-      bio: bio.trim() || undefined,
-      docType,
-      docNumber: docNumber.trim() || undefined,
-      docFileName: docFileName || undefined,
-      docFileUrl,
+      bio: isAdvanced ? (bio.trim() || undefined) : undefined,
+      docType: isAdvanced ? docType : 'Aadhaar Card',
+      docNumber: isAdvanced ? (docNumber.trim() || undefined) : undefined,
+      docFileName: isAdvanced ? (docFileName || undefined) : undefined,
+      docFileUrl: isAdvanced ? docFileUrl : undefined,
       avatarUrl,
       pin: finalPin,
     });
 
-    alert(`✅ ${finalName} का प्रोफ़ाइल सफलतापूर्वक सुरक्षित हो गया!\n\n🔑 4-अंकीय पिन (PIN): ${finalPin}\n📱 मोबाइल: ${finalPhone}\n💼 पद: ${staffType === 'instructor' ? 'जिम ट्रेनर (Trainer)' : 'स्टाफ (Staff)'}`);
+    alert(`✅ ${finalName} का प्रोफ़ाइल सफलतापूर्वक सुरक्षित हो गया!\n\n🔑 4-अंकीय पिन (PIN): ${finalPin}\n📱 मोबाइल: ${finalPhone}\n💼 पद: ${effectiveStaffType === 'instructor' ? 'जिम ट्रेनर (Trainer)' : 'स्टाफ (Staff)'}`);
     onClose();
   };
 
@@ -179,10 +196,12 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose }) => {
             </div>
             <div>
               <h3 className="font-black text-slate-900 text-base leading-tight">
-                नया स्टाफ / ट्रेनर जोड़ें (Add Staff & Trainer)
+                {isAdvanced ? 'नया स्टाफ / ट्रेनर जोड़ें (Add Staff & Trainer)' : 'नया ट्रेनर जोड़ें (Add Trainer)'}
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                कौशिक फिटनेस कांकेर - स्टाफ व ट्रेनर बायोडाटा, पता एवं दस्तावेज़ एंट्री
+                {isAdvanced
+                  ? 'कौशिक फिटनेस कांकेर - स्टाफ व ट्रेनर बायोडाटा, पता एवं दस्तावेज़ एंट्री'
+                  : 'कौशिक फिटनेस कांकेर - त्वरित ट्रेनर पंजीकरण (नाम, पिन, मोबाइल, फ़ोटो)'}
               </p>
             </div>
           </div>
@@ -282,14 +301,16 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose }) => {
 
           {/* Section 1: Basic Identity */}
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-800 bg-cyan-50 px-2.5 py-1 rounded-md border border-cyan-200 inline-block">
-                1. व्यक्तिगत विवरण (Personal Identity)
-              </span>
-              <span className="text-[10.5px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
-                त्वरित एंट्री: सभी विवरण वैकल्पिक हैं
-              </span>
-            </div>
+            {isAdvanced && (
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-800 bg-cyan-50 px-2.5 py-1 rounded-md border border-cyan-200 inline-block">
+                  1. व्यक्तिगत विवरण (Personal Identity)
+                </span>
+                <span className="text-[10.5px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
+                  त्वरित एंट्री: सभी विवरण वैकल्पिक हैं
+                </span>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Full Name */}
@@ -341,7 +362,7 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose }) => {
               </div>
 
               {/* Phone */}
-              <div>
+              <div className={isAdvanced ? '' : 'sm:col-span-2'}>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   मोबाइल नंबर (Phone Number)
                 </label>
@@ -357,245 +378,253 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose }) => {
                 </div>
               </div>
 
-              {/* Father Name */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  पिता का नाम (Father's Name) <span className="text-slate-400 font-normal">(वैकल्पिक)</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="उदा. श्री संतोष साहू"
-                  value={fatherName}
-                  onChange={(e) => setFatherName(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                />
-              </div>
+              {isAdvanced && (
+                <>
+                  {/* Father Name */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      पिता का नाम (Father's Name) <span className="text-slate-400 font-normal">(वैकल्पिक)</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="उदा. श्री संतोष साहू"
+                      value={fatherName}
+                      onChange={(e) => setFatherName(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                    />
+                  </div>
 
-              {/* Date of Birth */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  जन्म तिथि (Date of Birth / DOB) <span className="text-slate-400 font-normal">(वैकल्पिक)</span>
-                </label>
-                <div className="relative">
-                  <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                  <input
-                    type="date"
-                    value={dob}
-                    onChange={(e) => setDob(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                  />
-                </div>
-              </div>
+                  {/* Date of Birth */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      जन्म तिथि (Date of Birth / DOB) <span className="text-slate-400 font-normal">(वैकल्पिक)</span>
+                    </label>
+                    <div className="relative">
+                      <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                      <input
+                        type="date"
+                        value={dob}
+                        onChange={(e) => setDob(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                      />
+                    </div>
+                  </div>
 
-              {/* Email */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  ईमेल पता (Email Address) <span className="text-slate-400 font-normal">(वैकल्पिक)</span>
-                </label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                  <input
-                    type="email"
-                    placeholder="उदा. trainer@kaushikfitness.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                  />
-                </div>
-              </div>
+                  {/* Email */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      ईमेल पता (Email Address) <span className="text-slate-400 font-normal">(वैकल्पिक)</span>
+                    </label>
+                    <div className="relative">
+                      <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                      <input
+                        type="email"
+                        placeholder="उदा. trainer@kaushikfitness.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                      />
+                    </div>
+                  </div>
 
-              {/* Address */}
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  स्थायी पता / निवास (Residential Address) <span className="text-slate-400 font-normal">(वैकल्पिक)</span>
-                </label>
-                <div className="relative">
-                  <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                  <textarea
-                    rows={2}
-                    placeholder="मकान नं., मोहल्ला/वार्ड, पोस्ट, कांकेर (छ.ग.) पिनकोड"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                  />
-                </div>
-              </div>
+                  {/* Address */}
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      स्थायी पता / निवास (Residential Address) <span className="text-slate-400 font-normal">(वैकल्पिक)</span>
+                    </label>
+                    <div className="relative">
+                      <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                      <textarea
+                        rows={2}
+                        placeholder="मकान नं., मोहल्ला/वार्ड, पोस्ट, कांकेर (छ.ग.) पिनकोड"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
-          {/* Section 2: Role & Salary */}
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200 inline-block mb-3">
-              2. पद व वेतन विवरण (Role & Salary)
-            </span>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Category */}
+          {isAdvanced && (
+            <>
+              {/* Section 2: Role & Salary */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  स्टाफ श्रेणी (Staff Category)
-                </label>
-                <select
-                  value={staffType}
-                  onChange={(e) => {
-                    const val = e.target.value as StaffType;
-                    setStaffType(val);
-                    setDesignation(
-                      val === 'instructor'
-                        ? 'Gym Instructor & PT Coach'
-                        : 'Front Desk & Operations Officer'
-                    );
-                  }}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                >
-                  <option value="instructor">जिम इंस्ट्रक्टर / ट्रेनर (Gym Instructor / Trainer)</option>
-                  <option value="regular">रेगुलर स्टाफ (Front Desk & Ops)</option>
-                </select>
-              </div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200 inline-block mb-3">
+                  2. पद व वेतन विवरण (Role & Salary)
+                </span>
 
-              {/* Designation */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  पदनाम (Designation Title)
-                </label>
-                <div className="relative">
-                  <Briefcase className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                  <input
-                    type="text"
-                    value={designation}
-                    onChange={(e) => setDesignation(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Category */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      स्टाफ श्रेणी (Staff Category)
+                    </label>
+                    <select
+                      value={staffType}
+                      onChange={(e) => {
+                        const val = e.target.value as StaffType;
+                        setStaffType(val);
+                        setDesignation(
+                          val === 'instructor'
+                            ? 'Gym Instructor & PT Coach'
+                            : 'Front Desk & Operations Officer'
+                        );
+                      }}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                    >
+                      <option value="instructor">जिम इंस्ट्रक्टर / ट्रेनर (Gym Instructor / Trainer)</option>
+                      <option value="regular">रेगुलर स्टाफ (Front Desk & Ops)</option>
+                    </select>
+                  </div>
+
+                  {/* Designation */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      पदनाम (Designation Title)
+                    </label>
+                    <div className="relative">
+                      <Briefcase className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                      <input
+                        type="text"
+                        value={designation}
+                        onChange={(e) => setDesignation(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Salary Monthly */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      मासिक वेतन (Monthly Salary ₹)
+                    </label>
+                    <div className="relative">
+                      <DollarSign className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                      <input
+                        type="number"
+                        value={salaryMonthly}
+                        onChange={(e) => setSalaryMonthly(Number(e.target.value))}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-900 font-mono font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Specialization */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      विशेषज्ञता (Skills / Specialization)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="उदा. Hypertrophy, Diet Planning, Powerlifting"
+                      value={specializations}
+                      onChange={(e) => setSpecializations(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                    />
+                  </div>
+
+                  {/* Bio */}
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      संक्षिप्त परिचय / अनुभव (Bio / Credentials)
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="प्रमाणपत्र, पूर्व अनुभव एवं उपलब्धियां..."
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Salary Monthly */}
+              {/* Section 3: Document Verification & Upload */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  मासिक वेतन (Monthly Salary ₹)
-                </label>
-                <div className="relative">
-                  <DollarSign className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                  <input
-                    type="number"
-                    value={salaryMonthly}
-                    onChange={(e) => setSalaryMonthly(Number(e.target.value))}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-900 font-mono font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                  />
-                </div>
-              </div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 inline-block mb-3">
+                  3. आईडी व दस्तावेज़ अपलोड (Document Upload & Verification)
+                </span>
 
-              {/* Specialization */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  विशेषज्ञता (Skills / Specialization)
-                </label>
-                <input
-                  type="text"
-                  placeholder="उदा. Hypertrophy, Diet Planning, Powerlifting"
-                  value={specializations}
-                  onChange={(e) => setSpecializations(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                />
-              </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Document Type */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      दस्तावेज़ का प्रकार (Document Type)
+                    </label>
+                    <select
+                      value={docType}
+                      onChange={(e) => setDocType(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                    >
+                      <option value="Aadhaar Card">आधार कार्ड (Aadhaar Card)</option>
+                      <option value="PAN Card">पैन कार्ड (PAN Card)</option>
+                      <option value="Fitness Trainer Certificate">ट्रेनर सर्टिफिकेशन / डिप्लोमा (Certificate)</option>
+                      <option value="Police Verification">पुलिस चरित्र सत्यापन (Police Verification)</option>
+                      <option value="Address Proof">निवास प्रमाण पत्र (Address Proof)</option>
+                    </select>
+                  </div>
 
-              {/* Bio */}
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  संक्षिप्त परिचय / अनुभव (Bio / Credentials)
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="प्रमाणपत्र, पूर्व अनुभव एवं उपलब्धियां..."
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                />
-              </div>
-            </div>
-          </div>
+                  {/* Document Number */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      दस्तावेज़ / आईडी संख्या (Document ID / Number)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="उदा. 4821 XXXX XXXX या PAN"
+                      value={docNumber}
+                      onChange={(e) => setDocNumber(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                    />
+                  </div>
 
-          {/* Section 3: Document Verification & Upload */}
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 inline-block mb-3">
-              3. आईडी व दस्तावेज़ अपलोड (Document Upload & Verification)
-            </span>
+                  {/* File Upload Box */}
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      दस्तावेज़ की फ़ाइल अपलोड करें (Upload Document File / Photo / PDF)
+                    </label>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Document Type */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  दस्तावेज़ का प्रकार (Document Type)
-                </label>
-                <select
-                  value={docType}
-                  onChange={(e) => setDocType(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                >
-                  <option value="Aadhaar Card">आधार कार्ड (Aadhaar Card)</option>
-                  <option value="PAN Card">पैन कार्ड (PAN Card)</option>
-                  <option value="Fitness Trainer Certificate">ट्रेनर सर्टिफिकेशन / डिप्लोमा (Certificate)</option>
-                  <option value="Police Verification">पुलिस चरित्र सत्यापन (Police Verification)</option>
-                  <option value="Address Proof">निवास प्रमाण पत्र (Address Proof)</option>
-                </select>
-              </div>
+                    <div className="p-4 rounded-xl border-2 border-dashed border-slate-300 hover:border-amber-500 bg-slate-50 hover:bg-white transition-all text-center relative cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*,application/pdf"
+                        onChange={handleFileUpload}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
 
-              {/* Document Number */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  दस्तावेज़ / आईडी संख्या (Document ID / Number)
-                </label>
-                <input
-                  type="text"
-                  placeholder="उदा. 4821 XXXX XXXX या PAN"
-                  value={docNumber}
-                  onChange={(e) => setDocNumber(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                />
-              </div>
-
-              {/* File Upload Box */}
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  दस्तावेज़ की फ़ाइल अपलोड करें (Upload Document File / Photo / PDF)
-                </label>
-
-                <div className="p-4 rounded-xl border-2 border-dashed border-slate-300 hover:border-amber-500 bg-slate-50 hover:bg-white transition-all text-center relative cursor-pointer">
-                  <input
-                    type="file"
-                    accept="image/*,application/pdf"
-                    onChange={handleFileUpload}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  />
-
-                  {docFileName ? (
-                    <div className="flex items-center justify-center gap-3 text-emerald-700">
-                      <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
-                      <div className="text-left">
-                        <div className="font-bold text-sm text-slate-900">{docFileName}</div>
-                        <div className="text-xs text-slate-500 font-mono">
-                          आकार: {fileSizeStr} • फ़ाइल सफलतापूर्वक लोड हुई
+                      {docFileName ? (
+                        <div className="flex items-center justify-center gap-3 text-emerald-700">
+                          <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
+                          <div className="text-left">
+                            <div className="font-bold text-sm text-slate-900">{docFileName}</div>
+                            <div className="text-xs text-slate-500 font-mono">
+                              आकार: {fileSizeStr} • फ़ाइल सफलतापूर्वक लोड हुई
+                            </div>
+                          </div>
+                          <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full ml-auto">
+                            बदलें
+                          </span>
                         </div>
-                      </div>
-                      <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full ml-auto">
-                        बदलें
-                      </span>
+                      ) : (
+                        <div className="space-y-1">
+                          <UploadCloud className="w-8 h-8 mx-auto text-amber-600" />
+                          <div className="text-xs font-bold text-slate-800">
+                            फ़ाइल चुनने के लिए यहाँ क्लिक करें (आधार / पैन / सर्टिफिकेट)
+                          </div>
+                          <div className="text-[11px] text-slate-500">
+                            समर्थित प्रारूप: JPG, PNG, PDF (अधिकतम 5MB)
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <div className="space-y-1">
-                      <UploadCloud className="w-8 h-8 mx-auto text-amber-600" />
-                      <div className="text-xs font-bold text-slate-800">
-                        फ़ाइल चुनने के लिए यहाँ क्लिक करें (आधार / पैन / सर्टिफिकेट)
-                      </div>
-                      <div className="text-[11px] text-slate-500">
-                        समर्थित प्रारूप: JPG, PNG, PDF (अधिकतम 5MB)
-                      </div>
-                    </div>
-                  )}
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
 
           {/* Footer Actions */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
@@ -611,7 +640,7 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose }) => {
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-950 text-xs font-black shadow-md transition-all cursor-pointer"
             >
               <ShieldCheck className="w-4 h-4" />
-              <span>स्टाफ / ट्रेनर सुरक्षित करें (Save Profile)</span>
+              <span>{isAdvanced ? 'स्टाफ / ट्रेनर सुरक्षित करें (Save Profile)' : 'नया ट्रेनर सुरक्षित करें (Save Trainer)'}</span>
             </button>
           </div>
         </form>

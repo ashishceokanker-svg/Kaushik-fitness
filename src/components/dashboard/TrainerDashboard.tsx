@@ -6,6 +6,7 @@ import { ExpirationCountdown } from '../common/ExpirationCountdown';
 import { MemberProgressChart } from '../progress/MemberProgressChart';
 import { TrainerDietModal } from '../trainer/TrainerDietModal';
 import { TrainerWorkoutModal } from '../trainer/TrainerWorkoutModal';
+import { MemberRegisterModal } from '../members/MemberRegisterModal';
 import { localDb } from '../../db/localDatabase';
 import { CustomDietPlan, CustomWorkoutPlan, StaffDailyAttendance, WorkoutDay, Staff } from '../../types';
 import { generateAutomaticCustomDiet, generateWorkoutRoutine, calculateBMR, calculateTDEE } from '../../utils/fitnessCalculator';
@@ -86,10 +87,22 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
   const [isDietModalOpen, setIsDietModalOpen] = useState(false);
   const [isWorkoutModalOpen, setIsWorkoutModalOpen] = useState(false);
   const [isLogMeasurementModalOpen, setIsLogMeasurementModalOpen] = useState(false);
+  const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
   const [clientDiet, setClientDiet] = useState<CustomDietPlan | undefined>(undefined);
   const [clientWorkout, setClientWorkout] = useState<CustomWorkoutPlan | undefined>(undefined);
   const [activeWorkoutDayIdx, setActiveWorkoutDayIdx] = useState<number>(0);
   const [autoDietToast, setAutoDietToast] = useState<string | null>(null);
+
+  // System Form Mode (Simple vs Advanced Toggle for Dev)
+  const [isAdvanced, setIsAdvanced] = useState<boolean>(() => localDb.getFormMode() === 'advanced');
+
+  useEffect(() => {
+    const handleModeChange = () => {
+      setIsAdvanced(localDb.getFormMode() === 'advanced');
+    };
+    window.addEventListener('kf_form_mode_change', handleModeChange);
+    return () => window.removeEventListener('kf_form_mode_change', handleModeChange);
+  }, []);
 
   // Sync selected client if list updates
   useEffect(() => {
@@ -433,44 +446,46 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
             </div>
 
             {/* Geofenced Duty Status Badge */}
-            <div className="flex items-center gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
-              <div className="text-right">
-                <div className="flex items-center justify-end gap-1.5 mb-0.5">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold">GPS Duty Status</span>
-                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${
-                    trainerDailyAtt?.status === 'present'
-                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                      : trainerDailyAtt?.status === 'absent'
-                      ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                      : 'bg-slate-200 text-slate-700'
-                  }`}>
-                    {trainerDailyAtt ? (trainerDailyAtt.status === 'present' ? 'P - उपस्थित' : 'A - परिधि से बाहर') : 'Off Duty'}
-                  </span>
+            {isAdvanced && (
+              <div className="flex items-center gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                <div className="text-right">
+                  <div className="flex items-center justify-end gap-1.5 mb-0.5">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold">GPS Duty Status</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${
+                      trainerDailyAtt?.status === 'present'
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                        : trainerDailyAtt?.status === 'absent'
+                        ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                        : 'bg-slate-200 text-slate-700'
+                    }`}>
+                      {trainerDailyAtt ? (trainerDailyAtt.status === 'present' ? 'P - उपस्थित' : 'A - परिधि से बाहर') : 'Off Duty'}
+                    </span>
+                  </div>
+                  <div className="text-xs font-bold text-slate-800">
+                    {trainerDailyAtt?.checkInTime ? `In: ${trainerDailyAtt.checkInTime}` : 'Not Checked In'}
+                    {trainerDailyAtt?.checkOutTime && ` • Out: ${trainerDailyAtt.checkOutTime}`}
+                  </div>
                 </div>
-                <div className="text-xs font-bold text-slate-800">
-                  {trainerDailyAtt?.checkInTime ? `In: ${trainerDailyAtt.checkInTime}` : 'Not Checked In'}
-                  {trainerDailyAtt?.checkOutTime && ` • Out: ${trainerDailyAtt.checkOutTime}`}
-                </div>
-              </div>
 
-              {trainerDailyAtt?.checkInTime && !trainerDailyAtt?.checkOutTime ? (
-                <button
-                  onClick={() => handleTrainerDutyAction('logout')}
-                  className="px-3 py-2 rounded-xl text-xs font-bold transition-all bg-rose-600 hover:bg-rose-700 text-white shadow-sm flex items-center gap-1 cursor-pointer"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>Clock Out</span>
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleTrainerDutyAction('login')}
-                  className="px-3 py-2 rounded-xl text-xs font-bold transition-all bg-cyan-600 hover:bg-cyan-700 text-white shadow-sm flex items-center gap-1 cursor-pointer"
-                >
-                  <MapPin className="w-3.5 h-3.5" />
-                  <span>{trainerDailyAtt ? 'पुनः GPS In' : 'GPS Clock In'}</span>
-                </button>
-              )}
-            </div>
+                {trainerDailyAtt?.checkInTime && !trainerDailyAtt?.checkOutTime ? (
+                  <button
+                    onClick={() => handleTrainerDutyAction('logout')}
+                    className="px-3 py-2 rounded-xl text-xs font-bold transition-all bg-rose-600 hover:bg-rose-700 text-white shadow-sm flex items-center gap-1 cursor-pointer"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Clock Out</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleTrainerDutyAction('login')}
+                    className="px-3 py-2 rounded-xl text-xs font-bold transition-all bg-cyan-600 hover:bg-cyan-700 text-white shadow-sm flex items-center gap-1 cursor-pointer"
+                  >
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span>{trainerDailyAtt ? 'पुनः GPS In' : 'GPS Clock In'}</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -483,7 +498,7 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
       )}
 
       {/* Trainer Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className={`grid grid-cols-2 ${isAdvanced ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-4`}>
         <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
           <span className="text-xs text-slate-500 font-bold uppercase">Assigned PT Clients</span>
           <div className="text-2xl font-black text-slate-900 font-mono mt-1">
@@ -492,13 +507,15 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
           <div className="text-[11px] text-cyan-700 font-medium mt-0.5">Personal training roster</div>
         </div>
 
-        <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
-          <span className="text-xs text-slate-500 font-bold uppercase">Monthly Base Salary</span>
-          <div className="text-2xl font-black text-emerald-600 font-mono mt-1">
-            ₹{trainer.salaryMonthly.toLocaleString('en-IN')}
+        {isAdvanced && (
+          <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
+            <span className="text-xs text-slate-500 font-bold uppercase">Monthly Base Salary</span>
+            <div className="text-2xl font-black text-emerald-600 font-mono mt-1">
+              ₹{trainer.salaryMonthly.toLocaleString('en-IN')}
+            </div>
+            <div className="text-[11px] text-emerald-700 font-medium mt-0.5">Salary disbursed by admin</div>
           </div>
-          <div className="text-[11px] text-emerald-700 font-medium mt-0.5">Salary disbursed by admin</div>
-        </div>
+        )}
 
         <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
           <span className="text-xs text-slate-500 font-bold uppercase">Client Diet Status</span>
@@ -529,6 +546,14 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
               कोच {trainer.name} के असाइन सदस्य: किसी भी सदस्य पर क्लिक करके उसकी शारीरिक प्रोग्रेस, ट्रांसफॉर्मेशन बदलाव और डाइट प्लान देखें व बदलें:
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => setIsAddMemberModalOpen(true)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold text-xs shadow-sm transition-all cursor-pointer shrink-0"
+          >
+            <Plus className="w-4 h-4 stroke-[3]" />
+            <span>नया सदस्य जोड़ें (Add Member)</span>
+          </button>
         </div>
 
         {displayClients.length === 0 ? (
@@ -1261,6 +1286,21 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
             </form>
           </div>
         </div>
+      )}
+
+      {/* Add Member Modal for Trainer */}
+      {isAddMemberModalOpen && (
+        <MemberRegisterModal
+          onClose={() => setIsAddMemberModalOpen(false)}
+          lockedTrainerId={trainer.id}
+          lockedTrainerName={trainer.name}
+          onSuccess={(newMember) => {
+            setIsAddMemberModalOpen(false);
+            setSelectedClient(newMember);
+            setAutoDietToast(`✅ नया सदस्य ${newMember.name} कोच ${trainer.name} के तहत सफलतापूर्वक जोड़ा गया!`);
+            setTimeout(() => setAutoDietToast(null), 5000);
+          }}
+        />
       )}
     </div>
   );

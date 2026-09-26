@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useGymData } from '../../context/GymDataContext';
+import { localDb } from '../../db/localDatabase';
 import {
   LayoutDashboard,
   Users,
@@ -99,13 +100,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     // TRAINER: Clients, progress tracking & diet plans
     if (role === 'trainer') {
-      return [
+      const isAdvanced = localDb.getFormMode() === 'advanced';
+      const trainerClients = members.filter((m) => {
+        if (!currentUser) return false;
+        if (m.assignedTrainerId && (m.assignedTrainerId === currentUser.id || m.assignedTrainerId === currentUser.staffId)) return true;
+        if (m.assignedTrainerName && currentUser.name && m.assignedTrainerName.trim().toLowerCase() === currentUser.name.trim().toLowerCase()) return true;
+        return false;
+      });
+
+      const items: NavItem[] = [
         { id: 'dashboard', label: 'Trainer Dashboard (ट्रेनर पोर्टल)', icon: LayoutDashboard },
-        { id: 'clients', label: 'मेरे 5 मेंबर्स (Assigned PT Clients)', icon: Users, badge: 5 },
+        { id: 'clients', label: 'मेरे मेंबर्स (Assigned PT Clients)', icon: Users, badge: trainerClients.length || undefined },
         { id: 'progress', label: 'मेंबर प्रोग्रेस व बदलाव चार्ट', icon: Trophy, highlight: true },
         { id: 'fitness', label: 'डाइट व वर्कआउट प्लानर', icon: Sparkles },
-        { id: 'attendance', label: 'ड्यूटी हाजिरी (GPS Clock-In)', icon: CalendarCheck },
       ];
+
+      if (isAdvanced) {
+        items.push({ id: 'attendance', label: 'ड्यूटी हाजिरी (GPS Clock-In)', icon: CalendarCheck });
+      }
+
+      return items;
     }
 
     // MEMBER: Personal workout, diet, progress charts
