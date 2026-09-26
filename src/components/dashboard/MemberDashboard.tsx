@@ -300,13 +300,15 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
 
           {/* Quick Action Badges */}
           <div className="flex flex-wrap gap-2.5 w-full md:w-auto">
-            <button
-              onClick={() => setActiveTab('pass')}
-              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer"
-            >
-              <KeyRound className="w-4 h-4" />
-              Mera Gym PIN Pass
-            </button>
+            {isAdvanced && (
+              <button
+                onClick={() => setActiveTab('pass')}
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer"
+              >
+                <KeyRound className="w-4 h-4" />
+                Mera Gym PIN Pass
+              </button>
+            )}
 
             <button
               onClick={() => {
@@ -344,31 +346,33 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
         </div>
       </div>
 
-      {/* 2. REAL-TIME MEMBERSHIP EXPIRATION COUNTDOWN CARD */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
-          <div>
-            <div className="flex items-center gap-2 text-cyan-800 font-bold text-xs uppercase tracking-wider">
-              <Clock className="w-4 h-4 text-cyan-600 animate-spin-slow" />
-              Membership Expiry Countdown (सदस्यता समाप्ति उलटी गिनती)
+      {/* 2. REAL-TIME MEMBERSHIP EXPIRATION COUNTDOWN CARD (Only in Advanced Mode) */}
+      {isAdvanced && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+            <div>
+              <div className="flex items-center gap-2 text-cyan-800 font-bold text-xs uppercase tracking-wider">
+                <Clock className="w-4 h-4 text-cyan-600 animate-spin-slow" />
+                Membership Expiry Countdown (सदस्यता समाप्ति उलटी गिनती)
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Valid until: <strong className="text-slate-800">{formatDate(member.expiryDate)}</strong>
+              </p>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Valid until: <strong className="text-slate-800">{formatDate(member.expiryDate)}</strong>
-            </p>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500">Status:</span>
+              <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-300 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                Full Access Unlocked
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500">Status:</span>
-            <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-300 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              Full Access Unlocked
-            </span>
-          </div>
+          {/* Live Countdown Display */}
+          <ExpirationCountdown expiryDate={member.expiryDate} variant="card" />
         </div>
-
-        {/* Live Countdown Display */}
-        <ExpirationCountdown expiryDate={member.expiryDate} variant="card" />
-      </div>
+      )}
 
       {/* 3. SIMPLIFIED TAB NAVIGATION */}
       <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 overflow-x-auto scrollbar-none gap-1.5">
@@ -408,17 +412,19 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
           <span>Diet Chart (डाइट)</span>
         </button>
 
-        <button
-          onClick={() => setActiveTab('pass')}
-          className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            activeTab === 'pass'
-              ? 'bg-white text-cyan-800 shadow-sm border border-slate-200/80 font-black'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-          }`}
-        >
-          <KeyRound className="w-4 h-4 text-cyan-600" />
-          <span>PIN Pass (पिन)</span>
-        </button>
+        {isAdvanced && (
+          <button
+            onClick={() => setActiveTab('pass')}
+            className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              activeTab === 'pass'
+                ? 'bg-white text-cyan-800 shadow-sm border border-slate-200/80 font-black'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+            }`}
+          >
+            <KeyRound className="w-4 h-4 text-cyan-600" />
+            <span>PIN Pass (पिन)</span>
+          </button>
+        )}
 
         <button
           onClick={() => setActiveTab('body_index')}
@@ -842,8 +848,8 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
         </div>
       )}
 
-      {/* TAB 4: PASS (Official 4-Digit PIN Entry Pass) */}
-      {activeTab === 'pass' && (
+      {/* TAB 4: PASS (Official 4-Digit PIN Entry Pass) - Only shown in Advanced Mode */}
+      {isAdvanced && activeTab === 'pass' && (
         <div className="max-w-md mx-auto py-2">
           <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm text-center space-y-5 relative overflow-hidden">
             <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-800 text-xs font-bold uppercase tracking-widest">

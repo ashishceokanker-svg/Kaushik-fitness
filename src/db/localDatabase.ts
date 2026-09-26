@@ -84,673 +84,17 @@ const SEED_USERS: DbUser[] = [
     pin: '9975',
     address: 'Janpad Panchayat Baderajpur, District Kondagaon (C.G.)',
   },
-  {
-    id: 'usr-2',
-    name: 'Vikram Sahu',
-    email: 'trainer@kaushikfitness.com',
-    phone: '9826189002',
-    password_hash: '$2a$12$trainerHashKanker2024',
-    role: 'trainer',
-    created_at: '2022-06-15T00:00:00.000Z',
-    pin: '2002',
-    avatar_url: 'https://images.unsplash.com/photo-1567013127542-490d757e51fc?w=150&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'usr-3',
-    name: 'Ramesh Verma',
-    email: 'staff@kaushikfitness.com',
-    phone: '9826189003',
-    password_hash: '$2a$12$staffHashKanker2024',
-    role: 'staff',
-    created_at: '2023-03-10T00:00:00.000Z',
-    pin: '3003',
-    avatar_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'usr-5',
-    name: 'Rahul Sharma',
-    email: 'rahul@kaushikfitness.com',
-    phone: '9826112345',
-    password_hash: '$2a$12$memberHashKanker2024',
-    role: 'member',
-    created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
-    pin: '1234',
-    avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'usr-6',
-    name: 'Priya Patel',
-    email: 'priya@kaushikfitness.com',
-    phone: '9826123456',
-    password_hash: '$2a$12$memberHashKanker2024',
-    role: 'member',
-    created_at: new Date(Date.now() - 45 * 86400000).toISOString(),
-    pin: '2222',
-    avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'usr-7',
-    name: 'Amit Kumar Dewangan',
-    email: 'amit@kaushikfitness.com',
-    phone: '9826134567',
-    password_hash: '$2a$12$memberHashKanker2024',
-    role: 'member',
-    created_at: new Date(Date.now() - 40 * 86400000).toISOString(),
-    pin: '3333',
-    avatar_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'usr-8',
-    name: 'Neha Singh Rajput',
-    email: 'neha@kaushikfitness.com',
-    phone: '9826145678',
-    password_hash: '$2a$12$memberHashKanker2024',
-    role: 'member',
-    created_at: new Date(Date.now() - 35 * 86400000).toISOString(),
-    pin: '4444',
-    avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'usr-9',
-    name: 'Rajesh Sahu',
-    email: 'rajesh@kaushikfitness.com',
-    phone: '9826156789',
-    password_hash: '$2a$12$memberHashKanker2024',
-    role: 'member',
-    created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
-    pin: '5555',
-    avatar_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80',
-  },
 ];
 
-const SEED_MEMBER_PROFILES: DbMemberProfile[] = [
-  {
-    id: 'prof-1',
-    user_id: 'usr-5',
-    member_code: 'KF-2024-001',
-    age: 26,
-    gender: 'male',
-    height: 178,
-    weight: 78,
-    target_weight: 82,
-    fitness_goal: 'muscle_building',
-    fitness_level: 'Athletic',
-    fitness_score: 78,
-    bmi: 24.6,
-    body_fat_percentage: 17,
-    target_daily_calories: 2850,
-    emergency_contact: '9826119999 (Father)',
-    medical_conditions: 'None',
-    measurements: { chest: 41, waist: 32, biceps: 15.5, thighs: 23, hips: 38 },
-    workout_slot: '06:00 AM - 07:00 AM',
-  },
-  {
-    id: 'prof-2',
-    user_id: 'usr-6',
-    member_code: 'KF-2024-002',
-    age: 24,
-    gender: 'female',
-    height: 163,
-    weight: 59,
-    target_weight: 54,
-    fitness_goal: 'weight_loss',
-    fitness_level: 'Intermediate',
-    fitness_score: 82,
-    bmi: 22.2,
-    body_fat_percentage: 22,
-    target_daily_calories: 1650,
-    emergency_contact: '9826129999 (Mother)',
-    medical_conditions: 'None',
-    measurements: { chest: 34, waist: 28.5, biceps: 11.0, thighs: 22, hips: 37 },
-    workout_slot: '07:00 AM - 08:00 AM',
-  },
-  {
-    id: 'prof-3',
-    user_id: 'usr-7',
-    member_code: 'KF-2024-003',
-    age: 28,
-    gender: 'male',
-    height: 175,
-    weight: 72,
-    target_weight: 76,
-    fitness_goal: 'lean_bulk',
-    fitness_level: 'Athletic',
-    fitness_score: 85,
-    bmi: 23.5,
-    body_fat_percentage: 14.5,
-    target_daily_calories: 2750,
-    emergency_contact: '9826139999 (Brother)',
-    medical_conditions: 'None',
-    measurements: { chest: 40.5, waist: 31, biceps: 15.0, thighs: 22.5, hips: 37 },
-    workout_slot: '05:00 PM - 06:00 PM',
-  },
-  {
-    id: 'prof-4',
-    user_id: 'usr-8',
-    member_code: 'KF-2024-004',
-    age: 29,
-    gender: 'female',
-    height: 167,
-    weight: 58,
-    target_weight: 58,
-    fitness_goal: 'general_fitness',
-    fitness_level: 'Intermediate',
-    fitness_score: 80,
-    bmi: 20.8,
-    body_fat_percentage: 21,
-    target_daily_calories: 1850,
-    emergency_contact: '9826149999 (Spouse)',
-    medical_conditions: 'None',
-    measurements: { chest: 34.5, waist: 27.5, biceps: 11.8, thighs: 21.5, hips: 36.5 },
-    workout_slot: '06:00 PM - 07:00 PM',
-  },
-  {
-    id: 'prof-5',
-    user_id: 'usr-9',
-    member_code: 'KF-2024-005',
-    age: 34,
-    gender: 'male',
-    height: 172,
-    weight: 84,
-    target_weight: 75,
-    fitness_goal: 'weight_loss',
-    fitness_level: 'Intermediate',
-    fitness_score: 72,
-    bmi: 28.4,
-    body_fat_percentage: 23,
-    target_daily_calories: 2100,
-    emergency_contact: '9826159999 (Wife)',
-    medical_conditions: 'Mild Hypertension',
-    measurements: { chest: 42, waist: 36, biceps: 14.8, thighs: 24, hips: 40 },
-    workout_slot: '07:00 PM - 08:00 PM',
-  },
-];
+const SEED_MEMBER_PROFILES: DbMemberProfile[] = [];
+const SEED_MEMBERSHIPS: DbMembership[] = [];
+const SEED_BODY_INDEX_LOGS: BodyIndexLog[] = [];
+const SEED_ENQUIRIES: GymEnquiry[] = [];
+const SEED_BODY_PHOTO_LOGS: BodyPhotoLog[] = [];
+const SEED_FITNESS_PLANS: DbFitnessPlan[] = [];
+const SEED_LOGIN_LOGS: StaffLoginLog[] = [];
 
-const SEED_MEMBERSHIPS: DbMembership[] = [
-  {
-    id: 'msh-1',
-    member_id: 'prof-1',
-    package_type: '3_months',
-    is_personal_training: true,
-    pt_duration: '3_months',
-    trainer_id: 'usr-2',
-    trainer_name: 'Vikram Sahu',
-    joining_date: new Date(Date.now() - 30 * 86400000).toISOString(),
-    expiry_date: new Date(Date.now() + 60 * 86400000).toISOString(),
-    total_fee: 9200,
-    base_fee: 3200,
-    pt_fee: 6500,
-    discount_applied: 500,
-    discount_type: 'flat',
-    discount_value: 500,
-    final_paid_fee: 9200,
-    due_amount: 0,
-    payment_status: 'paid',
-    payment_method: 'upi',
-    last_payment_date: new Date(Date.now() - 30 * 86400000).toISOString(),
-    active: true,
-  },
-  {
-    id: 'msh-2',
-    member_id: 'prof-2',
-    package_type: '3_months',
-    is_personal_training: true,
-    pt_duration: '3_months',
-    trainer_id: 'usr-2',
-    trainer_name: 'Vikram Sahu',
-    joining_date: new Date(Date.now() - 45 * 86400000).toISOString(),
-    expiry_date: new Date(Date.now() + 45 * 86400000).toISOString(),
-    total_fee: 9000,
-    base_fee: 3200,
-    pt_fee: 6500,
-    discount_applied: 700,
-    discount_type: 'flat',
-    discount_value: 700,
-    final_paid_fee: 9000,
-    due_amount: 0,
-    payment_status: 'paid',
-    payment_method: 'upi',
-    last_payment_date: new Date(Date.now() - 45 * 86400000).toISOString(),
-    active: true,
-  },
-  {
-    id: 'msh-3',
-    member_id: 'prof-3',
-    package_type: '6_months',
-    is_personal_training: true,
-    pt_duration: '6_months',
-    trainer_id: 'usr-2',
-    trainer_name: 'Vikram Sahu',
-    joining_date: new Date(Date.now() - 40 * 86400000).toISOString(),
-    expiry_date: new Date(Date.now() + 140 * 86400000).toISOString(),
-    total_fee: 16800,
-    base_fee: 5800,
-    pt_fee: 12000,
-    discount_applied: 1000,
-    discount_type: 'flat',
-    discount_value: 1000,
-    final_paid_fee: 16800,
-    due_amount: 0,
-    payment_status: 'paid',
-    payment_method: 'cash',
-    last_payment_date: new Date(Date.now() - 40 * 86400000).toISOString(),
-    active: true,
-  },
-  {
-    id: 'msh-4',
-    member_id: 'prof-4',
-    package_type: '3_months',
-    is_personal_training: true,
-    pt_duration: '3_months',
-    trainer_id: 'usr-2',
-    trainer_name: 'Vikram Sahu',
-    joining_date: new Date(Date.now() - 35 * 86400000).toISOString(),
-    expiry_date: new Date(Date.now() + 55 * 86400000).toISOString(),
-    total_fee: 9200,
-    base_fee: 3200,
-    pt_fee: 6500,
-    discount_applied: 500,
-    discount_type: 'flat',
-    discount_value: 500,
-    final_paid_fee: 9200,
-    due_amount: 0,
-    payment_status: 'paid',
-    payment_method: 'upi',
-    last_payment_date: new Date(Date.now() - 35 * 86400000).toISOString(),
-    active: true,
-  },
-  {
-    id: 'msh-5',
-    member_id: 'prof-5',
-    package_type: '3_months',
-    is_personal_training: true,
-    pt_duration: '3_months',
-    trainer_id: 'usr-2',
-    trainer_name: 'Vikram Sahu',
-    joining_date: new Date(Date.now() - 60 * 86400000).toISOString(),
-    expiry_date: new Date(Date.now() + 30 * 86400000).toISOString(),
-    total_fee: 9000,
-    base_fee: 3200,
-    pt_fee: 6500,
-    discount_applied: 700,
-    discount_type: 'flat',
-    discount_value: 700,
-    final_paid_fee: 9000,
-    due_amount: 0,
-    payment_status: 'paid',
-    payment_method: 'cash',
-    last_payment_date: new Date(Date.now() - 60 * 86400000).toISOString(),
-    active: true,
-  },
-];
-
-const SEED_BODY_INDEX_LOGS: BodyIndexLog[] = [
-  // Rahul Sharma (prof-1)
-  {
-    id: 'bi-1-1',
-    memberId: 'prof-1',
-    date: new Date(Date.now() - 30 * 86400000).toISOString(),
-    weightKg: 74,
-    heightCm: 178,
-    bmi: 23.4,
-    chestInches: 39,
-    waistInches: 34,
-    bicepsInches: 14.0,
-    thighsInches: 22,
-    hipsInches: 39,
-    bodyFatPct: 20.5,
-    notes: 'प्रारंभिक बेसलाइन माप - कोच विक्रम साहू।',
-  },
-  {
-    id: 'bi-1-2',
-    memberId: 'prof-1',
-    date: new Date(Date.now() - 2 * 86400000).toISOString(),
-    weightKg: 78,
-    heightCm: 178,
-    bmi: 24.6,
-    chestInches: 41,
-    waistInches: 32,
-    bicepsInches: 15.5,
-    thighsInches: 23,
-    hipsInches: 38,
-    bodyFatPct: 17,
-    notes: 'कमर में 2" की कमी, डोले 1.5" बढ़े। लीन मसल गेन सफल।',
-  },
-
-  // Priya Patel (prof-2)
-  {
-    id: 'bi-2-1',
-    memberId: 'prof-2',
-    date: new Date(Date.now() - 45 * 86400000).toISOString(),
-    weightKg: 66,
-    heightCm: 163,
-    bmi: 24.8,
-    chestInches: 36,
-    waistInches: 32,
-    bicepsInches: 11.5,
-    thighsInches: 24,
-    hipsInches: 40,
-    bodyFatPct: 28.5,
-    notes: 'पहला दिन असेसमेंट - कोच विक्रम।',
-  },
-  {
-    id: 'bi-2-2',
-    memberId: 'prof-2',
-    date: new Date(Date.now() - 20 * 86400000).toISOString(),
-    weightKg: 62.5,
-    heightCm: 163,
-    bmi: 23.5,
-    chestInches: 35,
-    waistInches: 30,
-    bicepsInches: 11.2,
-    thighsInches: 23,
-    hipsInches: 38.5,
-    bodyFatPct: 25,
-    notes: 'मिड चेक-इन: 3.5kg फैट लॉस।',
-  },
-  {
-    id: 'bi-2-3',
-    memberId: 'prof-2',
-    date: new Date(Date.now() - 3 * 86400000).toISOString(),
-    weightKg: 59,
-    heightCm: 163,
-    bmi: 22.2,
-    chestInches: 34,
-    waistInches: 28.5,
-    bicepsInches: 11.0,
-    thighsInches: 22,
-    hipsInches: 37,
-    bodyFatPct: 22,
-    notes: 'कुल 7kg वजन कम, कमर 32" से 28.5" (-3.5 इंच)। टोन्ड बॉडी।',
-  },
-
-  // Amit Kumar Dewangan (prof-3)
-  {
-    id: 'bi-3-1',
-    memberId: 'prof-3',
-    date: new Date(Date.now() - 40 * 86400000).toISOString(),
-    weightKg: 67,
-    heightCm: 175,
-    bmi: 21.9,
-    chestInches: 38,
-    waistInches: 31.5,
-    bicepsInches: 13.5,
-    thighsInches: 21,
-    hipsInches: 36,
-    bodyFatPct: 16,
-    notes: 'लीन बल्क प्रोग्राम प्रारंभ।',
-  },
-  {
-    id: 'bi-3-2',
-    memberId: 'prof-3',
-    date: new Date(Date.now() - 1 * 86400000).toISOString(),
-    weightKg: 72,
-    heightCm: 175,
-    bmi: 23.5,
-    chestInches: 40.5,
-    waistInches: 31,
-    bicepsInches: 15.0,
-    thighsInches: 22.5,
-    hipsInches: 37,
-    bodyFatPct: 14.5,
-    notes: '+5kg शुद्ध मसल मास, बाइसेप्स 15 इंच।',
-  },
-
-  // Neha Singh Rajput (prof-4)
-  {
-    id: 'bi-4-1',
-    memberId: 'prof-4',
-    date: new Date(Date.now() - 35 * 86400000).toISOString(),
-    weightKg: 61,
-    heightCm: 167,
-    bmi: 21.9,
-    chestInches: 35,
-    waistInches: 29.5,
-    bicepsInches: 11.2,
-    thighsInches: 22.5,
-    hipsInches: 38,
-    bodyFatPct: 26,
-    notes: 'स्ट्रेंथ व कंडीशनिंग प्रारंभ।',
-  },
-  {
-    id: 'bi-4-2',
-    memberId: 'prof-4',
-    date: new Date(Date.now() - 4 * 86400000).toISOString(),
-    weightKg: 58,
-    heightCm: 167,
-    bmi: 20.8,
-    chestInches: 34.5,
-    waistInches: 27.5,
-    bicepsInches: 11.8,
-    thighsInches: 21.5,
-    hipsInches: 36.5,
-    bodyFatPct: 21,
-    notes: 'कमर में 2" की कमी, स्क्वॉट में 20kg की प्रगति।',
-  },
-
-  // Rajesh Sahu (prof-5)
-  {
-    id: 'bi-5-1',
-    memberId: 'prof-5',
-    date: new Date(Date.now() - 60 * 86400000).toISOString(),
-    weightKg: 93,
-    heightCm: 172,
-    bmi: 31.4,
-    chestInches: 44,
-    waistInches: 40,
-    bicepsInches: 14.5,
-    thighsInches: 25.5,
-    hipsInches: 43,
-    bodyFatPct: 29,
-    notes: 'वेट लॉस व कार्डियो स्क्रीनिंग।',
-  },
-  {
-    id: 'bi-5-2',
-    memberId: 'prof-5',
-    date: new Date(Date.now() - 30 * 86400000).toISOString(),
-    weightKg: 88,
-    heightCm: 172,
-    bmi: 29.7,
-    chestInches: 43,
-    waistInches: 38,
-    bicepsInches: 14.5,
-    thighsInches: 24.5,
-    hipsInches: 41.5,
-    bodyFatPct: 26,
-    notes: 'पहला महीना: -5kg वजन कम।',
-  },
-  {
-    id: 'bi-5-3',
-    memberId: 'prof-5',
-    date: new Date(Date.now() - 2 * 86400000).toISOString(),
-    weightKg: 84,
-    heightCm: 172,
-    bmi: 28.4,
-    chestInches: 42,
-    waistInches: 36,
-    bicepsInches: 14.8,
-    thighsInches: 24,
-    hipsInches: 40,
-    bodyFatPct: 23,
-    notes: '-9kg कुल वजन कम (-4" कमर), फिटनेस में बड़ा बदलाव।',
-  },
-];
-
-const SEED_ENQUIRIES: GymEnquiry[] = [
-  {
-    id: 'enq-1',
-    name: 'Devendra Sinha',
-    phone: '9826198888',
-    email: 'devendra.kanker@gmail.com',
-    fitnessGoal: 'weight_loss',
-    interestedPackage: '3_months',
-    wantsPersonalTraining: true,
-    preferredTiming: 'Morning (6:00 AM - 9:00 AM)',
-    message: 'Interested in joining gym for fat loss + personal coaching with Vikram Sir.',
-    status: 'new',
-    createdAt: new Date(Date.now() - 1 * 86400000).toISOString(),
-  },
-];
-
-const SEED_BODY_PHOTO_LOGS: BodyPhotoLog[] = [
-  {
-    id: 'bphoto-1-1',
-    memberId: 'mem-1',
-    date: '2026-07-01',
-    weightKg: 78.5,
-    notes: 'दिन 1 बेसलाइन: जिम जॉइनिंग की शुरुआत, फैट अधिक व मसल डेफिनेशन कम।',
-    frontPhotoUrl: getSeedBodyPhotoSvg('front', 'before'),
-    backPhotoUrl: getSeedBodyPhotoSvg('back', 'before'),
-    leftPhotoUrl: getSeedBodyPhotoSvg('left', 'before'),
-    rightPhotoUrl: getSeedBodyPhotoSvg('right', 'before'),
-    createdAt: '2026-07-01T10:00:00.000Z',
-  },
-  {
-    id: 'bphoto-1-2',
-    memberId: 'mem-1',
-    date: '2026-09-19',
-    weightKg: 72.8,
-    notes: 'दिन 80 प्रोग्रेस: 5.7 kg फैट लॉस, चेस्ट कटिंग, 6-पैक एब्स व वी-टेपर बैक साफ दिखाई दे रहा है।',
-    frontPhotoUrl: getSeedBodyPhotoSvg('front', 'after'),
-    backPhotoUrl: getSeedBodyPhotoSvg('back', 'after'),
-    leftPhotoUrl: getSeedBodyPhotoSvg('left', 'after'),
-    rightPhotoUrl: getSeedBodyPhotoSvg('right', 'after'),
-    createdAt: '2026-09-19T10:00:00.000Z',
-  },
-];
-
-const SEED_FITNESS_PLANS: DbFitnessPlan[] = [
-  {
-    id: 'plan-1',
-    goal_type: 'muscle_building',
-    title: 'Hypertrophy & Strength Split',
-    description: 'Targeted progressive overload workout routine and high-protein nutrition.',
-    workout_chart: generateWorkoutRoutine('muscle_building'),
-    diet_chart: generateDietPlan('muscle_building', 2850),
-  },
-];
-
-const SEED_LOGIN_LOGS: StaffLoginLog[] = [
-  {
-    id: 'log-1',
-    userId: 'usr-2',
-    userName: 'Vikram Sahu',
-    userEmail: 'trainer@kaushikfitness.com',
-    role: 'trainer',
-    staffType: 'instructor',
-    loginTime: new Date(Date.now() - 90 * 60000).toISOString(),
-    loginMethod: 'pin',
-    deviceInfo: 'Duty Kiosk (PIN: 2002)',
-    status: 'active',
-  },
-  {
-    id: 'log-2',
-    userId: 'usr-1',
-    userName: 'Vaibhav Kaushik',
-    userEmail: 'admin@kaushikfitness.com',
-    role: 'admin',
-    staffType: 'regular',
-    loginTime: new Date(Date.now() - 180 * 60000).toISOString(),
-    loginMethod: 'password',
-    deviceInfo: 'Admin Console (Windows Chrome)',
-    status: 'active',
-  },
-];
-
-const generateInitialStaffAttendance = (): StaffDailyAttendance[] => {
-  const records: StaffDailyAttendance[] = [];
-  const daysInSeptember = 19;
-
-  for (let day = 1; day <= daysInSeptember; day++) {
-    const dayStr = String(day).padStart(2, '0');
-    const dateStr = `2026-09-${dayStr}`;
-    const dayOfWeek = new Date(2026, 8, day).getDay(); // 0 is Sunday
-
-    // Vikram Sahu (Trainer)
-    if (dayOfWeek === 0) {
-      records.push({
-        id: `att-tr-202609${dayStr}`,
-        staffId: 'usr-2',
-        staffName: 'Vikram Sahu',
-        staffRole: 'trainer',
-        date: dateStr,
-        status: 'holiday',
-        notes: 'रविवार साप्ताहिक अवकाश (Weekly Off)',
-      });
-    } else if (day === 10) {
-      records.push({
-        id: `att-tr-202609${dayStr}`,
-        staffId: 'usr-2',
-        staffName: 'Vikram Sahu',
-        staffRole: 'trainer',
-        date: dateStr,
-        status: 'leave',
-        leaveReason: 'कैजुअल लीव (बुखार)',
-        notes: 'Medical leave approved by Director',
-      });
-    } else {
-      records.push({
-        id: `att-tr-202609${dayStr}`,
-        staffId: 'usr-2',
-        staffName: 'Vikram Sahu',
-        staffRole: 'trainer',
-        date: dateStr,
-        status: 'present',
-        checkInTime: '06:30 AM',
-        checkOutTime: '01:30 PM',
-        latitude: 20.2721,
-        longitude: 81.4934,
-        distanceMeters: 45,
-        isWithinRadius: true,
-        notes: 'ड्यूटी सत्यापित (In-Radius 45m)',
-      });
-    }
-
-    // Ramesh Verma (Staff)
-    if (dayOfWeek === 0) {
-      records.push({
-        id: `att-st-202609${dayStr}`,
-        staffId: 'usr-3',
-        staffName: 'Ramesh Verma',
-        staffRole: 'staff',
-        date: dateStr,
-        status: 'holiday',
-        notes: 'रविवार साप्ताहिक अवकाश (Weekly Off)',
-      });
-    } else if (day === 15) {
-      records.push({
-        id: `att-st-202609${dayStr}`,
-        staffId: 'usr-3',
-        staffName: 'Ramesh Verma',
-        staffRole: 'staff',
-        date: dateStr,
-        status: 'leave',
-        leaveReason: 'पारिवारिक कार्य (Approved Leave)',
-        notes: 'Approved family work leave',
-      });
-    } else {
-      records.push({
-        id: `att-st-202609${dayStr}`,
-        staffId: 'usr-3',
-        staffName: 'Ramesh Verma',
-        staffRole: 'staff',
-        date: dateStr,
-        status: 'present',
-        checkInTime: '08:00 AM',
-        checkOutTime: '06:00 PM',
-        latitude: 20.2720,
-        longitude: 81.4933,
-        distanceMeters: 35,
-        isWithinRadius: true,
-        notes: 'फ्रंट डेस्क काउंटर ड्यूटी सत्यापित (In-Radius 35m)',
-      });
-    }
-  }
-
-  return records;
-};
-
-const INITIAL_STAFF_DAILY_ATTENDANCE: StaffDailyAttendance[] = generateInitialStaffAttendance();
+const INITIAL_STAFF_DAILY_ATTENDANCE: StaffDailyAttendance[] = [];
 
 // ===============================================================
 // SEED SUPPLEMENT INVENTORY & SALES
@@ -871,73 +215,7 @@ const SEED_SUPPLEMENTS: SupplementItem[] = [
   },
 ];
 
-const SEED_SUPPLEMENT_SALES: SupplementSaleTransaction[] = [
-  {
-    id: 'sale-1',
-    invoiceNumber: 'SUP-2026-001',
-    supplementId: 'sup-1',
-    supplementName: 'ON Gold Standard 100% Whey Protein (2 kg)',
-    brand: 'Optimum Nutrition',
-    category: 'whey_protein',
-    quantity: 1,
-    unitPrice: 6500,
-    costPrice: 5200,
-    totalAmount: 6500,
-    profit: 1300,
-    date: '2026-09-17T11:30:00.000Z',
-    buyerType: 'member',
-    buyerName: 'Rahul Sharma',
-    buyerMemberId: 'prof-1',
-    buyerPhone: '9826112345',
-    paymentMethod: 'upi',
-    soldByStaffId: 'usr-3',
-    soldByStaffName: 'Ramesh Verma',
-    notes: 'Member purchase, paid via GooglePay UPI',
-  },
-  {
-    id: 'sale-2',
-    invoiceNumber: 'SUP-2026-002',
-    supplementId: 'sup-2',
-    supplementName: 'MuscleBlaze Micronized Creatine Monohydrate (250g)',
-    brand: 'MuscleBlaze',
-    category: 'creatine',
-    quantity: 1,
-    unitPrice: 1199,
-    costPrice: 850,
-    totalAmount: 1199,
-    profit: 349,
-    date: '2026-09-18T16:45:00.000Z',
-    buyerType: 'member',
-    buyerName: 'Amit Verma',
-    buyerMemberId: 'prof-3',
-    buyerPhone: '9826139999',
-    paymentMethod: 'cash',
-    soldByStaffId: 'usr-3',
-    soldByStaffName: 'Ramesh Verma',
-    notes: 'PT Client direct purchase',
-  },
-  {
-    id: 'sale-3',
-    invoiceNumber: 'SUP-2026-003',
-    supplementId: 'sup-6',
-    supplementName: 'MyFitness High Protein Peanut Butter Chocolate (1 kg)',
-    brand: 'MyFitness',
-    category: 'peanut_butter',
-    quantity: 2,
-    unitPrice: 599,
-    costPrice: 420,
-    totalAmount: 1198,
-    profit: 358,
-    date: '2026-09-19T09:15:00.000Z',
-    buyerType: 'walk_in',
-    buyerName: 'Suresh Kumar Dewangan',
-    buyerPhone: '9826198765',
-    paymentMethod: 'upi',
-    soldByStaffId: 'usr-3',
-    soldByStaffName: 'Ramesh Verma',
-    notes: 'Walk-in buyer from Kanker town',
-  },
-];
+const SEED_SUPPLEMENT_SALES: SupplementSaleTransaction[] = [];
 
 // ===============================================================
 // LOCAL DATABASE SERVICE CLASS
@@ -950,49 +228,77 @@ class LocalGymDatabase {
 
   private checkAndMigrate() {
     try {
-      // Auto-migrate admin user name to Vaibhav Kaushik and add address
-      const rawUsers = localStorage.getItem(DB_KEYS.USERS);
-      if (rawUsers) {
-        try {
-          const users: DbUser[] = JSON.parse(rawUsers);
-          let changed = false;
-          users.forEach((u) => {
-            if (u.id === 'usr-1') {
-              if (u.name === 'Koushik Patel' || !u.address) {
-                u.name = 'Vaibhav Kaushik';
-                if (!u.address) u.address = 'मेन रोड, नया बस स्टैंड के पास, कांकेर (छ.ग.) - 494334';
-                changed = true;
-              }
-              if (u.pin !== '2343') {
-                u.pin = '2343';
-                changed = true;
-              }
-            }
-            if (u.id === 'usr-5' && u.pin === '1111') {
-              u.pin = '1234';
-              changed = true;
-            }
-          });
+      const CLEAN_MIGRATION_KEY = 'kf_clean_v12_prod_only';
+      if (localStorage.getItem(CLEAN_MIGRATION_KEY) !== 'true') {
+        // 1. Purge all users except Admin (usr-1, 2343) and Developer (usr-dev, 9975)
+        const cleanUsers: DbUser[] = [
+          {
+            id: 'usr-1',
+            name: 'Vaibhav Kaushik',
+            email: 'admin@kaushikfitness.com',
+            phone: '9826189001',
+            password_hash: '$2a$12$adminHashKanker2024',
+            role: 'admin',
+            created_at: '2022-01-01T00:00:00.000Z',
+            pin: '2343',
+            avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+            address: 'मेन रोड, नया बस स्टैंड के पास, कांकेर (छ.ग.) - 494334',
+          },
+          {
+            id: 'usr-dev',
+            name: 'Ashish Dey',
+            email: 'developer@kaushikfitness.com',
+            phone: '9244249975',
+            password_hash: '$2a$12$devHashKondagaon2024',
+            role: 'admin',
+            created_at: '2022-01-01T00:00:00.000Z',
+            pin: '9975',
+            address: 'Janpad Panchayat Baderajpur, District Kondagaon (C.G.)',
+          },
+        ];
+        localStorage.setItem(DB_KEYS.USERS, JSON.stringify(cleanUsers));
 
-          const hasDev = users.some((u) => u.id === 'usr-dev' || u.pin === '9975');
-          if (!hasDev) {
-            users.push({
-              id: 'usr-dev',
-              name: 'Ashish Dey',
-              email: 'developer@kaushikfitness.com',
-              phone: '9244249975',
-              password_hash: '$2a$12$devHashKondagaon2024',
-              role: 'admin',
-              created_at: '2022-01-01T00:00:00.000Z',
-              pin: '9975',
-              address: 'Janpad Panchayat Baderajpur, District Kondagaon (C.G.)',
-            });
-            changed = true;
-          }
-          if (changed) {
-            localStorage.setItem(DB_KEYS.USERS, JSON.stringify(users));
+        // 2. Wipe all demo records from localStorage
+        localStorage.setItem(DB_KEYS.MEMBER_PROFILES, JSON.stringify([]));
+        localStorage.setItem(DB_KEYS.MEMBERSHIPS, JSON.stringify([]));
+        localStorage.setItem(DB_KEYS.ATTENDANCE, JSON.stringify([]));
+        localStorage.setItem(DB_KEYS.TRANSACTIONS, JSON.stringify([]));
+        localStorage.setItem(DB_KEYS.PROGRESS_LOGS, JSON.stringify([]));
+        localStorage.setItem(DB_KEYS.BODY_INDEX_LOGS, JSON.stringify([]));
+        localStorage.setItem(DB_KEYS.BODY_PHOTOS, JSON.stringify([]));
+        localStorage.setItem(DB_KEYS.ENQUIRIES, JSON.stringify([]));
+        localStorage.setItem(DB_KEYS.LOGIN_LOGS, JSON.stringify([]));
+        localStorage.setItem(DB_KEYS.SALARY_PAYMENTS, JSON.stringify([]));
+        localStorage.setItem(DB_KEYS.CUSTOM_DIETS, JSON.stringify([]));
+        localStorage.setItem(DB_KEYS.CUSTOM_WORKOUTS, JSON.stringify([]));
+        localStorage.setItem(DB_KEYS.STAFF_DAILY_ATTENDANCE, JSON.stringify([]));
+        localStorage.setItem(DB_KEYS.SUPPLEMENT_SALES, JSON.stringify([]));
+        localStorage.setItem(DB_KEYS.STAFF_PROFILES, JSON.stringify([]));
+
+        // Wipe legacy keys
+        localStorage.removeItem('kf_members');
+        localStorage.removeItem('kf_staff');
+        localStorage.removeItem('kf_attendance');
+        localStorage.removeItem('kf_transactions');
+        localStorage.removeItem('kf_progress_logs');
+        localStorage.removeItem('kf_enquiries');
+        localStorage.removeItem('kf_active_shift');
+
+        // Check active session: if logged in as a demo user (not usr-1 or usr-dev), logout
+        try {
+          const authUserRaw = localStorage.getItem('kf_auth_user');
+          if (authUserRaw) {
+            const authUser = JSON.parse(authUserRaw);
+            if (authUser?.id !== 'usr-1' && authUser?.id !== 'usr-dev') {
+              localStorage.removeItem('kf_auth_user');
+              localStorage.removeItem('kf_current_user');
+              localStorage.removeItem('kf_user_role');
+              localStorage.removeItem('kf_user_token');
+            }
           }
         } catch {}
+
+        localStorage.setItem(CLEAN_MIGRATION_KEY, 'true');
       }
     } catch (e) {
       console.warn('Local database migration notice:', e);
@@ -1055,7 +361,30 @@ class LocalGymDatabase {
           changed = true;
         }
       }
+      if (u.id === 'usr-dev' || u.phone === '9244249975') {
+        if (u.pin !== '9975') {
+          u.pin = '9975';
+          changed = true;
+        }
+      }
     });
+
+    const hasDev = list.some((u) => u.id === 'usr-dev' || u.pin === '9975');
+    if (!hasDev) {
+      list.push({
+        id: 'usr-dev',
+        name: 'Ashish Dey',
+        email: 'developer@kaushikfitness.com',
+        phone: '9244249975',
+        password_hash: '$2a$12$devHashKondagaon2024',
+        role: 'admin',
+        created_at: '2022-01-01T00:00:00.000Z',
+        pin: '9975',
+        address: 'Janpad Panchayat Baderajpur, District Kondagaon (C.G.)',
+      });
+      changed = true;
+    }
+
     if (changed) {
       this.setTable(DB_KEYS.USERS, list);
     }
@@ -2152,6 +1481,7 @@ class LocalGymDatabase {
     this.setTable(DB_KEYS.CUSTOM_DIETS, INITIAL_CUSTOM_DIETS);
     this.setTable(DB_KEYS.CUSTOM_WORKOUTS, INITIAL_CUSTOM_WORKOUTS);
     this.setTable(DB_KEYS.STAFF_DAILY_ATTENDANCE, INITIAL_STAFF_DAILY_ATTENDANCE);
+    this.setTable(DB_KEYS.STAFF_PROFILES, []);
     localStorage.setItem(DB_KEYS.GEOFENCE_SETTINGS, JSON.stringify(DEFAULT_GYM_GEOFENCE));
     localStorage.removeItem(DB_KEYS.ATTENDANCE);
     localStorage.removeItem(DB_KEYS.TRANSACTIONS);

@@ -14,6 +14,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { MemberSelfRegisterModal } from './MemberSelfRegisterModal';
+import { localDb } from '../../db/localDatabase';
 
 interface LoginModalProps {
   onClose: () => void;
@@ -24,10 +25,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSuccess }) =>
   const { loginWithCredentials, switchRole, loginAsSpecificMember } = useAuth();
   const { members } = useGymData();
 
+  const isAdvanced = localDb.getFormMode() === 'advanced';
   const [showSelfRegisterModal, setShowSelfRegisterModal] = useState<boolean>(false);
   const [portalType, setPortalType] = useState<'member' | 'staff'>('member');
-  const [identifier, setIdentifier] = useState('9826112345');
-  const [password, setPassword] = useState('1234');
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -198,22 +200,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSuccess }) =>
                 className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-10 pr-3.5 py-3 text-sm text-slate-900 tracking-widest focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono"
               />
             </div>
-            {portalType === 'member' && (
-              <span className="text-[11px] text-slate-500 mt-1 block">
-                💡 डेमो मेंबर राहुल का PIN <strong className="text-amber-800 font-mono">1234</strong> है
-              </span>
-            )}
           </div>
-
-          {/* Direct Self Registration Action */}
-          <button
-            type="button"
-            onClick={() => setShowSelfRegisterModal(true)}
-            className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-500/10 via-cyan-500/10 to-amber-500/10 border border-emerald-500/30 hover:border-emerald-500 text-emerald-800 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all hover:bg-emerald-50"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-            <span>नया सदस्य? <b>PIN: 1111</b> दर्ज करें या यहाँ क्लिक करें &rarr;</span>
-          </button>
 
           <button
             type="submit"
@@ -224,70 +211,72 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSuccess }) =>
           </button>
         </form>
 
-        {/* 1-CLICK INSTANT DEMO LOGIN LIST (Especially for Members) */}
-        {portalType === 'member' ? (
-          <div className="pt-3 border-t border-slate-200 space-y-2">
-            <span className="text-[11px] font-black uppercase text-amber-800 tracking-wider block">
-              ⚡ बिना टाइप किए 1-क्लिक फास्ट लॉगिन:
-            </span>
+        {/* 1-CLICK INSTANT DEMO LOGIN LIST (Only in Advanced Mode) */}
+        {isAdvanced && (
+          portalType === 'member' ? (
+            <div className="pt-3 border-t border-slate-200 space-y-2">
+              <span className="text-[11px] font-black uppercase text-amber-800 tracking-wider block">
+                ⚡ बिना टाइप किए 1-क्लिक फास्ट लॉगिन:
+              </span>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
-              {members.slice(0, 4).map((m) => (
-                <div
-                  key={m.id}
-                  onClick={() => handleInstantMemberSelect(m.id)}
-                  className="p-2.5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-emerald-500 cursor-pointer transition-all flex items-center justify-between group hover:bg-emerald-50/50"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-cyan-100 border border-cyan-300 flex items-center justify-center text-xs font-black text-cyan-800 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                      {m.name.slice(0, 2).toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="font-bold text-xs text-slate-900 group-hover:text-emerald-900">
-                        {m.name}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                {members.slice(0, 4).map((m) => (
+                  <div
+                    key={m.id}
+                    onClick={() => handleInstantMemberSelect(m.id)}
+                    className="p-2.5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-emerald-500 cursor-pointer transition-all flex items-center justify-between group hover:bg-emerald-50/50"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-cyan-100 border border-cyan-300 flex items-center justify-center text-xs font-black text-cyan-800 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                        {m.name.slice(0, 2).toUpperCase()}
                       </div>
-                      <div className="text-[10px] text-slate-500 font-mono">
-                        {m.memberCode} • PIN: {m.pin}
+                      <div>
+                        <div className="font-bold text-xs text-slate-900 group-hover:text-emerald-900">
+                          {m.name}
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-mono">
+                          {m.memberCode} • PIN: {m.pin}
+                        </div>
                       </div>
                     </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600" />
                   </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600" />
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="pt-3 border-t border-slate-200 space-y-2">
-            <span className="text-[11px] font-bold uppercase text-slate-500 tracking-wider block">
-              1-Click स्टाफ डेमो लॉगिन:
-            </span>
+          ) : (
+            <div className="pt-3 border-t border-slate-200 space-y-2">
+              <span className="text-[11px] font-bold uppercase text-slate-500 tracking-wider block">
+                1-Click स्टाफ डेमो लॉगिन:
+              </span>
 
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  switchRole('admin');
-                  onClose();
-                }}
-                className="p-2.5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-amber-500 hover:bg-amber-50 text-left text-xs transition-colors cursor-pointer"
-              >
-                <div className="font-bold text-amber-900">👑 Vaibhav Kaushik</div>
-                <div className="text-[10px] text-slate-500">Gym Owner & Admin</div>
-              </button>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    switchRole('admin');
+                    onClose();
+                  }}
+                  className="p-2.5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-amber-500 hover:bg-amber-50 text-left text-xs transition-colors cursor-pointer"
+                >
+                  <div className="font-bold text-amber-900">👑 Vaibhav Kaushik</div>
+                  <div className="text-[10px] text-slate-500">Gym Owner & Admin</div>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  switchRole('trainer');
-                  onClose();
-                }}
-                className="p-2.5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-cyan-500 hover:bg-cyan-50 text-left text-xs transition-colors cursor-pointer"
-              >
-                <div className="font-bold text-cyan-900">🥊 Vikram Sahu</div>
-                <div className="text-[10px] text-slate-500">Head Coach & Trainer</div>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    switchRole('trainer');
+                    onClose();
+                  }}
+                  className="p-2.5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-cyan-500 hover:bg-cyan-50 text-left text-xs transition-colors cursor-pointer"
+                >
+                  <div className="font-bold text-cyan-900">🥊 Vikram Sahu</div>
+                  <div className="text-[10px] text-slate-500">Head Coach & Trainer</div>
+                </button>
+              </div>
             </div>
-          </div>
+          )
         )}
       </div>
 

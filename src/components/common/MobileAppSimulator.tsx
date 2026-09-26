@@ -45,16 +45,20 @@ import {
   Trash2,
   LogOut,
   HelpCircle,
+  Eye,
+  EyeOff,
+  X,
 } from 'lucide-react';
 import { AppHelpdeskModal } from '../member/AppHelpdeskModal';
+import confetti from 'canvas-confetti';
 
 interface MobileAppSimulatorProps {
   onExitMobileView: () => void;
 }
 
 export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMobileView }) => {
-  const { currentUser, role, switchRole, logout } = useAuth();
-  const { members, staff, isCloudSynced } = useGymData();
+  const { currentUser, role, switchRole, logout, updateCurrentUserProfile } = useAuth();
+  const { members, staff, isCloudSynced, updateMember } = useGymData();
 
   const isDeveloper = currentUser?.id === 'usr-dev' || currentUser?.phone === '9244249975';
   const [developerPhoto, setDeveloperPhoto] = useState<string>(() => {
@@ -143,6 +147,7 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
     fitnessGoal: 'muscle_building',
     active: true,
     status: 'active',
+    pin: currentUser?.pin || '2222',
   };
 
   const member: any =
@@ -177,6 +182,59 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
 
   const toggleExercise = (id: string) => {
     setCompletedExercises((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  // Change PIN State
+  const [isChangePinModalOpen, setIsChangePinModalOpen] = useState(false);
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [showPin, setShowPin] = useState(false);
+  const [pinError, setPinError] = useState<string | null>(null);
+  const [pinSuccessToast, setPinSuccessToast] = useState<string | null>(null);
+  const [isSubmittingPin, setIsSubmittingPin] = useState(false);
+
+  const handleSaveNewPin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPinError(null);
+    const p1 = newPin.trim();
+    const p2 = confirmPin.trim();
+
+    if (!p1 || p1.length !== 4 || !/^\d{4}$/.test(p1)) {
+      setPinError('कृपया ठीक 4 अंकों का संख्यात्मक पिन दर्ज करें (उदा. 3482)');
+      return;
+    }
+    if (p1 !== p2) {
+      setPinError('पुष्टि किया गया पिन मेल नहीं खाता। कृपया दोनों बॉक्स में एक ही पिन दर्ज करें।');
+      return;
+    }
+
+    setIsSubmittingPin(true);
+    try {
+      if (member?.id) {
+        updateMember(member.id, { pin: p1 });
+      }
+      const userId = member?.userId || currentUser?.id;
+      if (userId) {
+        localDb.updateUser(userId, { pin: p1 });
+      }
+      updateCurrentUserProfile({ pin: p1 });
+
+      try {
+        confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
+      } catch {}
+
+      setPinSuccessToast(`✅ आपका 4-अंकीय पिन सफलतापूर्वक बदल गया है! नया पिन: ${p1}`);
+      setTimeout(() => {
+        setIsChangePinModalOpen(false);
+        setPinSuccessToast(null);
+        setNewPin('');
+        setConfirmPin('');
+      }, 2200);
+    } catch (err: any) {
+      setPinError('पिन अपडेट करने में विफल: ' + (err?.message || 'अज्ञात त्रुटि'));
+    } finally {
+      setIsSubmittingPin(false);
+    }
   };
 
   const screenContent = (
@@ -377,7 +435,24 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <h2 className="text-sm font-black text-slate-900 leading-snug truncate">{member.name}</h2>
+                      <div className="flex items-center justify-between gap-1">
+                        <h2 className="text-sm font-black text-slate-900 leading-snug truncate">{member.name}</h2>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPinError(null);
+                            setPinSuccessToast(null);
+                            setNewPin('');
+                            setConfirmPin('');
+                            setIsChangePinModalOpen(true);
+                          }}
+                          className="px-2 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[10px] uppercase flex items-center gap-1 shadow-2xs shrink-0 cursor-pointer active:scale-95"
+                          title="अपना 4-अंकीय पिन बदलें"
+                        >
+                          <KeyRound className="w-3 h-3 text-slate-950" />
+                          <span>पिन बदलें</span>
+                        </button>
+                      </div>
                       <div className="text-[11px] text-cyan-800 font-mono font-bold">
                         Pass ID: {member.memberCode}
                       </div>
@@ -399,26 +474,45 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                   </div>
                 </div>
 
-                {/* Expiration Countdown Widget */}
-                <div className="w-full max-w-full overflow-x-hidden">
-                  <div className="text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-amber-600" />
-                    सदस्यता वैधता (Membership Countdown)
+                {/* Expiration Countdown Widget (Only in Advanced Mode) */}
+                {isAdvanced && (
+                  <div className="w-full max-w-full overflow-x-hidden">
+                    <div className="text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-amber-600" />
+                      सदस्यता वैधता (Membership Countdown)
+                    </div>
+                    <ExpirationCountdown expiryDate={member.expiryDate} variant="card" />
                   </div>
-                  <ExpirationCountdown expiryDate={member.expiryDate} variant="card" />
-                </div>
+                )}
 
                 {/* Quick Touch Action Buttons (Light Theme Grid) */}
                 <div className="grid grid-cols-2 gap-2.5 w-full">
+                  {isAdvanced && (
+                    <button
+                      onClick={() => setMobileTab('pass')}
+                      className="p-3 rounded-2xl bg-white hover:bg-cyan-50/40 border border-cyan-200 text-left active:scale-95 transition-all shadow-xs cursor-pointer"
+                    >
+                      <KeyRound className="w-5 h-5 text-cyan-600 mb-1.5" />
+                      <div className="font-black text-xs text-slate-900">4-Digit PIN Pass</div>
+                      <div className="text-[10px] text-slate-500">
+                        PIN: <span className="font-mono font-bold text-cyan-800">{member.pin}</span>
+                      </div>
+                    </button>
+                  )}
+
                   <button
-                    onClick={() => setMobileTab('pass')}
-                    className="p-3 rounded-2xl bg-white hover:bg-cyan-50/40 border border-cyan-200 text-left active:scale-95 transition-all shadow-xs cursor-pointer"
+                    onClick={() => {
+                      setPinError(null);
+                      setPinSuccessToast(null);
+                      setNewPin('');
+                      setConfirmPin('');
+                      setIsChangePinModalOpen(true);
+                    }}
+                    className="p-3 rounded-2xl bg-white hover:bg-amber-50/40 border border-amber-200 text-left active:scale-95 transition-all shadow-xs cursor-pointer"
                   >
-                    <KeyRound className="w-5 h-5 text-cyan-600 mb-1.5" />
-                    <div className="font-black text-xs text-slate-900">4-Digit PIN Pass</div>
-                    <div className="text-[10px] text-slate-500">
-                      PIN: <span className="font-mono font-bold text-cyan-800">{member.pin}</span>
-                    </div>
+                    <KeyRound className="w-5 h-5 text-amber-600 mb-1.5" />
+                    <div className="font-black text-xs text-slate-900">पिन बदलें (Change PIN)</div>
+                    <div className="text-[10px] text-amber-800 font-medium">4-अंकीय पासवर्ड बदलें</div>
                   </button>
 
                   <button
@@ -490,8 +584,8 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
               </div>
             )}
 
-            {/* TAB 2: PASS (Official 4-Digit PIN Pass) */}
-            {mobileTab === 'pass' && (
+            {/* TAB 2: PASS (Official 4-Digit PIN Pass) - Only shown in Advanced Mode */}
+            {isAdvanced && mobileTab === 'pass' && (
               <div className="space-y-4 text-center py-2 w-full max-w-full overflow-x-hidden">
                 <div className="p-5 rounded-3xl bg-white border-2 border-cyan-400 shadow-sm space-y-4">
                   <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-cyan-50 border border-cyan-300 text-cyan-800 text-[10px] font-black uppercase tracking-wider">
@@ -542,6 +636,24 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                       Active Kanker Member
                     </span>
+
+                    {/* Change PIN Action inside Pass Tab */}
+                    <div className="pt-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPinError(null);
+                          setPinSuccessToast(null);
+                          setNewPin('');
+                          setConfirmPin('');
+                          setIsChangePinModalOpen(true);
+                        }}
+                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer mx-auto active:scale-95"
+                      >
+                        <KeyRound className="w-3.5 h-3.5" />
+                        <span>पिन बदलें (Change 4-Digit PIN)</span>
+                      </button>
+                    </div>
                   </div>
 
                   <p className="text-[11px] text-slate-500">
@@ -888,15 +1000,17 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                 <span className="truncate">Home</span>
               </button>
 
-              <button
-                onClick={() => setMobileTab('pass')}
-                className={`flex flex-col items-center gap-0.5 text-[9px] font-bold transition-colors flex-1 min-w-0 cursor-pointer ${
-                  mobileTab === 'pass' ? 'text-cyan-700' : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <KeyRound className="w-4 h-4" />
-                <span className="truncate">Pass</span>
-              </button>
+              {isAdvanced && (
+                <button
+                  onClick={() => setMobileTab('pass')}
+                  className={`flex flex-col items-center gap-0.5 text-[9px] font-bold transition-colors flex-1 min-w-0 cursor-pointer ${
+                    mobileTab === 'pass' ? 'text-cyan-700' : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <KeyRound className="w-4 h-4" />
+                  <span className="truncate">Pass</span>
+                </button>
+              )}
 
               <button
                 onClick={() => setMobileTab('photos')}
@@ -947,6 +1061,144 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                 <User className="w-4 h-4" />
                 <span className="truncate">Profile</span>
               </button>
+            </div>
+          )}
+
+          {/* Change PIN Modal (Optimized for Mobile) */}
+          {isChangePinModalOpen && (
+            <div className="absolute inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-3">
+              <div className="bg-white rounded-3xl p-5 w-full max-w-sm border border-slate-200 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+                {/* Header */}
+                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600">
+                      <KeyRound className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-sm text-slate-900">नया 4-अंकीय पिन बनाएं</h3>
+                      <p className="text-[10px] text-slate-500">कियोस्क एवं ऐप लॉगिन के लिए</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsChangePinModalOpen(false)}
+                    className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveNewPin} className="space-y-3">
+                  {pinError && (
+                    <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-[11px] font-bold flex items-center gap-1.5">
+                      <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                      <span>{pinError}</span>
+                    </div>
+                  )}
+
+                  {pinSuccessToast && (
+                    <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>{pinSuccessToast}</span>
+                    </div>
+                  )}
+
+                  {/* New PIN Input */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs font-black text-slate-800">
+                      <span>नया 4-अंकीय पिन *</span>
+                      <button
+                        type="button"
+                        onClick={() => setShowPin(!showPin)}
+                        className="text-[10px] font-bold text-amber-700 hover:text-amber-800 flex items-center gap-1 cursor-pointer"
+                      >
+                        {showPin ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                        <span>{showPin ? 'छुपाएं' : 'दिखाएं'}</span>
+                      </button>
+                    </div>
+                    <input
+                      type={showPin ? 'text' : 'password'}
+                      maxLength={4}
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={newPin}
+                      onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      placeholder="••••"
+                      className="w-full text-center tracking-[0.8em] text-2xl font-mono font-black py-2 px-3 bg-slate-50 border-2 border-slate-300 rounded-xl focus:outline-none focus:border-amber-500 text-slate-900 shadow-inner"
+                      autoFocus
+                    />
+                  </div>
+
+                  {/* Confirm New PIN Input */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-black text-slate-800 block">
+                      नया पिन दोबारा दर्ज करें *
+                    </label>
+                    <input
+                      type={showPin ? 'text' : 'password'}
+                      maxLength={4}
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={confirmPin}
+                      onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      placeholder="••••"
+                      className="w-full text-center tracking-[0.8em] text-2xl font-mono font-black py-2 px-3 bg-slate-50 border-2 border-slate-300 rounded-xl focus:outline-none focus:border-amber-500 text-slate-900 shadow-inner"
+                    />
+                  </div>
+
+                  {/* Touch keypad for mobile */}
+                  <div className="pt-1">
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map((k) => (
+                        <button
+                          type="button"
+                          key={k}
+                          onClick={() => {
+                            if (k === 'C') {
+                              if (newPin.length < 4) setNewPin('');
+                              else setConfirmPin('');
+                            } else if (k === '⌫') {
+                              if (confirmPin.length > 0) setConfirmPin((p) => p.slice(0, -1));
+                              else setNewPin((p) => p.slice(0, -1));
+                            } else {
+                              if (newPin.length < 4) setNewPin((p) => p + k);
+                              else if (confirmPin.length < 4) setConfirmPin((p) => p + k);
+                            }
+                          }}
+                          className={`h-9 font-mono font-bold text-sm rounded-xl flex items-center justify-center transition-all cursor-pointer shadow-2xs active:scale-95 ${
+                            k === 'C'
+                              ? 'bg-rose-100 hover:bg-rose-200 text-rose-800'
+                              : k === '⌫'
+                              ? 'bg-slate-200 hover:bg-slate-300 text-slate-800'
+                              : 'bg-white hover:bg-slate-100 text-slate-900 border border-slate-200'
+                          }`}
+                        >
+                          {k}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setIsChangePinModalOpen(false)}
+                      className="flex-1 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+                    >
+                      रद्द करें
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmittingPin || newPin.length !== 4 || confirmPin.length !== 4}
+                      className="flex-1 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>{isSubmittingPin ? 'सुरक्षित...' : 'पिन बदलें'}</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
 
