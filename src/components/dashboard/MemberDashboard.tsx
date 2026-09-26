@@ -6,7 +6,7 @@ import { ExpirationCountdown } from '../common/ExpirationCountdown';
 import { InvoiceModal } from '../common/InvoiceModal';
 import { BodyVisualizer3D } from '../fitness/BodyVisualizer3D';
 import { BodyIndexTracker } from '../members/BodyIndexTracker';
-import { generateWorkoutRoutine, generateDietPlan } from '../../utils/fitnessCalculator';
+import { generateWorkoutRoutine, generateDietPlan, generateAutomaticCustomDiet } from '../../utils/fitnessCalculator';
 import { localDb } from '../../db/localDatabase';
 import { CustomDietPlan } from '../../types';
 import confetti from 'canvas-confetti';
@@ -188,15 +188,60 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
     setTimeout(() => setStatsSavedToast(null), 4500);
   };
 
+  const [dietTick, setDietTick] = useState(0);
+
+  useEffect(() => {
+    const handleUpdate = () => setDietTick((t) => t + 1);
+    window.addEventListener('kf_body_index_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('kf_body_index_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
+
   // Pre-generate custom workouts and diet
   const customWorkout = member?.id ? localDb.getMemberWorkout(member.id) : undefined;
   const workoutDays = customWorkout && customWorkout.days && customWorkout.days.length > 0
     ? customWorkout.days
     : generateWorkoutRoutine(member?.fitnessGoal || 'muscle_building');
+
   const customDiet = member?.id ? localDb.getMemberDiet(member.id) : undefined;
+  const activeDietType: 'veg' | 'non_veg' = (customDiet?.dietType === 'non_veg' || member?.dietPreference === 'non_veg') ? 'non_veg' : 'veg';
+
   const dietMeals = customDiet && customDiet.meals && customDiet.meals.length > 0
     ? customDiet.meals
-    : generateDietPlan(member?.fitnessGoal || 'muscle_building', member?.targetDailyCalories || 2600);
+    : generateAutomaticCustomDiet({
+        memberId: member.id,
+        memberName: member.name,
+        weightKg: member.weightKg || 70,
+        heightCm: member.heightCm || 172,
+        age: member.age || 25,
+        gender: member.gender || 'male',
+        goal: member.fitnessGoal || 'muscle_building',
+        dietType: activeDietType,
+        trainerId: member.assignedTrainerId,
+        trainerName: member.assignedTrainerName,
+      }).meals;
+
+  const handleSwitchDietType = (type: 'veg' | 'non_veg') => {
+    const newDiet = generateAutomaticCustomDiet({
+      memberId: member.id,
+      memberName: member.name,
+      weightKg: member.weightKg || 70,
+      heightCm: member.heightCm || 172,
+      age: member.age || 25,
+      gender: member.gender || 'male',
+      goal: member.fitnessGoal || 'muscle_building',
+      dietType: type,
+      trainerId: member.assignedTrainerId,
+      trainerName: member.assignedTrainerName,
+    });
+    localDb.saveMemberDiet(newDiet);
+    updateMember(member.id, { dietPreference: type });
+    window.dispatchEvent(new Event('kf_body_index_updated'));
+    setDietTick((t) => t + 1);
+  };
 
   const toggleExercise = (id: string) => {
     setCompletedExercises((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -218,9 +263,11 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
                 <h3 className="font-black text-slate-900 text-base">
                   आपकी सदस्यता समाप्त हो चुकी है (Membership Expired)
                 </h3>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-200 text-rose-900 font-mono">
-                  वैधता तिथि: {formatDate(member.expiryDate)}
-                </span>
+                {isAdvanced && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-200 text-rose-900 font-mono">
+                    वैधता तिथि: {formatDate(member.expiryDate)}
+                  </span>
+                )}
               </div>
               <p className="text-xs text-rose-900 mt-1 leading-relaxed">
                 जिम सुरक्षा नियमों के अनुसार आपका <strong>4-अंकीय कियोस्क एंट्री पिन अक्षम (Disabled)</strong> कर दिया गया है। कृपया सदस्यता रिन्यू कराने हेतु संपर्क करें।
@@ -291,9 +338,15 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
               </h1>
 
               <p className="text-xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-2">
-                <span>Plan: <strong className="text-slate-800">{MEMBERSHIP_PRICING[member.membershipDuration]?.label}</strong></span>
-                <span className="text-slate-300">•</span>
+                {isAdvanced && (
+                  <>
+                    <span>Plan: <strong className="text-slate-800">{MEMBERSHIP_PRICING[member.membershipDuration]?.label}</strong></span>
+                    <span className="text-slate-300">•</span>
+                  </>
+                )}
                 <span>Goal: <strong className="text-cyan-700 capitalize">{member.fitnessGoal.replace('_', ' ')}</strong></span>
+                <span className="text-slate-300">•</span>
+                <span>Diet: <strong className="text-emerald-700 font-bold">{member.dietPreference === 'non_veg' ? '🍗 मांसाहारी (Non-Veg)' : '🥗 शाकाहारी (Veg)'}</strong></span>
               </p>
             </div>
           </div>
@@ -512,6 +565,19 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
                 <span>ऊंचाई व वजन बदलें / अपडेट करें</span>
               </button>
             </div>
+
+            {/* Coach & Measurement Progress Note */}
+            {member.notes && (
+              <div className="p-3.5 bg-gradient-to-r from-cyan-50 via-white to-cyan-50/50 border border-cyan-200 rounded-2xl flex items-start gap-2.5 text-xs text-slate-800 shadow-2xs">
+                <span className="p-1 rounded-lg bg-cyan-600 text-white font-bold text-[10px] shrink-0 mt-0.5">
+                  UPDATE NOTE
+                </span>
+                <p className="flex-1 min-w-0">
+                  <strong className="text-cyan-900">फिटनेस व ट्रेनर टिप्पणी: </strong>
+                  <span className="italic">{member.notes}</span>
+                </p>
+              </div>
+            )}
 
             {/* 4 Stat Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -783,6 +849,62 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
       {/* TAB 3: DIET (Meal-by-Meal High Protein Food) */}
       {activeTab === 'diet' && (
         <div className="space-y-4">
+          {/* Diet Preference Bar & Quick Switcher */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${
+                activeDietType === 'non_veg' ? 'bg-orange-100 text-orange-800' : 'bg-emerald-100 text-emerald-800'
+              }`}>
+                {activeDietType === 'non_veg' ? '🍗' : '🥗'}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-black text-slate-900">
+                    {activeDietType === 'non_veg' ? 'मांसाहारी डाइट चार्ट (Non-Veg High Protein Plan)' : 'शाकाहारी डाइट चार्ट (Vegetarian Muscle Plan)'}
+                  </h4>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    activeDietType === 'non_veg' ? 'bg-orange-100 text-orange-900' : 'bg-emerald-100 text-emerald-900'
+                  }`}>
+                    {activeDietType === 'non_veg' ? 'Non-Veg Active' : 'Veg Active'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500">
+                  {activeDietType === 'non_veg'
+                    ? 'अंडे, चिकन ब्रेस्ट, मछली, ओट्स व उच्च प्रोटीन आहार'
+                    : 'पनीर, सोया चंक्स, मूंग दाल, स्प्राउट्स, दूध व अंकुरित आहार'}
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Switch Buttons */}
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 self-end sm:self-auto">
+              <button
+                type="button"
+                onClick={() => handleSwitchDietType('veg')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeDietType === 'veg'
+                    ? 'bg-emerald-600 text-white shadow-xs font-black'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                }`}
+              >
+                <span>🥗</span>
+                <span>शाकाहारी (Veg)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSwitchDietType('non_veg')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeDietType === 'non_veg'
+                    ? 'bg-orange-600 text-white shadow-xs font-black'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                }`}
+              >
+                <span>🍗</span>
+                <span>मांसाहारी (Non-Veg)</span>
+              </button>
+            </div>
+          </div>
           {customDiet && customDiet.trainerName ? (
             <div className="p-4 rounded-2xl bg-cyan-50 border border-cyan-200 text-xs text-cyan-950 flex flex-col sm:flex-row justify-between sm:items-center gap-2 shadow-sm">
               <div>

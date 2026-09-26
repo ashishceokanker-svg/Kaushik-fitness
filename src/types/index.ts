@@ -46,6 +46,7 @@ export interface DbMemberProfile {
   weight: number;
   target_weight?: number;
   fitness_goal: FitnessGoal;
+  diet_preference?: 'veg' | 'non_veg';
   fitness_level: 'Beginner' | 'Intermediate' | 'Athletic' | 'Elite';
   fitness_score: number;
   bmi: number;
@@ -61,6 +62,7 @@ export interface DbMemberProfile {
     hips?: number;
   };
   workout_slot?: string;
+  notes?: string;
 }
 
 export interface DbMembership {
@@ -225,6 +227,7 @@ export interface Member {
   
   // Fitness Profile
   fitnessGoal: FitnessGoal;
+  dietPreference?: 'veg' | 'non_veg';
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
   fitnessScore?: number;
   fitnessLevel?: 'Beginner' | 'Intermediate' | 'Athletic' | 'Elite';

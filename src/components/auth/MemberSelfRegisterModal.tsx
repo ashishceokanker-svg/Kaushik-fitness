@@ -51,6 +51,7 @@ export const MemberSelfRegisterModal: React.FC<MemberSelfRegisterModalProps> = (
   const [fitnessGoal, setFitnessGoal] = useState<FitnessGoal>('muscle_building');
   const [emergencyContact, setEmergencyContact] = useState('');
   const [workoutSlot, setWorkoutSlot] = useState<string>('06:00 AM - 07:00 AM');
+  const [dietPreference, setDietPreference] = useState<'veg' | 'non_veg'>('veg');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -143,6 +144,7 @@ export const MemberSelfRegisterModal: React.FC<MemberSelfRegisterModalProps> = (
         paymentMethod: 'cash',
         lastPaymentDate: joiningDate,
         fitnessGoal,
+        dietPreference,
         activityLevel: 'moderate',
         workoutSlot,
         active: true,
@@ -538,6 +540,39 @@ export const MemberSelfRegisterModal: React.FC<MemberSelfRegisterModalProps> = (
                   <option value="09:00 PM - 10:00 PM">09:00 PM - 10:00 PM (शाम 9 से 10)</option>
                 </optgroup>
               </select>
+            </div>
+          </div>
+
+          {/* Diet Preference Selection (शाकाहारी / मांसाहारी) */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              खानपान प्राथमिकता / आहार (Diet Preference) *
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setDietPreference('veg')}
+                className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 text-xs font-bold transition-all cursor-pointer ${
+                  dietPreference === 'veg'
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-800 shadow-sm'
+                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <span className="text-base">🥗</span>
+                <span>शाकाहारी (Veg Diet)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDietPreference('non_veg')}
+                className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 text-xs font-bold transition-all cursor-pointer ${
+                  dietPreference === 'non_veg'
+                    ? 'border-amber-600 bg-amber-50 text-amber-900 shadow-sm'
+                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <span className="text-base">🍗</span>
+                <span>मांसाहारी (Non-Veg Diet)</span>
+              </button>
             </div>
           </div>
 

@@ -9,7 +9,7 @@ import { AttendanceScanner } from '../attendance/AttendanceScanner';
 import { InvoiceModal } from './InvoiceModal';
 import { BodyIndexTracker } from '../members/BodyIndexTracker';
 import { BodyPhotoTracker } from '../members/BodyPhotoTracker';
-import { generateWorkoutRoutine, generateDietPlan } from '../../utils/fitnessCalculator';
+import { generateWorkoutRoutine, generateDietPlan, generateAutomaticCustomDiet } from '../../utils/fitnessCalculator';
 import { localDb } from '../../db/localDatabase';
 import { compressImageFile } from '../../utils/imageCompressor';
 import {
@@ -170,15 +170,60 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
       ? staff.find((s) => s.id === currentUser?.staffId) || staff[1] || staff[0]
       : { id: 'usr-2', name: 'Coach Vikram Sahu', designation: 'Head Coach', role: 'trainer' as const };
 
+  const [selectedWorkoutDay, setSelectedWorkoutDay] = useState<number>(0);
+  const [dietTick, setDietTick] = useState(0);
+
+  useEffect(() => {
+    const handleUpdate = () => setDietTick((t) => t + 1);
+    window.addEventListener('kf_body_index_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('kf_body_index_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
+
   const customWorkout = member?.id ? localDb.getMemberWorkout(member.id) : undefined;
   const workoutDays = customWorkout?.days?.length
     ? customWorkout.days
     : generateWorkoutRoutine(member?.fitnessGoal || 'muscle_building');
 
   const customDiet = member?.id ? localDb.getMemberDiet(member.id) : undefined;
+  const activeDietType: 'veg' | 'non_veg' = (customDiet?.dietType === 'non_veg' || member?.dietPreference === 'non_veg') ? 'non_veg' : 'veg';
+  
   const dietMeals = customDiet?.meals?.length
     ? customDiet.meals
-    : generateDietPlan(member?.fitnessGoal || 'muscle_building', member?.targetDailyCalories || 2600);
+    : generateAutomaticCustomDiet({
+        memberId: member.id,
+        memberName: member.name,
+        weightKg: member.weightKg || 70,
+        heightCm: member.heightCm || 172,
+        age: member.age || 25,
+        gender: member.gender || 'male',
+        goal: member.fitnessGoal || 'muscle_building',
+        dietType: activeDietType,
+        trainerId: member.assignedTrainerId,
+        trainerName: member.assignedTrainerName,
+      }).meals;
+
+  const handleSwitchDietType = (type: 'veg' | 'non_veg') => {
+    const newDiet = generateAutomaticCustomDiet({
+      memberId: member.id,
+      memberName: member.name,
+      weightKg: member.weightKg || 70,
+      heightCm: member.heightCm || 172,
+      age: member.age || 25,
+      gender: member.gender || 'male',
+      goal: member.fitnessGoal || 'muscle_building',
+      dietType: type,
+      trainerId: member.assignedTrainerId,
+      trainerName: member.assignedTrainerName,
+    });
+    localDb.saveMemberDiet(newDiet);
+    updateMember(member.id, { dietPreference: type });
+    window.dispatchEvent(new Event('kf_body_index_updated'));
+    setDietTick((t) => t + 1);
+  };
 
   const toggleExercise = (id: string) => {
     setCompletedExercises((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -358,7 +403,10 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                   <div className="mt-3 p-3 rounded-xl bg-rose-50 border border-rose-200 text-left text-xs text-rose-900 space-y-1.5 w-full">
                     <div className="font-bold flex items-center gap-1.5 text-rose-800">
                       <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
-                      <span>वैधता समाप्त तिथि: {formatDate(member.expiryDate)}</span>
+                      <span>सदस्यता समाप्त (Membership Expired)</span>
+                      {isAdvanced && (
+                        <span className="text-[10px] font-mono text-rose-700">({formatDate(member.expiryDate)})</span>
+                      )}
                     </div>
                     <p className="text-[11px] text-slate-600 leading-relaxed">
                       आपकी सदस्यता समाप्त हो चुकी है। सुरक्षा व उपस्थिति नियमों के अनुसार फ्रंट डेस्क कियोस्क पर आपका <strong>4-अंकीय एंट्री पिन अक्षम (Disabled)</strong> कर दिया गया है एवं मोबाइल ऐप लॉक है।
@@ -681,60 +729,124 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
               </div>
             )}
 
-            {/* TAB 3: WORKOUT */}
+            {/* TAB 3: WORKOUT - Full Week View (Mon-Sat / Day 1-6) */}
             {mobileTab === 'workout' && (
               <div className="space-y-3 w-full max-w-full overflow-x-hidden">
-                <div className="p-3.5 bg-white rounded-2xl border border-slate-200 text-xs shadow-xs">
-                  <span className="text-cyan-800 font-black text-sm block">{workoutDays[0]?.dayName}</span>
-                  <span className="text-slate-500 text-[11px] font-medium">Focus: {workoutDays[0]?.focus}</span>
+                {/* 6-Day Week Navigation Pill Bar */}
+                <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                  {workoutDays.map((day, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedWorkoutDay(idx)}
+                      className={`px-3 py-2 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                        selectedWorkoutDay === idx
+                          ? 'bg-cyan-600 text-white shadow-xs font-black'
+                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Calendar className="w-3 h-3" />
+                      Day {idx + 1}: {day.dayName.split(':')[0] || `Day ${idx + 1}`}
+                    </button>
+                  ))}
                 </div>
 
-                <div className="space-y-2">
-                  {workoutDays[0]?.exercises.map((ex, idx) => {
-                    const isDone = completedExercises[ex.id];
-                    return (
-                      <div
-                        key={idx}
-                        onClick={() => toggleExercise(ex.id)}
-                        className={`p-3 rounded-2xl border cursor-pointer flex items-center justify-between text-xs transition-all shadow-xs ${
-                          isDone
-                            ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
-                            : 'bg-white border-slate-200 text-slate-900 hover:border-slate-300'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div
-                            className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
-                              isDone ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-amber-700'
-                            }`}
-                          >
-                            {isDone ? '✓' : idx + 1}
-                          </div>
-                          <div className="min-w-0">
-                            <div className={`font-bold truncate ${isDone ? 'line-through text-slate-400' : 'text-slate-900'}`}>
-                              {ex.name}
-                            </div>
-                            <div className="text-[10px] text-slate-500 font-mono font-medium">
-                              {ex.sets} Sets • {ex.reps} Reps
-                            </div>
-                          </div>
-                        </div>
-                        <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-medium shrink-0 ml-2">
-                          {ex.targetMuscle}
+                {/* Selected Day Workout Schedule */}
+                {workoutDays[selectedWorkoutDay] && (
+                  <div className="space-y-2.5">
+                    <div className="p-3.5 bg-white rounded-2xl border border-slate-200 text-xs shadow-xs flex justify-between items-center">
+                      <div>
+                        <span className="text-cyan-800 font-black text-sm block">
+                          {workoutDays[selectedWorkoutDay].dayName}
+                        </span>
+                        <span className="text-slate-500 text-[11px] font-medium">
+                          Focus: {workoutDays[selectedWorkoutDay].focus}
                         </span>
                       </div>
-                    );
-                  })}
-                </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-mono font-bold border border-slate-200">
+                        {workoutDays[selectedWorkoutDay].exercises.length} Exercises
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {workoutDays[selectedWorkoutDay].exercises.map((ex, idx) => {
+                        const isDone = completedExercises[ex.id];
+                        return (
+                          <div
+                            key={ex.id || idx}
+                            onClick={() => toggleExercise(ex.id)}
+                            className={`p-3 rounded-2xl border cursor-pointer flex items-center justify-between text-xs transition-all shadow-xs ${
+                              isDone
+                                ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                                : 'bg-white border-slate-200 text-slate-900 hover:border-slate-300'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div
+                                className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
+                                  isDone ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-amber-700'
+                                }`}
+                              >
+                                {isDone ? '✓' : idx + 1}
+                              </div>
+                              <div className="min-w-0">
+                                <div className={`font-bold truncate ${isDone ? 'line-through text-slate-400' : 'text-slate-900'}`}>
+                                  {ex.name}
+                                </div>
+                                <div className="text-[10px] text-slate-500 font-mono font-medium">
+                                  {ex.sets} Sets • {ex.reps} Reps
+                                </div>
+                              </div>
+                            </div>
+                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-medium shrink-0 ml-2">
+                              {ex.targetMuscle}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* TAB 4: DIET */}
+            {/* TAB 4: DIET - Customized Veg / Non-Veg Chart */}
             {mobileTab === 'diet' && (
               <div className="space-y-3 w-full max-w-full overflow-x-hidden">
-                <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-950 shadow-xs">
-                  <strong className="block font-black text-sm text-emerald-900">Aapka Daily Diet Chart:</strong>
-                  <span className="text-emerald-800">Target: {member.targetDailyCalories || 2850} Calories (High Protein)</span>
+                <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-950 shadow-xs space-y-2">
+                  <div className="flex justify-between items-center">
+                    <strong className="block font-black text-sm text-emerald-900">Aapka Daily Diet Chart:</strong>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-white text-emerald-800 border border-emerald-200">
+                      {activeDietType === 'non_veg' ? '🍗 मांसाहारी (Non-Veg)' : '🥗 शाकाहारी (Veg)'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-emerald-800">
+                    <span>Target: {member.targetDailyCalories || 2850} Calories</span>
+                    {/* Quick Veg/Non-Veg Switcher */}
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleSwitchDietType('veg')}
+                        className={`px-2 py-0.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all ${
+                          activeDietType === 'veg'
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-white/80 text-emerald-900 hover:bg-white'
+                        }`}
+                      >
+                        🥗 Veg
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSwitchDietType('non_veg')}
+                        className={`px-2 py-0.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all ${
+                          activeDietType === 'non_veg'
+                            ? 'bg-orange-600 text-white'
+                            : 'bg-white/80 text-orange-900 hover:bg-white'
+                        }`}
+                      >
+                        🍗 Non-Veg
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -748,7 +860,7 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                       </div>
                       <p className="text-[11px] text-amber-800 font-semibold">{meal.description}</p>
                       <ul className="text-[11px] text-slate-600 space-y-0.5 pt-1 border-t border-slate-100">
-                        {meal.items.slice(0, 3).map((it, iIdx) => (
+                        {meal.items.slice(0, 4).map((it, iIdx) => (
                           <li key={iIdx}>• {it}</li>
                         ))}
                       </ul>
@@ -773,22 +885,34 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                     <span>Pass ID:</span>
                     <strong className="text-cyan-800 font-mono font-bold">{member.memberCode}</strong>
                   </div>
+                  {isAdvanced && (
+                    <div className="flex justify-between text-slate-600">
+                      <span>Plan:</span>
+                      <strong className="text-amber-800 font-bold">{MEMBERSHIP_PRICING[member.membershipDuration]?.label}</strong>
+                    </div>
+                  )}
                   <div className="flex justify-between text-slate-600">
-                    <span>Plan:</span>
-                    <strong className="text-amber-800 font-bold">{MEMBERSHIP_PRICING[member.membershipDuration]?.label}</strong>
+                    <span>Diet Preference:</span>
+                    <strong className="text-emerald-700 font-bold">
+                      {member.dietPreference === 'non_veg' ? '🍗 Non-Veg (मांसाहारी)' : '🥗 Veg (शाकाहारी)'}
+                    </strong>
                   </div>
                   <div className="flex justify-between text-slate-600">
                     <span>Workout Batch (समय):</span>
                     <strong className="text-slate-900 font-bold">{member.workoutSlot || '06:00 AM - 07:00 AM'}</strong>
                   </div>
-                  <div className="flex justify-between text-slate-600">
-                    <span>Validity Date:</span>
-                    <strong className="text-slate-900">{formatDate(member.expiryDate)}</strong>
-                  </div>
-                  <div className="flex justify-between text-slate-600">
-                    <span>Fees Status:</span>
-                    <strong className="text-emerald-700 uppercase font-bold">Paid in Full (पूरा जमा)</strong>
-                  </div>
+                  {isAdvanced && (
+                    <>
+                      <div className="flex justify-between text-slate-600">
+                        <span>Validity Date:</span>
+                        <strong className="text-slate-900">{formatDate(member.expiryDate)}</strong>
+                      </div>
+                      <div className="flex justify-between text-slate-600">
+                        <span>Fees Status:</span>
+                        <strong className="text-emerald-700 uppercase font-bold">Paid in Full (पूरा जमा)</strong>
+                      </div>
+                    </>
+                  )}
 
                   {isAdvanced && (
                     <button

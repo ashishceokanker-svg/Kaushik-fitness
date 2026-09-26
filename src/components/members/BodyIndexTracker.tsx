@@ -27,24 +27,38 @@ interface BodyIndexTrackerProps {
 }
 
 export const BodyIndexTracker: React.FC<BodyIndexTrackerProps> = ({ member, canEdit = true, isCompact = false }) => {
-  const { getBodyIndexLogs, addBodyIndexLog } = useGymData();
+  const { getBodyIndexLogs, addBodyIndexLog, bodyIndexLogs, updateMember } = useGymData();
   const [subTab, setSubTab] = useState<'photos' | 'measurements'>('photos');
   const [showAddForm, setShowAddForm] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Form State
-  const [weightKg, setWeightKg] = useState<number>(member.weightKg || 70);
-  const [heightCm, setHeightCm] = useState<number>(member.heightCm || 175);
-  const [chestInches, setChestInches] = useState<number>(member.measurements?.chest || 38);
-  const [waistInches, setWaistInches] = useState<number>(member.measurements?.waist || 32);
-  const [bicepsInches, setBicepsInches] = useState<number>(member.measurements?.biceps || 13.5);
-  const [thighsInches, setThighsInches] = useState<number>(member.measurements?.thighs || 21);
-  const [hipsInches, setHipsInches] = useState<number>(member.measurements?.hips || 36);
-  const [bodyFatPct, setBodyFatPct] = useState<number>(member.bodyFatPercentage || 18);
+  // Real-time synchronization with trainer updates
+  const [syncTick, setSyncTick] = useState(0);
+  React.useEffect(() => {
+    const handleSync = () => setSyncTick((t) => t + 1);
+    window.addEventListener('kf_body_index_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('kf_body_index_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
+
+  // Form State - blank if not entered by member or trainer
+  const [weightKg, setWeightKg] = useState<number | string>(member.weightKg || '');
+  const [heightCm, setHeightCm] = useState<number | string>(member.heightCm || '');
+  const [chestInches, setChestInches] = useState<number | string>(member.measurements?.chest || '');
+  const [waistInches, setWaistInches] = useState<number | string>(member.measurements?.waist || '');
+  const [bicepsInches, setBicepsInches] = useState<number | string>(member.measurements?.biceps || '');
+  const [thighsInches, setThighsInches] = useState<number | string>(member.measurements?.thighs || '');
+  const [hipsInches, setHipsInches] = useState<number | string>(member.measurements?.hips || '');
+  const [bodyFatPct, setBodyFatPct] = useState<number | string>(member.bodyFatPercentage || '');
   const [notes, setNotes] = useState('');
 
-  // Fetch logs for this member
-  const logs = getBodyIndexLogs(member.id);
+  // Fetch logs for this member (reactive to context updates & events)
+  const logs = React.useMemo(() => {
+    return getBodyIndexLogs(member.id);
+  }, [member.id, bodyIndexLogs, syncTick, getBodyIndexLogs]);
 
   // First record (Baseline) vs Latest record
   const baseline = logs.length > 0 ? logs[0] : null;
@@ -60,25 +74,43 @@ export const BodyIndexTracker: React.FC<BodyIndexTrackerProps> = ({ member, canE
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const heightM = heightCm / 100;
-    const computedBmi = Math.round((weightKg / (heightM * heightM)) * 10) / 10;
+    const finalWeight = Number(weightKg) || member.weightKg || 70;
+    const finalHeight = Number(heightCm) || member.heightCm || 170;
+    const heightM = finalHeight / 100;
+    const computedBmi = Math.round((finalWeight / (heightM * heightM)) * 10) / 10;
+    const finalNote = notes.trim() || `सदस्य द्वारा शारीरिक माप दर्ज किया गया (${new Date().toLocaleDateString('hi-IN')})`;
 
     const newLog: Omit<BodyIndexLog, 'id'> = {
       memberId: member.id,
       date: new Date().toISOString(),
-      weightKg: Number(weightKg),
-      heightCm: Number(heightCm),
+      weightKg: finalWeight,
+      heightCm: finalHeight,
       bmi: computedBmi,
-      chestInches: Number(chestInches),
-      waistInches: Number(waistInches),
-      bicepsInches: Number(bicepsInches),
-      thighsInches: Number(thighsInches),
+      chestInches: Number(chestInches) || 0,
+      waistInches: Number(waistInches) || 0,
+      bicepsInches: Number(bicepsInches) || 0,
+      thighsInches: Number(thighsInches) || 0,
       hipsInches: hipsInches ? Number(hipsInches) : undefined,
       bodyFatPct: bodyFatPct ? Number(bodyFatPct) : undefined,
-      notes: notes.trim() || 'Updated measurement log checkpoint.',
+      notes: finalNote,
     };
 
     addBodyIndexLog(newLog);
+
+    // Update member's core record so notes and measurements stay in sync immediately
+    updateMember(member.id, {
+      weightKg: finalWeight,
+      heightCm: finalHeight,
+      bodyFatPercentage: bodyFatPct ? Number(bodyFatPct) : member.bodyFatPercentage,
+      notes: finalNote,
+      measurements: {
+        chest: Number(chestInches) || 0,
+        waist: Number(waistInches) || 0,
+        biceps: Number(bicepsInches) || 0,
+        thighs: Number(thighsInches) || 0,
+        hips: hipsInches ? Number(hipsInches) : undefined,
+      },
+    });
 
     // Auto-update customized workout and diet plans in local database
     const updatedWorkout = generateAutomaticCustomWorkout({
@@ -93,16 +125,20 @@ export const BodyIndexTracker: React.FC<BodyIndexTrackerProps> = ({ member, canE
     const updatedDiet = generateAutomaticCustomDiet({
       memberId: member.id,
       memberName: member.name,
-      weightKg: Number(weightKg),
-      heightCm: Number(heightCm),
+      weightKg: finalWeight,
+      heightCm: finalHeight,
       age: member.age || 25,
       gender: member.gender || 'male',
       goal: member.fitnessGoal || 'muscle_building',
-      dietType: 'veg',
+      dietType: member.dietPreference || 'veg',
       trainerId: member.assignedTrainerId,
       trainerName: member.assignedTrainerName,
     });
     localDb.saveMemberDiet(updatedDiet);
+
+    // Dispatch broadcast event for real-time reactivity
+    window.dispatchEvent(new Event('kf_body_index_updated'));
+    window.dispatchEvent(new Event('storage'));
 
     setShowAddForm(false);
     setNotes('');
@@ -210,8 +246,9 @@ export const BodyIndexTracker: React.FC<BodyIndexTrackerProps> = ({ member, canE
                     type="number"
                     step="0.1"
                     required
+                    placeholder="उदा. 70"
                     value={weightKg}
-                    onChange={(e) => setWeightKg(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => setWeightKg(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono font-bold text-sm focus:outline-none focus:border-cyan-500 focus:bg-white"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-semibold">kg</span>
@@ -228,8 +265,9 @@ export const BodyIndexTracker: React.FC<BodyIndexTrackerProps> = ({ member, canE
                     type="number"
                     step="1"
                     required
+                    placeholder="उदा. 172"
                     value={heightCm}
-                    onChange={(e) => setHeightCm(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => setHeightCm(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono font-bold text-sm focus:outline-none focus:border-cyan-500 focus:bg-white"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-semibold">cm</span>
@@ -246,8 +284,9 @@ export const BodyIndexTracker: React.FC<BodyIndexTrackerProps> = ({ member, canE
                     type="number"
                     step="0.25"
                     required
+                    placeholder="उदा. 38"
                     value={chestInches}
-                    onChange={(e) => setChestInches(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => setChestInches(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono font-bold text-sm focus:outline-none focus:border-cyan-500 focus:bg-white"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-semibold">in</span>
@@ -264,8 +303,9 @@ export const BodyIndexTracker: React.FC<BodyIndexTrackerProps> = ({ member, canE
                     type="number"
                     step="0.25"
                     required
+                    placeholder="उदा. 32"
                     value={waistInches}
-                    onChange={(e) => setWaistInches(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => setWaistInches(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono font-bold text-sm focus:outline-none focus:border-cyan-500 focus:bg-white"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-semibold">in</span>
@@ -282,8 +322,9 @@ export const BodyIndexTracker: React.FC<BodyIndexTrackerProps> = ({ member, canE
                     type="number"
                     step="0.25"
                     required
+                    placeholder="उदा. 13.5"
                     value={bicepsInches}
-                    onChange={(e) => setBicepsInches(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => setBicepsInches(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono font-bold text-sm focus:outline-none focus:border-cyan-500 focus:bg-white"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-semibold">in</span>
@@ -300,8 +341,9 @@ export const BodyIndexTracker: React.FC<BodyIndexTrackerProps> = ({ member, canE
                     type="number"
                     step="0.25"
                     required
+                    placeholder="उदा. 21"
                     value={thighsInches}
-                    onChange={(e) => setThighsInches(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => setThighsInches(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono font-bold text-sm focus:outline-none focus:border-cyan-500 focus:bg-white"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-semibold">in</span>
@@ -317,8 +359,9 @@ export const BodyIndexTracker: React.FC<BodyIndexTrackerProps> = ({ member, canE
                   <input
                     type="number"
                     step="0.25"
+                    placeholder="उदा. 36"
                     value={hipsInches}
-                    onChange={(e) => setHipsInches(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => setHipsInches(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono font-bold text-sm focus:outline-none focus:border-cyan-500 focus:bg-white"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-semibold">in</span>
@@ -334,8 +377,9 @@ export const BodyIndexTracker: React.FC<BodyIndexTrackerProps> = ({ member, canE
                   <input
                     type="number"
                     step="0.5"
+                    placeholder="उदा. 18"
                     value={bodyFatPct}
-                    onChange={(e) => setBodyFatPct(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => setBodyFatPct(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono font-bold text-sm focus:outline-none focus:border-cyan-500 focus:bg-white"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-semibold">%</span>
@@ -346,11 +390,11 @@ export const BodyIndexTracker: React.FC<BodyIndexTrackerProps> = ({ member, canE
             {/* Notes */}
             <div>
               <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                Progress Note / Trainer Feedback (टिप्पणी)
+                Progress Note / Trainer Feedback (टिप्पणी / विवरण)
               </label>
               <input
                 type="text"
-                placeholder="e.g. Arms feel fuller, reduced 1.5 inches waist in past 3 weeks with Vikram Sir"
+                placeholder="उदा. आर्म्स में अच्छा पंप है, ट्रेनर मार्गदर्शन अनुसार कमर 1 इंच कम हुई..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 text-xs focus:outline-none focus:border-cyan-500 focus:bg-white"
@@ -376,8 +420,153 @@ export const BodyIndexTracker: React.FC<BodyIndexTrackerProps> = ({ member, canE
         </div>
       )}
 
-      {/* Before vs Now Comparison Card (Pehle vs Abhi) */}
-      {baseline && latest && (
+      {/* Prominent Notes / Update Banner */}
+      {latest?.notes && (
+        <div className="bg-gradient-to-r from-amber-50 via-white to-amber-50/50 border border-amber-200 rounded-2xl p-4 shadow-2xs flex items-start gap-3">
+          <div className="p-2 rounded-xl bg-amber-500 text-slate-950 font-bold shrink-0 mt-0.5">
+            <Info className="w-4 h-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between flex-wrap gap-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-amber-900">
+                नवीनतम शारीरिक माप एवं फिटनेस नोट (Latest Progress Note)
+              </span>
+              <span className="text-[10px] text-slate-500 font-mono">
+                दिनांक: {new Date(latest.date).toLocaleDateString('hi-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+              </span>
+            </div>
+            <p className="text-xs font-semibold text-slate-800 mt-1">
+              "{latest.notes}"
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* CASE 1: EMPTY STATE - No measurements entered yet */}
+      {logs.length === 0 && !showAddForm && (
+        <div className="bg-white border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center space-y-3">
+          <div className="w-14 h-14 rounded-2xl bg-cyan-50 border border-cyan-200 flex items-center justify-center text-cyan-600 mx-auto shadow-2xs">
+            <Ruler className="w-7 h-7" />
+          </div>
+          <div>
+            <h4 className="text-base font-black text-slate-900 uppercase tracking-wide">
+              अभी कोई शारीरिक माप (Measurements) दर्ज नहीं है
+            </h4>
+            <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 leading-relaxed">
+              Biceps (डोले), Waist (कमर), Chest (सीना) और Thighs (जांघ) की माप जब आप या आपके जिम ट्रेनर दर्ज करेंगे, तभी यहाँ शारीरिक बदलाव और प्रगति दिखाई देगी।
+            </p>
+          </div>
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => setShowAddForm(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs uppercase shadow-sm transition-all cursor-pointer hover:scale-[1.02]"
+            >
+              <Plus className="w-4 h-4" />
+              + पहली शारीरिक माप दर्ज करें (Add First Measurement)
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* CASE 2: SINGLE CHECKPOINT - Only 1 measurement recorded (Baseline) */}
+      {logs.length === 1 && latest && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-cyan-100 border border-cyan-300 flex items-center justify-center text-cyan-800">
+                <Ruler className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-base font-black text-slate-900 uppercase tracking-wide flex items-center gap-2">
+                  <span>पहला बेसलाइन माप (Day 1 Checkpoint Recorded)</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 font-bold font-mono">
+                    1 Checkpoint
+                  </span>
+                </h4>
+                <p className="text-xs text-slate-500">
+                  दर्ज दिनांक: {new Date(latest.date).toLocaleDateString('hi-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </p>
+              </div>
+            </div>
+
+            <span className="text-[11px] text-amber-700 bg-amber-50 px-3 py-1 rounded-full border border-amber-200 font-semibold">
+              अगली नाप पर Before vs Now तुलना दिखेगी 📈
+            </span>
+          </div>
+
+          <div className={`grid ${isCompact ? 'grid-cols-2 gap-2' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3'}`}>
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+              <span className="text-[10px] uppercase font-bold text-slate-500 flex items-center justify-center gap-1">
+                <Scale className="w-3 h-3 text-cyan-600" />
+                Weight (वजन)
+              </span>
+              <div className="text-xl font-black font-mono text-slate-900 my-1">
+                {latest.weightKg} <span className="text-xs font-normal text-slate-400">kg</span>
+              </div>
+              <div className="text-[10px] text-cyan-700 font-semibold">दर्ज वजन</div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+              <span className="text-[10px] uppercase font-bold text-slate-500 flex items-center justify-center gap-1">
+                <Activity className="w-3 h-3 text-purple-600" />
+                Biceps (डोले)
+              </span>
+              <div className="text-xl font-black font-mono text-purple-700 my-1">
+                {latest.bicepsInches}"
+              </div>
+              <div className="text-[10px] text-slate-500">Day 1 नाप</div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+              <span className="text-[10px] uppercase font-bold text-slate-500 flex items-center justify-center gap-1">
+                <Ruler className="w-3 h-3 text-emerald-600" />
+                Waist (कमर)
+              </span>
+              <div className="text-xl font-black font-mono text-emerald-700 my-1">
+                {latest.waistInches}"
+              </div>
+              <div className="text-[10px] text-slate-500">Day 1 नाप</div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+              <span className="text-[10px] uppercase font-bold text-slate-500 flex items-center justify-center gap-1">
+                <TrendingUp className="w-3 h-3 text-amber-500" />
+                Chest (सीना)
+              </span>
+              <div className="text-xl font-black font-mono text-slate-900 my-1">
+                {latest.chestInches}"
+              </div>
+              <div className="text-[10px] text-slate-500">Day 1 नाप</div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+              <span className="text-[10px] uppercase font-bold text-slate-500 flex items-center justify-center gap-1">
+                <Activity className="w-3 h-3 text-cyan-600" />
+                Thighs (जांघ)
+              </span>
+              <div className="text-xl font-black font-mono text-slate-900 my-1">
+                {latest.thighsInches}"
+              </div>
+              <div className="text-[10px] text-slate-500">Day 1 नाप</div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+              <span className="text-[10px] uppercase font-bold text-slate-500 flex items-center justify-center gap-1">
+                <Flame className="w-3 h-3 text-orange-500" />
+                BMI
+              </span>
+              <div className="text-xl font-black font-mono text-slate-900 my-1">
+                {latest.bmi}
+              </div>
+              <div className="text-[10px] text-slate-500">{latest.bodyFatPct ? `Fat: ${latest.bodyFatPct}%` : 'Normal'}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CASE 3: BEFORE VS NOW - 2 or more checkpoints recorded */}
+      {logs.length >= 2 && baseline && latest && (
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm relative overflow-hidden">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-4 mb-5">
             <div className="flex items-center gap-3">

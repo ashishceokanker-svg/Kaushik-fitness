@@ -526,7 +526,18 @@ class LocalGymDatabase {
     const all = this.getTable<BodyIndexLog>(DB_KEYS.BODY_INDEX_LOGS, SEED_BODY_INDEX_LOGS);
     const cleanId = (memberId || '').replace('mem-', '').replace('prof-', '');
     return all
-      .filter((l) => l.memberId === memberId || (cleanId && l.memberId.replace('mem-', '').replace('prof-', '') === cleanId))
+      .filter((l) => {
+        const matchesMember = l.memberId === memberId || (cleanId && l.memberId.replace('mem-', '').replace('prof-', '') === cleanId);
+        if (!matchesMember) return false;
+        // Filter out legacy unedited auto-generated dummy logs
+        const isDummy =
+          l.notes === 'Initial joining baseline stats recorded.' &&
+          l.chestInches === 38 &&
+          l.waistInches === 32 &&
+          l.bicepsInches === 13 &&
+          l.thighsInches === 21;
+        return !isDummy;
+      })
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }
 
@@ -553,6 +564,7 @@ class LocalGymDatabase {
         hips: log.hipsInches,
       };
       if (log.bodyFatPct) targetProf.body_fat_percentage = log.bodyFatPct;
+      if (log.notes) targetProf.notes = log.notes;
       this.setTable(DB_KEYS.MEMBER_PROFILES, profiles);
     }
 
@@ -733,7 +745,9 @@ class LocalGymDatabase {
         bmi: profile.bmi,
         bodyFatPercentage: profile.body_fat_percentage,
         targetDailyCalories: profile.target_daily_calories,
-        measurements: profile.measurements,
+        measurements: (profile.measurements && profile.measurements.chest === 38 && profile.measurements.waist === 32 && profile.measurements.biceps === 13 && profile.measurements.thighs === 21) ? undefined : profile.measurements,
+        dietPreference: profile.diet_preference || 'veg',
+        notes: profile.notes,
         pin: user.pin,
         medicalConditions: profile.medical_conditions,
         workoutSlot: profile.workout_slot || '06:00 AM - 07:00 AM',
@@ -907,6 +921,15 @@ class LocalGymDatabase {
     targetWeightKg?: number;
     emergencyContact: string;
     fitnessGoal: FitnessGoal;
+    dietPreference?: 'veg' | 'non_veg';
+    notes?: string;
+    measurements?: {
+      chest: number;
+      waist: number;
+      biceps: number;
+      thighs: number;
+      hips?: number;
+    };
     duration: MembershipDuration;
     hasPT: boolean;
     ptDuration?: PTPackageDuration;
@@ -967,6 +990,7 @@ class LocalGymDatabase {
       weight: input.weightKg,
       target_weight: input.targetWeightKg,
       fitness_goal: input.fitnessGoal,
+      diet_preference: input.dietPreference || 'veg',
       fitness_level: metrics.fitnessLevel,
       fitness_score: metrics.fitnessScore,
       bmi: metrics.bmi,
@@ -974,12 +998,8 @@ class LocalGymDatabase {
       target_daily_calories: metrics.targetDailyCalories,
       emergency_contact: input.emergencyContact,
       medical_conditions: input.medicalConditions,
-      measurements: {
-        chest: 38,
-        waist: 32,
-        biceps: 13,
-        thighs: 21,
-      },
+      notes: input.notes,
+      measurements: input.measurements || undefined,
       workout_slot: input.workoutSlot || '06:00 AM - 07:00 AM',
     };
     profiles.unshift(newProfile);
@@ -1029,19 +1049,23 @@ class LocalGymDatabase {
     memberships.unshift(newMembership);
     this.setTable(DB_KEYS.MEMBERSHIPS, memberships);
 
-    this.addBodyIndexLog({
-      memberId: newProfileId,
-      date: joiningDate,
-      weightKg: input.weightKg,
-      heightCm: input.heightCm,
-      bmi: metrics.bmi,
-      chestInches: 38,
-      waistInches: 32,
-      bicepsInches: 13,
-      thighsInches: 21,
-      bodyFatPct: metrics.bodyFatPercentage,
-      notes: 'Initial joining baseline stats recorded.',
-    });
+    // Only record a body index baseline log if actual measurements were provided
+    if (input.measurements) {
+      this.addBodyIndexLog({
+        memberId: newProfileId,
+        date: joiningDate,
+        weightKg: input.weightKg,
+        heightCm: input.heightCm,
+        bmi: metrics.bmi,
+        chestInches: input.measurements.chest,
+        waistInches: input.measurements.waist,
+        bicepsInches: input.measurements.biceps,
+        thighsInches: input.measurements.thighs,
+        hipsInches: input.measurements.hips,
+        bodyFatPct: metrics.bodyFatPercentage,
+        notes: input.notes || 'Initial joining baseline stats recorded.',
+      });
+    }
 
     // Auto-generate customized 6-day workout routine based on member body details & goal
     const autoWorkout = generateAutomaticCustomWorkout({
@@ -1054,7 +1078,7 @@ class LocalGymDatabase {
     });
     this.saveMemberWorkout(autoWorkout);
 
-    // Auto-generate customized 5-meal diet plan based on member body details & goal
+    // Auto-generate customized 5-meal diet plan based on member body details, goal & Veg/Non-Veg choice
     const autoDiet = generateAutomaticCustomDiet({
       memberId: newProfileId,
       memberName: input.name,
@@ -1063,7 +1087,7 @@ class LocalGymDatabase {
       age: input.age,
       gender: input.gender,
       goal: input.fitnessGoal,
-      dietType: 'veg',
+      dietType: input.dietPreference || 'veg',
       trainerId: input.assignedTrainerId,
       trainerName: assignedTrainer?.name,
     });
@@ -1100,6 +1124,7 @@ class LocalGymDatabase {
       paymentMethod: input.paymentMethod,
       lastPaymentDate: joiningDate,
       fitnessGoal: input.fitnessGoal,
+      dietPreference: input.dietPreference || 'veg',
       activityLevel: 'active',
       fitnessScore: metrics.fitnessScore,
       fitnessLevel: metrics.fitnessLevel,
@@ -1109,6 +1134,8 @@ class LocalGymDatabase {
       pin,
       medicalConditions: input.medicalConditions,
       workoutSlot: input.workoutSlot || '06:00 AM - 07:00 AM',
+      measurements: input.measurements,
+      notes: input.notes,
       active: true,
       avatarUrl: input.avatarUrl,
     };
@@ -1200,7 +1227,9 @@ class LocalGymDatabase {
       target_daily_calories: cloudMember.targetDailyCalories || 2600,
       emergency_contact: cloudMember.emergencyContact || '',
       medical_conditions: cloudMember.medicalConditions || '',
-      measurements: { chest: 38, waist: 32, biceps: 13, thighs: 21 },
+      measurements: cloudMember.measurements || (existingProfIdx >= 0 ? profiles[existingProfIdx].measurements : undefined),
+      diet_preference: cloudMember.dietPreference || (existingProfIdx >= 0 ? profiles[existingProfIdx].diet_preference : 'veg'),
+      notes: cloudMember.notes !== undefined ? cloudMember.notes : (existingProfIdx >= 0 ? profiles[existingProfIdx].notes : undefined),
       workout_slot: cloudMember.workoutSlot || '06:00 AM - 07:00 AM',
     };
     if (existingProfIdx >= 0) {

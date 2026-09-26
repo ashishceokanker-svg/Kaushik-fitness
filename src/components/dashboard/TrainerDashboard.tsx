@@ -9,7 +9,7 @@ import { TrainerWorkoutModal } from '../trainer/TrainerWorkoutModal';
 import { MemberRegisterModal } from '../members/MemberRegisterModal';
 import { localDb } from '../../db/localDatabase';
 import { CustomDietPlan, CustomWorkoutPlan, StaffDailyAttendance, WorkoutDay, Staff } from '../../types';
-import { generateAutomaticCustomDiet, generateWorkoutRoutine, calculateBMR, calculateTDEE } from '../../utils/fitnessCalculator';
+import { generateAutomaticCustomDiet, generateAutomaticCustomWorkout, generateWorkoutRoutine, calculateBMR, calculateTDEE } from '../../utils/fitnessCalculator';
 import {
   Award,
   Users,
@@ -312,6 +312,18 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
     const squatNum = logForm.squatPR ? parseFloat(logForm.squatPR) : undefined;
     const deadliftNum = logForm.deadliftPR ? parseFloat(logForm.deadliftPR) : undefined;
 
+    const trainerNote = logForm.notes
+      ? `ट्रेनर ${trainer.name}: ${logForm.notes}`
+      : `Coach ${trainer.name} द्वारा मापा गया (${logForm.date})`;
+
+    const newMeasurements = {
+      chest: chestNum ?? (selectedClient.measurements?.chest || 0),
+      waist: waistNum ?? (selectedClient.measurements?.waist || 0),
+      biceps: bicepsNum ?? (selectedClient.measurements?.biceps || 0),
+      thighs: thighsNum ?? (selectedClient.measurements?.thighs || 0),
+      hips: hipsNum ?? (selectedClient.measurements?.hips || 0),
+    };
+
     // 1. Add progress log
     addProgressLog({
       memberId: selectedClient.id,
@@ -326,7 +338,7 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
       benchPressPR: benchNum,
       squatPR: squatNum,
       deadliftPR: deadliftNum,
-      notes: logForm.notes || `Coach ${trainer.name} द्वारा मापा गया`,
+      notes: trainerNote,
     });
 
     // 2. Add body index log
@@ -336,41 +348,59 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
       weightKg: weightNum,
       heightCm: clientHeight,
       bmi: Number((weightNum / Math.pow(clientHeight / 100, 2)).toFixed(1)),
-      chestInches: chestNum ?? (selectedClient.measurements?.chest || 0),
-      waistInches: waistNum ?? (selectedClient.measurements?.waist || 0),
-      bicepsInches: bicepsNum ?? (selectedClient.measurements?.biceps || 0),
-      thighsInches: thighsNum ?? (selectedClient.measurements?.thighs || 0),
+      chestInches: newMeasurements.chest,
+      waistInches: newMeasurements.waist,
+      bicepsInches: newMeasurements.biceps,
+      thighsInches: newMeasurements.thighs,
       hipsInches: hipsNum,
       bodyFatPct: bfNum,
-      notes: logForm.notes || `Coach ${trainer.name} द्वारा मापा गया`,
+      notes: trainerNote,
     });
 
-    // 3. Update member's core record
+    // 3. Update member's core record (including notes so member dashboard reflects update)
     updateMember(selectedClient.id, {
       weightKg: weightNum,
       bodyFatPercentage: bfNum || selectedClient.bodyFatPercentage,
-      measurements: {
-        chest: chestNum || selectedClient.measurements?.chest || 0,
-        waist: waistNum || selectedClient.measurements?.waist || 0,
-        biceps: bicepsNum || selectedClient.measurements?.biceps || 0,
-        thighs: thighsNum || selectedClient.measurements?.thighs || 0,
-        hips: hipsNum || selectedClient.measurements?.hips || 0,
-      },
+      notes: trainerNote,
+      measurements: newMeasurements,
     });
+
+    // 4. Update custom workout & custom diet reflecting new weight/measurements
+    const updatedWorkout = generateAutomaticCustomWorkout({
+      memberId: selectedClient.id,
+      memberName: selectedClient.name,
+      goal: selectedClient.fitnessGoal || 'muscle_building',
+      trainerId: trainer.id,
+      trainerName: trainer.name,
+    });
+    localDb.saveMemberWorkout(updatedWorkout);
+
+    const updatedDiet = generateAutomaticCustomDiet({
+      memberId: selectedClient.id,
+      memberName: selectedClient.name,
+      weightKg: weightNum,
+      heightCm: clientHeight,
+      age: selectedClient.age || 25,
+      gender: selectedClient.gender || 'male',
+      goal: selectedClient.fitnessGoal || 'muscle_building',
+      dietType: selectedClient.dietPreference || 'veg',
+      trainerId: trainer.id,
+      trainerName: trainer.name,
+    });
+    localDb.saveMemberDiet(updatedDiet);
 
     // Update selected client in local state
     setSelectedClient((prev: any) => ({
       ...prev,
       weightKg: weightNum,
       bodyFatPercentage: bfNum || prev.bodyFatPercentage,
-      measurements: {
-        chest: chestNum || prev.measurements?.chest || 0,
-        waist: waistNum || prev.measurements?.waist || 0,
-        biceps: bicepsNum || prev.measurements?.biceps || 0,
-        thighs: thighsNum || prev.measurements?.thighs || 0,
-        hips: hipsNum || prev.measurements?.hips || 0,
-      },
+      notes: trainerNote,
+      measurements: newMeasurements,
     }));
+
+    // 5. Broadcast real-time event for member instant view update
+    window.dispatchEvent(new Event('kf_body_index_updated'));
+    window.dispatchEvent(new Event('storage'));
 
     setIsLogMeasurementModalOpen(false);
     setAutoDietToast(

@@ -20,7 +20,8 @@ import {
 } from 'lucide-react';
 import { LiveCameraModal } from '../common/LiveCameraModal';
 import { compressImageFile } from '../../utils/imageCompressor';
-import { calculateFitnessMetrics } from '../../utils/fitnessCalculator';
+import { calculateFitnessMetrics, generateAutomaticCustomDiet } from '../../utils/fitnessCalculator';
+import { localDb } from '../../db/localDatabase';
 
 interface EditMemberModalProps {
   member: Member;
@@ -66,6 +67,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ member, onClos
 
   // Fitness Preferences
   const [fitnessGoal, setFitnessGoal] = useState<FitnessGoal>(member.fitnessGoal || 'muscle_building');
+  const [dietPreference, setDietPreference] = useState<'veg' | 'non_veg'>(member.dietPreference || 'veg');
   const [workoutSlot, setWorkoutSlot] = useState(member.workoutSlot || '06:00 AM - 07:00 AM');
   const [medicalConditions, setMedicalConditions] = useState(member.medicalConditions || '');
   const [assignedTrainerId, setAssignedTrainerId] = useState(member.assignedTrainerId || '');
@@ -139,6 +141,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ member, onClos
       weightKg: Number(weightKg),
       targetWeightKg: targetWeightKg ? Number(targetWeightKg) : undefined,
       fitnessGoal,
+      dietPreference,
       workoutSlot,
       medicalConditions: medicalConditions.trim() || undefined,
       assignedTrainerId: assignedTrainerId || undefined,
@@ -151,6 +154,26 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ member, onClos
       bodyFatPercentage: metrics.bodyFatPercentage,
       targetDailyCalories: metrics.targetDailyCalories,
     });
+
+    try {
+      const autoDiet = generateAutomaticCustomDiet({
+        memberId: member.id,
+        memberName: finalName,
+        goal: fitnessGoal,
+        weightKg: Number(weightKg),
+        heightCm: Number(heightCm),
+        age: Number(age),
+        gender,
+        dietType: dietPreference,
+        trainerId: assignedTrainerId || undefined,
+        trainerName: selectedTrainer?.name || undefined,
+      });
+      localDb.saveMemberDiet(autoDiet);
+      window.dispatchEvent(new CustomEvent('kf_body_index_updated'));
+      window.dispatchEvent(new Event('storage'));
+    } catch (err) {
+      console.warn('Could not auto-generate diet:', err);
+    }
 
     alert(`✅ सदस्य ${finalName} (${member.memberCode}) की जानकारी सफलतापूर्वक अपडेट कर दी गई है!`);
     onClose();
@@ -436,6 +459,39 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ member, onClos
                     </option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            {/* Diet Preference Selection (शाकाहारी / मांसाहारी) */}
+            <div className="pt-2 border-t border-slate-100">
+              <label className="text-[11px] font-bold text-slate-700 block mb-1.5">
+                खानपान प्राथमिकता / डाइट प्लान (Diet Preference)
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDietPreference('veg')}
+                  className={`flex items-center justify-center gap-2 p-2 rounded-xl border-2 text-xs font-bold transition-all cursor-pointer ${
+                    dietPreference === 'veg'
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-800 shadow-sm'
+                      : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="text-base">🥗</span>
+                  <span>शाकाहारी (Veg Diet)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDietPreference('non_veg')}
+                  className={`flex items-center justify-center gap-2 p-2 rounded-xl border-2 text-xs font-bold transition-all cursor-pointer ${
+                    dietPreference === 'non_veg'
+                      ? 'border-amber-600 bg-amber-50 text-amber-900 shadow-sm'
+                      : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="text-base">🍗</span>
+                  <span>मांसाहारी (Non-Veg Diet)</span>
+                </button>
               </div>
             </div>
           </div>
