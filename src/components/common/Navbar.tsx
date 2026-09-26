@@ -19,6 +19,7 @@ import {
   CodeXml,
   Cloud,
 } from 'lucide-react';
+import { getEffectiveAvatar } from '../../utils/animatedAvatars';
 
 interface NavbarProps {
   isMobileView: boolean;
@@ -227,15 +228,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => setIsRoleMenuOpen(!isRoleMenuOpen)}
               className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${currentRoleConfig.color}`}
             >
-              {currentUser?.avatarUrl ? (
-                <img
-                  src={currentUser.avatarUrl}
-                  alt={currentUser.name}
-                  className="w-5 h-5 rounded-full object-cover border border-slate-300 shadow-xs shrink-0"
-                />
-              ) : (
-                <CurrentIcon className="w-3.5 h-3.5" />
-              )}
+              <img
+                src={getEffectiveAvatar(currentUser?.avatarUrl, (currentUser as any)?.gender, currentUser?.name)}
+                alt={currentUser?.name || 'User'}
+                className="w-5 h-5 rounded-full object-cover border border-slate-300 shadow-xs shrink-0 bg-slate-900"
+              />
               <span className="capitalize">{currentUser?.name?.split(' ')[0] || role}</span>
               <ChevronDown className="w-3.5 h-3.5 opacity-70" />
             </button>
@@ -244,17 +241,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             {isRoleMenuOpen && (
               <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl p-3 shadow-xl z-50 space-y-3">
                 <div className="flex items-center gap-3 pb-2.5 border-b border-slate-100">
-                  {currentUser?.avatarUrl ? (
-                    <img
-                      src={currentUser.avatarUrl}
-                      alt={currentUser.name}
-                      className="w-10 h-10 rounded-xl object-cover border border-slate-200"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-900 font-bold flex items-center justify-center text-sm border border-amber-200">
-                      {(currentUser?.name || 'U').slice(0, 2).toUpperCase()}
-                    </div>
-                  )}
+                  <img
+                    src={getEffectiveAvatar(currentUser?.avatarUrl, (currentUser as any)?.gender, currentUser?.name)}
+                    alt={currentUser?.name || 'User'}
+                    className="w-10 h-10 rounded-xl object-cover border border-slate-200 bg-slate-900 shadow-xs shrink-0"
+                  />
                   <div className="min-w-0 flex-1">
                     <div className="font-bold text-xs text-slate-900 truncate">{currentUser?.name || 'Active User'}</div>
                     <div className="text-[10px] text-slate-500 capitalize">{role} Account</div>

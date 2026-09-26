@@ -31,6 +31,7 @@ import { CloudDatabaseModal } from './components/admin/CloudDatabaseModal';
 import { PlanManagement } from './components/plans/PlanManagement';
 import { InstallPwaBanner } from './components/common/InstallPwaBanner';
 import { AppInstallModal } from './components/common/AppInstallModal';
+import { TrainerGoswaraReport } from './components/trainer/TrainerGoswaraReport';
 import { Member, FitnessGoal } from './types';
 import {
   LayoutDashboard,
@@ -48,6 +49,7 @@ import {
   Package,
   KeyRound,
   Trophy,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 const MainAppContent: React.FC = () => {
@@ -155,6 +157,7 @@ const MainAppContent: React.FC = () => {
       return [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'clients', label: 'Clients', icon: Users },
+        { id: 'trainer_report', label: 'रिपोर्ट (Goswara)', icon: FileSpreadsheet },
         { id: 'fitness', label: 'Fitness', icon: Dumbbell },
         { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
         { id: 'developer', label: 'Dev', icon: CodeXml },
@@ -217,6 +220,10 @@ const MainAppContent: React.FC = () => {
 
       case 'clients':
         return <TrainerDashboard onNavigate={(tab) => setActiveTab(tab)} />;
+
+      case 'trainer_report':
+      case 'report':
+        return <TrainerGoswaraReport onBack={() => setActiveTab('dashboard')} />;
 
       case 'members':
         if (role === 'trainer') {

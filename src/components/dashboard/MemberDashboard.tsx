@@ -11,6 +11,7 @@ import { localDb } from '../../db/localDatabase';
 import { CustomDietPlan } from '../../types';
 import confetti from 'canvas-confetti';
 import { compressImageFile } from '../../utils/imageCompressor';
+import { getEffectiveAvatar } from '../../utils/animatedAvatars';
 import {
   Camera,
   User,
@@ -378,17 +379,11 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
           <div className="flex items-center gap-4">
             {/* Avatar with Photo Update Option */}
             <div className="relative group shrink-0">
-              {member.avatarUrl ? (
-                <img
-                  src={member.avatarUrl}
-                  alt={member.name}
-                  className="w-16 h-16 rounded-2xl object-cover border-2 border-cyan-300 shadow-sm"
-                />
-              ) : (
-                <div className="w-16 h-16 rounded-2xl bg-cyan-100 border-2 border-cyan-300 flex items-center justify-center text-2xl font-black text-cyan-800 shadow-sm">
-                  {member.name.slice(0, 2).toUpperCase()}
-                </div>
-              )}
+              <img
+                src={getEffectiveAvatar(member.avatarUrl, member.gender, member.name)}
+                alt={member.name}
+                className="w-16 h-16 rounded-2xl object-cover border-2 border-cyan-300 shadow-sm bg-slate-900"
+              />
 
               {/* Photo Change Overlay Button */}
               <button
@@ -1134,9 +1129,11 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
 
             {/* Member Profile Avatar & Info */}
             <div>
-              <div className="w-20 h-20 mx-auto rounded-2xl bg-cyan-100 border-2 border-cyan-300 flex items-center justify-center text-3xl font-black text-cyan-800 shadow-sm mb-3">
-                {member.name.slice(0, 2).toUpperCase()}
-              </div>
+              <img
+                src={getEffectiveAvatar(member.avatarUrl, member.gender, member.name)}
+                alt={member.name}
+                className="w-20 h-20 mx-auto rounded-2xl object-cover border-2 border-cyan-300 shadow-sm mb-3 bg-slate-900"
+              />
               <h2 className="text-2xl font-black text-slate-900">{member.name}</h2>
               <div className="font-mono text-xs text-cyan-700 font-bold mt-0.5">
                 Member ID: {member.memberCode}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useGymData } from '../../context/GymDataContext';
 import { useAuth } from '../../context/AuthContext';
 import { formatDate, PT_PRICING } from '../../utils/formatters';
@@ -7,9 +7,12 @@ import { MemberProgressChart } from '../progress/MemberProgressChart';
 import { TrainerDietModal } from '../trainer/TrainerDietModal';
 import { TrainerWorkoutModal } from '../trainer/TrainerWorkoutModal';
 import { MemberRegisterModal } from '../members/MemberRegisterModal';
+import { TrainerHelpdeskModal } from '../trainer/TrainerHelpdeskModal';
 import { localDb } from '../../db/localDatabase';
 import { CustomDietPlan, CustomWorkoutPlan, StaffDailyAttendance, WorkoutDay, Staff } from '../../types';
 import { generateAutomaticCustomDiet, generateAutomaticCustomWorkout, generateWorkoutRoutine, calculateBMR, calculateTDEE } from '../../utils/fitnessCalculator';
+import { getEffectiveAvatar } from '../../utils/animatedAvatars';
+import { compressImageFile } from '../../utils/imageCompressor';
 import {
   Award,
   Users,
@@ -37,6 +40,9 @@ import {
   Plus,
   X,
   TrendingUp,
+  Camera,
+  FileSpreadsheet,
+  HelpCircle,
 } from 'lucide-react';
 
 interface TrainerDashboardProps {
@@ -44,11 +50,12 @@ interface TrainerDashboardProps {
 }
 
 export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, updateCurrentUserProfile } = useAuth();
   const {
     staff,
     members,
     updateMember,
+    updateStaff,
     attendance,
     markAttendance,
     checkOutPerson,
@@ -94,6 +101,31 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
   const [clientWorkout, setClientWorkout] = useState<CustomWorkoutPlan | undefined>(undefined);
   const [activeWorkoutDayIdx, setActiveWorkoutDayIdx] = useState<number>(0);
   const [autoDietToast, setAutoDietToast] = useState<string | null>(null);
+
+  // Trainer Profile Photo Upload & Helpdesk Modal States
+  const [isHelpdeskOpen, setIsHelpdeskOpen] = useState(false);
+  const [isUploadingTrainerPhoto, setIsUploadingTrainerPhoto] = useState(false);
+  const trainerPhotoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleTrainerPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !trainer) return;
+    setIsUploadingTrainerPhoto(true);
+    try {
+      const compressed = await compressImageFile(file, { maxWidth: 600, maxHeight: 600, quality: 0.85 });
+      updateStaff(trainer.id, { avatarUrl: compressed });
+      updateCurrentUserProfile({ avatarUrl: compressed });
+      localDb.updateStaff(trainer.id, { avatarUrl: compressed });
+      window.dispatchEvent(new Event('kf_member_updated'));
+      window.dispatchEvent(new Event('storage'));
+      setAutoDietToast('📸 कोच प्रोफ़ाइल फ़ोटो सफलतापूर्वक अपडेट हो गई!');
+      setTimeout(() => setAutoDietToast(null), 4000);
+    } catch {
+      alert('फ़ोटो अपलोड करने में त्रुटि आई। कृपया पुनः प्रयास करें।');
+    } finally {
+      setIsUploadingTrainerPhoto(false);
+    }
+  };
 
   // System Form Mode (Simple vs Advanced Toggle for Dev)
   const [isAdvanced, setIsAdvanced] = useState<boolean>(() => localDb.getFormMode() === 'advanced');
@@ -565,17 +597,43 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm relative overflow-hidden">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-4">
-            {trainer.avatarUrl ? (
+            <div className="relative group shrink-0">
               <img
-                src={trainer.avatarUrl}
+                src={getEffectiveAvatar(trainer.avatarUrl, (trainer as any)?.gender, trainer.name)}
                 alt={trainer.name}
                 className="w-16 h-16 rounded-2xl object-cover border-2 border-cyan-300 shadow-sm"
               />
-            ) : (
-              <div className="w-16 h-16 rounded-2xl bg-cyan-100 border-2 border-cyan-300 flex items-center justify-center text-2xl font-black text-cyan-800 shadow-sm">
-                {trainer.name.slice(0, 2).toUpperCase()}
-              </div>
-            )}
+              {/* Photo Change Button Overlay for Desktop Hover */}
+              <button
+                type="button"
+                onClick={() => trainerPhotoInputRef.current?.click()}
+                disabled={isUploadingTrainerPhoto}
+                className="absolute inset-0 rounded-2xl bg-slate-950/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white cursor-pointer"
+                title="कोच प्रोफ़ाइल फ़ोटो बदलें (Change Photo)"
+              >
+                <Camera className="w-5 h-5 text-cyan-300" />
+                <span className="text-[9px] font-bold">बदलें</span>
+              </button>
+
+              {/* Mobile Always-Visible Photo Change Badge */}
+              <button
+                type="button"
+                onClick={() => trainerPhotoInputRef.current?.click()}
+                disabled={isUploadingTrainerPhoto}
+                className="absolute -bottom-1 -right-1 p-1 bg-cyan-600 hover:bg-cyan-700 text-white rounded-full shadow-md border-2 border-white cursor-pointer transition-transform active:scale-95 sm:hidden"
+                title="फ़ोटो बदलें"
+              >
+                <Camera className="w-3 h-3" />
+              </button>
+
+              <input
+                ref={trainerPhotoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleTrainerPhotoUpload}
+              />
+            </div>
             <div>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-800 text-[11px] font-bold uppercase tracking-wider mb-1">
                 <Award className="w-3.5 h-3.5 text-cyan-600" />
@@ -590,7 +648,30 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2.5 flex-wrap">
+            {/* Quick Button: Goswara Report */}
+            {onNavigate && (
+              <button
+                type="button"
+                onClick={() => onNavigate('trainer_report')}
+                className="px-3.5 py-2 rounded-xl bg-cyan-700 hover:bg-cyan-600 active:scale-95 text-white font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                title="सभी मेंबर्स का पीटी गोशवारा पत्रक व एक्सेल/पीडीएफ डाउनलोड"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-cyan-200" />
+                <span>📊 गोशवारा रिपोर्ट (Reports)</span>
+              </button>
+            )}
+
+            {/* Trainer Helpdesk Button */}
+            <button
+              type="button"
+              onClick={() => setIsHelpdeskOpen(true)}
+              className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+              title="कोच सहायता केंद्र एवं मेंटेनेंस हेल्पलाइन"
+            >
+              <HelpCircle className="w-4 h-4 text-slate-950" />
+              <span>🎧 ट्रेनर हेल्पडेस्क</span>
+            </button>
             {/* Live Floor Status & 1-Click Floor Check-Out */}
             <div className={`p-3 rounded-2xl border flex items-center gap-2.5 text-xs ${
               isTrainerOnLiveFloor
@@ -761,12 +842,19 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
                   }`}
                 >
                   <div>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-black text-slate-900 text-sm">{client.name}</div>
-                        <div className="text-xs text-slate-500 font-mono">{client.memberCode}</div>
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <img
+                          src={getEffectiveAvatar(client.avatarUrl, client.gender, client.name)}
+                          alt={client.name}
+                          className="w-10 h-10 rounded-xl object-cover border border-slate-200 bg-slate-900 shrink-0 shadow-xs"
+                        />
+                        <div className="min-w-0">
+                          <div className="font-black text-slate-900 text-sm truncate">{client.name}</div>
+                          <div className="text-xs text-slate-500 font-mono truncate">{client.memberCode}</div>
+                        </div>
                       </div>
-                      <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300">
+                      <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300 shrink-0">
                         {client.ptDuration?.replace('_', ' ').toUpperCase() || 'PT CLIENT'}
                       </span>
                     </div>
@@ -1884,6 +1972,13 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
           }}
         />
       )}
+
+      {/* Trainer Helpdesk Modal */}
+      <TrainerHelpdeskModal
+        isOpen={isHelpdeskOpen}
+        onClose={() => setIsHelpdeskOpen(false)}
+        trainerName={trainer?.name || 'Coach'}
+      />
     </div>
   );
 };

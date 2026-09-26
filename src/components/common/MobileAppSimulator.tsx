@@ -50,6 +50,8 @@ import {
   X,
 } from 'lucide-react';
 import { AppHelpdeskModal } from '../member/AppHelpdeskModal';
+import { TrainerHelpdeskModal } from '../trainer/TrainerHelpdeskModal';
+import { getEffectiveAvatar } from '../../utils/animatedAvatars';
 import confetti from 'canvas-confetti';
 
 interface MobileAppSimulatorProps {
@@ -548,17 +550,11 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                 <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
                   <div className="flex items-center gap-3">
                     <div className="relative group shrink-0">
-                      {member.avatarUrl ? (
-                        <img
-                          src={member.avatarUrl}
-                          alt={member.name}
-                          className="w-12 h-12 rounded-2xl object-cover border-2 border-amber-400 shadow-sm shrink-0"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-slate-950 font-black text-lg shadow-sm shrink-0">
-                          {member.name.slice(0, 2).toUpperCase()}
-                        </div>
-                      )}
+                      <img
+                        src={getEffectiveAvatar(member.avatarUrl, member.gender, member.name)}
+                        alt={member.name}
+                        className="w-12 h-12 rounded-2xl object-cover border-2 border-amber-400 shadow-sm shrink-0 bg-slate-900"
+                      />
                       <button
                         type="button"
                         onClick={() => memberPhotoInputRef.current?.click()}
@@ -769,17 +765,11 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
 
                   <div>
                     <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-cyan-500 to-teal-400 p-0.5 shadow-md shadow-cyan-500/10 mb-2">
-                      {member.avatarUrl ? (
-                        <img
-                          src={member.avatarUrl}
-                          alt={member.name}
-                          className="w-full h-full object-cover rounded-[14px]"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-white rounded-[14px] flex items-center justify-center text-xl font-black text-cyan-800">
-                          {member.name.slice(0, 2).toUpperCase()}
-                        </div>
-                      )}
+                      <img
+                        src={getEffectiveAvatar(member.avatarUrl, member.gender, member.name)}
+                        alt={member.name}
+                        className="w-full h-full object-cover rounded-[14px] bg-slate-900"
+                      />
                     </div>
                     <div className="text-base font-black text-slate-900">{member.name}</div>
                     <div className="text-xs font-mono text-cyan-700 font-bold">{member.memberCode}</div>
@@ -1495,14 +1485,23 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
           <InvoiceModal member={member} onClose={() => setSelectedInvoice(false)} />
         )}
         {isHelpdeskOpen && (
-          <AppHelpdeskModal
-            isOpen={isHelpdeskOpen}
-            onClose={() => setIsHelpdeskOpen(false)}
-            onNavigateTab={(tab) => {
-              setMobileTab(tab);
-              setIsHelpdeskOpen(false);
-            }}
-          />
+          role === 'trainer' ? (
+            <TrainerHelpdeskModal
+              isOpen={isHelpdeskOpen}
+              onClose={() => setIsHelpdeskOpen(false)}
+              trainerName={currentUser?.name || 'Coach'}
+            />
+          ) : (
+            <AppHelpdeskModal
+              isOpen={isHelpdeskOpen}
+              onClose={() => setIsHelpdeskOpen(false)}
+              onNavigateTab={(tab) => {
+                setMobileTab(tab);
+                setIsHelpdeskOpen(false);
+              }}
+              memberName={member?.name}
+            />
+          )
         )}
       </div>
     );
@@ -1542,14 +1541,23 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
 
       {/* Helpdesk & App Guide Modal */}
       {isHelpdeskOpen && (
-        <AppHelpdeskModal
-          isOpen={isHelpdeskOpen}
-          onClose={() => setIsHelpdeskOpen(false)}
-          onNavigateTab={(tab) => {
-            setMobileTab(tab);
-            setIsHelpdeskOpen(false);
-          }}
-        />
+        role === 'trainer' ? (
+          <TrainerHelpdeskModal
+            isOpen={isHelpdeskOpen}
+            onClose={() => setIsHelpdeskOpen(false)}
+            trainerName={currentUser?.name || 'Coach'}
+          />
+        ) : (
+          <AppHelpdeskModal
+            isOpen={isHelpdeskOpen}
+            onClose={() => setIsHelpdeskOpen(false)}
+            onNavigateTab={(tab) => {
+              setMobileTab(tab);
+              setIsHelpdeskOpen(false);
+            }}
+            memberName={member?.name}
+          />
+        )
       )}
     </div>
   );

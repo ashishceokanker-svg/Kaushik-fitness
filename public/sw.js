@@ -1,5 +1,5 @@
-// Service Worker for Kaushik Fitness PWA - Resilient Offline & Cloud Cache v25
-const CACHE_NAME = 'koushik-fitness-v25-goswara-sync-clean-pin-stepper';
+// Service Worker for Kaushik Fitness PWA - Resilient Offline & Cloud Cache v26
+const CACHE_NAME = 'koushik-fitness-v26-animated-avatar-trainer-goswara-helpdesk';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',

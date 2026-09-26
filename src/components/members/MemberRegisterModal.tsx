@@ -686,7 +686,6 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({
                         >
                           <div className="font-black text-xs">{pkg.label}</div>
                           <div className="text-[10px] text-slate-500 font-medium">{pkg.sub}</div>
-                          <div className="font-mono font-bold text-cyan-700 text-xs mt-1">₹{pkg.price.toLocaleString('en-IN')}</div>
                         </button>
                       );
                     })}
@@ -812,7 +811,7 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({
                         >
                           {activePTPlans.map((pkg) => (
                             <option key={pkg.id} value={pkg.id}>
-                              {pkg.name} ({formatINR(pkg.price)}) - {pkg.durationMonths} माह
+                              {pkg.name} - {pkg.durationMonths} माह अवधि
                             </option>
                           ))}
                         </select>

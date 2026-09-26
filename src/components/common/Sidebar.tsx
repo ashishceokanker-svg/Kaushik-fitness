@@ -22,7 +22,9 @@ import {
   ShoppingBag,
   CodeXml,
   Package,
+  FileSpreadsheet,
 } from 'lucide-react';
+import { getEffectiveAvatar } from '../../utils/animatedAvatars';
 
 interface SidebarProps {
   activeTab: string;
@@ -125,6 +127,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       const items: NavItem[] = [
         { id: 'dashboard', label: 'Trainer Dashboard (ट्रेनर पोर्टल)', icon: LayoutDashboard },
         { id: 'clients', label: 'मेरे मेंबर्स (Assigned PT Clients)', icon: Users, badge: trainerClients.length || undefined },
+        { id: 'trainer_report', label: '📊 पीटी गोशवारा रिपोर्ट (Reports)', icon: FileSpreadsheet, highlight: true },
         { id: 'progress', label: 'मेंबर प्रोग्रेस व बदलाव चार्ट', icon: Trophy, highlight: true },
         { id: 'fitness', label: 'डाइट व वर्कआउट प्लानर', icon: Sparkles },
       ];
@@ -232,17 +235,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* User Badge & Logout */}
       <div className="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-300 shadow-2xs">
         <div className="flex items-center gap-2.5 min-w-0 pr-2">
-          {currentUser?.avatarUrl ? (
-            <img
-              src={currentUser.avatarUrl}
-              alt={currentUser.name}
-              className="w-8 h-8 rounded-xl object-cover border border-slate-200 shadow-xs shrink-0"
-            />
-          ) : (
-            <div className="w-8 h-8 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center text-xs font-black text-amber-900 shrink-0">
-              {(currentUser?.name || 'User').slice(0, 2).toUpperCase()}
-            </div>
-          )}
+          <img
+            src={getEffectiveAvatar(currentUser?.avatarUrl, (currentUser as any)?.gender, currentUser?.name)}
+            alt={currentUser?.name || 'Active User'}
+            className="w-8 h-8 rounded-xl object-cover border border-slate-200 shadow-xs shrink-0 bg-slate-900"
+          />
           <div className="truncate text-left">
             <div className="text-xs font-bold text-slate-900 truncate">
               {currentUser?.name || 'Active User'}
