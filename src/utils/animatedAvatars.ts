@@ -190,24 +190,35 @@ export const FEMALE_ATHLETE_ANIMATED_AVATAR = `data:image/svg+xml;utf8,${encodeU
  */
 export function getDefaultAnimatedAvatar(gender?: string | null, name?: string | null): string {
   const g = (gender || '').trim().toLowerCase();
-  if (g === 'female' || g === 'f' || g === 'महिला') {
+  if (
+    g === 'female' ||
+    g === 'f' ||
+    g === 'महिला' ||
+    g === 'स्त्री' ||
+    g === 'woman' ||
+    g === 'girl'
+  ) {
     return FEMALE_ATHLETE_ANIMATED_AVATAR;
+  }
+  if (
+    g === 'male' ||
+    g === 'm' ||
+    g === 'पुरुष' ||
+    g === 'man' ||
+    g === 'boy'
+  ) {
+    return MALE_ATHLETE_ANIMATED_AVATAR;
   }
   // If gender is unspecified, check common female names or honorifics
   const n = (name || '').trim().toLowerCase();
-  if (
-    n.includes('priya') ||
-    n.includes('pooja') ||
-    n.includes('neha') ||
-    n.includes('anjali') ||
-    n.includes('shreya') ||
-    n.includes('divya') ||
-    n.includes('sunita') ||
-    n.includes('kavita') ||
-    n.includes('mrs') ||
-    n.includes('ms') ||
-    n.includes('miss')
-  ) {
+  const femalePatterns = [
+    'priya', 'pooja', 'neha', 'anjali', 'shreya', 'divya', 'sunita', 'kavita',
+    'mrs', 'ms', 'miss', 'rani', 'devi', 'kumari', 'rekha', 'geeta', 'seema',
+    'anita', 'meena', 'arti', 'sonia', 'nisha', 'sneha', 'swati', 'sapna',
+    'mona', 'preeti', 'ritu', 'tanu', 'shikha', 'mamta', 'rashmi', 'pallavi',
+    'poonam', 'komal', 'jyoti', 'simran', 'payal', 'khushi', 'pinky'
+  ];
+  if (femalePatterns.some((p) => n.includes(p))) {
     return FEMALE_ATHLETE_ANIMATED_AVATAR;
   }
   return MALE_ATHLETE_ANIMATED_AVATAR;
@@ -215,9 +226,17 @@ export function getDefaultAnimatedAvatar(gender?: string | null, name?: string |
 
 /**
  * Resolves avatar with fallback to the high-performance animated avatar.
+ * Stock placeholder photos (Unsplash demo images) are filtered out so that
+ * the appropriate Male or Female animated athlete avatar is always displayed.
  */
 export function getEffectiveAvatar(avatarUrl?: string | null, gender?: string | null, name?: string | null): string {
-  if (avatarUrl && typeof avatarUrl === 'string' && avatarUrl.trim().length > 10) {
+  if (
+    avatarUrl &&
+    typeof avatarUrl === 'string' &&
+    avatarUrl.trim().length > 10 &&
+    !avatarUrl.includes('images.unsplash.com') &&
+    !avatarUrl.includes('placeholder')
+  ) {
     return avatarUrl;
   }
   return getDefaultAnimatedAvatar(gender, name);

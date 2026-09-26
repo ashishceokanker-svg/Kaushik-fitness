@@ -30,7 +30,7 @@ export const DEMO_USERS: Record<UserRole, User> = {
     phone: '9826189001',
     role: 'admin',
     staffId: 'usr-1',
-    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    gender: 'male',
     address: 'मेन रोड, नया बस स्टैंड के पास, कांकेर (छ.ग.) - 494334',
     token: 'jwt_mock_admin_token_kaushik_kanker_2024',
   },
@@ -41,7 +41,7 @@ export const DEMO_USERS: Record<UserRole, User> = {
     phone: '9826189002',
     role: 'trainer',
     staffId: 'usr-2',
-    avatarUrl: 'https://images.unsplash.com/photo-1567013127542-490d757e51fc?w=150&auto=format&fit=crop&q=80',
+    gender: 'male',
     token: 'jwt_mock_trainer_token_vikram_kanker_2024',
   },
   staff: {
@@ -51,7 +51,7 @@ export const DEMO_USERS: Record<UserRole, User> = {
     phone: '9826189003',
     role: 'staff',
     staffId: 'staff-3',
-    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+    gender: 'male',
     token: 'jwt_mock_staff_token_ramesh_kanker_2024',
   },
   member: {
@@ -61,7 +61,7 @@ export const DEMO_USERS: Record<UserRole, User> = {
     phone: '9826112345',
     role: 'member',
     memberId: 'prof-1',
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    gender: 'male',
     token: 'jwt_mock_member_token_rahul_kanker_2024',
   },
 };
@@ -73,8 +73,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const u = JSON.parse(saved);
         if (u && u.id) {
+          let userChanged = false;
+          if (u.avatarUrl && typeof u.avatarUrl === 'string' && u.avatarUrl.includes('images.unsplash.com')) {
+            delete u.avatarUrl;
+            userChanged = true;
+          }
           if (u.id === 'usr-1') {
-            let userChanged = false;
             if (u.name === 'Koushik Patel' || !u.address) {
               u.name = 'Vaibhav Kaushik';
               if (!u.address) u.address = 'मेन रोड, नया बस स्टैंड के पास, कांकेर (छ.ग.) - 494334';
@@ -84,9 +88,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               u.pin = '2343';
               userChanged = true;
             }
-            if (userChanged) {
-              localStorage.setItem('kf_current_user', JSON.stringify(u));
-            }
+          }
+          if (userChanged) {
+            localStorage.setItem('kf_current_user', JSON.stringify(u));
           }
           return u;
         }
@@ -229,7 +233,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: 'admin',
           created_at: '2023-01-01T00:00:00.000Z',
           pin: '2343',
-          avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
           address: 'मेन रोड, नया बस स्टैंड के पास, कांकेर (छ.ग.) - 494334',
         };
         localDb.updateUser('usr-1', { pin: '2343', name: 'Vaibhav Kaushik' });

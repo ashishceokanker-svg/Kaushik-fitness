@@ -70,7 +70,6 @@ const SEED_USERS: DbUser[] = [
     role: 'admin',
     created_at: '2022-01-01T00:00:00.000Z',
     pin: '2343',
-    avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
     address: 'मेन रोड, नया बस स्टैंड के पास, कांकेर (छ.ग.) - 494334',
   },
   {
@@ -241,7 +240,6 @@ class LocalGymDatabase {
             role: 'admin',
             created_at: '2022-01-01T00:00:00.000Z',
             pin: '2343',
-            avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
             address: 'मेन रोड, नया बस स्टैंड के पास, कांकेर (छ.ग.) - 494334',
           },
           {
@@ -867,6 +865,7 @@ class LocalGymDatabase {
             ? 'vikram_sahu_trainer_cert.pdf'
             : 'ramesh_verma_aadhaar_pan.pdf',
         avatarUrl: u.avatar_url,
+        gender: ((u as any).gender || 'male') as Gender,
       };
     });
   }

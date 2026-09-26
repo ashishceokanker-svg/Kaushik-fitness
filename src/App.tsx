@@ -116,18 +116,18 @@ const MainAppContent: React.FC = () => {
     );
   }
 
-  // Only show Member Mobile App Simulator:
-  // 1. If the logged in user is a MEMBER on a mobile screen/PWA app
-  // 2. OR if an Admin / Developer explicitly clicked "App Preview" on desktop
+  // Show Mobile App (Member or Trainer):
+  // 1. If the logged in user is a MEMBER or TRAINER on a mobile screen/PWA app
+  // 2. OR if "App Preview" was toggled on desktop
   const isRealMobileDevice =
     typeof window !== 'undefined' &&
     (window.innerWidth < 768 || window.matchMedia('(display-mode: standalone)').matches);
 
-  const shouldShowMemberMobileApp =
-    (role === 'member' && isRealMobileDevice) ||
-    (isMobileSimulator && isDeveloper);
+  const shouldShowMobileApp =
+    ((role === 'member' || role === 'trainer') && isRealMobileDevice) ||
+    isMobileSimulator;
 
-  if (shouldShowMemberMobileApp) {
+  if (shouldShowMobileApp) {
     return <MobileAppSimulator onExitMobileView={() => setIsMobileSimulator(false)} />;
   }
 

@@ -130,15 +130,15 @@ export const AppHelpdeskModal: React.FC<AppHelpdeskModalProps> = ({
     },
     {
       id: 'profile' as const,
-      name: 'प्रोफ़ाइल एवं बिल (Profile)',
-      englishName: 'Membership Account & Tax Invoices',
+      name: 'प्रोफ़ाइल एवं सेटिंग्स (Profile)',
+      englishName: 'Account Settings & PIN Security',
       icon: User,
       color: 'text-slate-700 bg-slate-100 border-slate-200',
       badgeColor: 'bg-slate-200 text-slate-900 border-slate-300',
-      whatIsIt: 'सदस्यता खाता, बिलिंग एवं ऐप सेटिंग्स।',
+      whatIsIt: 'सदस्यता प्रोफ़ाइल, 4-अंकीय एंट्री पिन एवं फ़ोटो सेटिंग्स।',
       howItWorks:
-        'यहाँ आपकी सदस्यता की अंतिम तिथि, फीस भुगतान स्थिति, जीएसटी टैक्स रसीद डाउनलोड बटन और सेटिंग्स हैं।',
-      bestUse: 'फीस रसीद डाउनलोड करने या अपनी सदस्यता नवीनीकरण तिथि जांचने के लिए।',
+        'यहाँ आप अपनी प्रोफ़ाइल फ़ोटो बदल सकते हैं, 4-अंकीय कियोस्क एंट्री पिन अपडेट कर सकते हैं और फिटनेस लक्ष्य देख सकते हैं।',
+      bestUse: 'फ़ोटो बदलने, पिन अपडेट करने या अपनी व्यक्तिगत जानकारी जांचने के लिए।',
     },
   ];
 
@@ -291,7 +291,7 @@ export const AppHelpdeskModal: React.FC<AppHelpdeskModalProps> = ({
                   <span>जिम एडमिन व कोच को अपनी समस्या / सवाल भेजें</span>
                 </h4>
                 <p className="text-[11px] text-emerald-900">
-                  डाइट, वर्कआउट, उपकरण, फीस या ऐप से संबंधित कोई भी सवाल आप सीधे एडमिन को भेज सकते हैं।
+                  डाइट, वर्कआउट, उपकरण, 4-अंकीय पिन या ऐप से संबंधित कोई भी सवाल आप सीधे कोच व एडमिन को भेज सकते हैं।
                 </p>
               </div>
 
@@ -313,8 +313,9 @@ export const AppHelpdeskModal: React.FC<AppHelpdeskModalProps> = ({
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                   >
                     <option value="डाइट या वर्कआउट में सहायता">🥗 डाइट या वर्कआउट में मार्गदर्शन</option>
+                    <option value="4-अंकीय पिन या पास सहायता">🔑 4-अंकीय पिन या पास सहायता</option>
                     <option value="मशीन या उपकरण खराबी रिपोर्ट">🛠️ मशीन या जिम उपकरण खराबी</option>
-                    <option value="फीस या सदस्यता रिन्यूअल पूछताछ">💳 फीस या सदस्यता रिन्यूअल</option>
+                    <option value="शारीरिक माप व प्रोग्रेस ट्रैकर">📈 शारीरिक माप व प्रोग्रेस ट्रैकर</option>
                     <option value="लॉकर, पानी या अन्य सुविधा">🚰 लॉकर, पानी या जिम सुविधा</option>
                     <option value="अन्य सामान्य पूछताछ">💬 अन्य सामान्य पूछताछ</option>
                   </select>

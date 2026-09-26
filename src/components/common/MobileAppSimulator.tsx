@@ -48,9 +48,13 @@ import {
   Eye,
   EyeOff,
   X,
+  LayoutDashboard,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { AppHelpdeskModal } from '../member/AppHelpdeskModal';
 import { TrainerHelpdeskModal } from '../trainer/TrainerHelpdeskModal';
+import { TrainerDashboard } from '../dashboard/TrainerDashboard';
+import { TrainerGoswaraReport } from '../trainer/TrainerGoswaraReport';
 import { getEffectiveAvatar } from '../../utils/animatedAvatars';
 import confetti from 'canvas-confetti';
 
@@ -60,7 +64,7 @@ interface MobileAppSimulatorProps {
 
 export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMobileView }) => {
   const { currentUser, role, switchRole, logout, updateCurrentUserProfile } = useAuth();
-  const { members, staff, isCloudSynced, updateMember, attendance, markAttendance } = useGymData();
+  const { members, staff, isCloudSynced, updateMember, updateStaff, attendance, markAttendance } = useGymData();
 
   const isDeveloper = currentUser?.id === 'usr-dev' || currentUser?.phone === '9244249975';
   const [developerPhoto, setDeveloperPhoto] = useState<string>(() => {
@@ -105,6 +109,7 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
   });
 
   const [mobileTab, setMobileTab] = useState<'home' | 'pass' | 'photos' | 'body_index' | 'workout' | 'diet' | 'profile' | 'developer'>('home');
+  const [trainerTab, setTrainerTab] = useState<'dashboard' | 'reports' | 'profile' | 'developer'>('dashboard');
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedInvoice, setSelectedInvoice] = useState(false);
   const [isHelpdeskOpen, setIsHelpdeskOpen] = useState(false);
@@ -147,6 +152,7 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
     joinDate: new Date().toISOString().split('T')[0],
     expiryDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
     fitnessGoal: 'muscle_building',
+    gender: 'male',
     active: true,
     status: 'active',
     pin: currentUser?.pin || '2222',
@@ -163,14 +169,60 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
         ) || allMembers[0]
       : null) || fallbackMember;
 
-  const isMemberExpired = member?.expiryDate
-    ? new Date(member.expiryDate).getTime() < Date.now() || member.status === 'expired' || !member.active
-    : false;
+  const isMemberExpired =
+    role === 'member' && member?.expiryDate
+      ? new Date(member.expiryDate).getTime() < Date.now() || member.status === 'expired' || !member.active
+      : false;
 
-  const trainer =
+  const trainer: any =
     staff && staff.length > 0
-      ? staff.find((s) => s.id === currentUser?.staffId) || staff[1] || staff[0]
-      : { id: 'usr-2', name: 'Coach Vikram Sahu', designation: 'Head Coach', role: 'trainer' as const };
+      ? staff.find(
+          (s) =>
+            s.id === currentUser?.staffId ||
+            s.id === currentUser?.id ||
+            (s.userId && s.userId === currentUser?.id) ||
+            (s.phone && s.phone === currentUser?.phone)
+        ) ||
+        staff.find((s) => s.role === 'trainer') ||
+        staff[1] ||
+        staff[0]
+      : { id: 'usr-2', name: 'Vikram Sahu', designation: 'Head Coach', role: 'trainer' as const, gender: 'male' as const, phone: '9826189002', email: 'trainer@kaushikfitness.com', staffCode: 'KFS-002', avatarUrl: '' };
+
+  const isMemberAssignedToTrainer = (m: any, t: any) => {
+    if (!m || !t) return false;
+    if (m.assignedTrainerId) {
+      if (m.assignedTrainerId === t.id) return true;
+      if (t.userId && m.assignedTrainerId === t.userId) return true;
+    }
+    if (m.assignedTrainerName && t.name) {
+      const mName = m.assignedTrainerName.trim().toLowerCase();
+      const tName = t.name.trim().toLowerCase();
+      if (mName === tName) return true;
+    }
+    return false;
+  };
+  const trainerAssignedClients = allMembers.filter((m) => trainer && isMemberAssignedToTrainer(m, trainer));
+
+  // Trainer photo upload in mobile app
+  const trainerPhotoInputRef = React.useRef<HTMLInputElement>(null);
+  const [trainerPhotoUploading, setTrainerPhotoUploading] = useState(false);
+
+  const handleTrainerPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !trainer?.id) return;
+    setTrainerPhotoUploading(true);
+    try {
+      const compressed = await compressImageFile(file, { maxWidth: 600, maxHeight: 600, quality: 0.85 });
+      updateStaff(trainer.id, { avatarUrl: compressed });
+      updateCurrentUserProfile({ avatarUrl: compressed });
+      localDb.updateStaff(trainer.id, { avatarUrl: compressed });
+      alert('📸 आपकी कोच प्रोफ़ाइल फ़ोटो सफलतापूर्वक अपडेट हो गई!');
+    } catch {
+      alert('फ़ोटो अपलोड करने में त्रुटि आई। कृपया पुनः प्रयास करें।');
+    } finally {
+      setTrainerPhotoUploading(false);
+    }
+  };
 
   const [selectedWorkoutDay, setSelectedWorkoutDay] = useState<number>(0);
   const [dietTick, setDietTick] = useState(0);
@@ -360,6 +412,114 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
     }
   };
 
+  const renderDeveloperProfile = (onBack: () => void) => (
+    <div className="space-y-3.5 w-full max-w-full overflow-x-hidden animate-in fade-in">
+      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-950 rounded-3xl p-5 text-white border border-slate-700 shadow-lg text-center space-y-3">
+        {/* Photo / Avatar */}
+        <div className="relative mx-auto w-24 h-24 rounded-2xl bg-gradient-to-tr from-cyan-600 to-amber-500 p-0.5 shadow-md">
+          {developerPhoto ? (
+            <img
+              src={developerPhoto}
+              alt="Ashish Dey"
+              className="w-full h-full rounded-2xl object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-slate-900 rounded-2xl flex flex-col items-center justify-center p-2">
+              <Building2 className="w-8 h-8 text-cyan-400 mb-0.5" />
+              <span className="text-[10px] font-black text-amber-300">Ashish Dey</span>
+            </div>
+          )}
+
+          {/* Photo Upload Option - ONLY ACTIVE FOR DEVELOPER */}
+          {isDeveloper ? (
+            <>
+              <input
+                type="file"
+                ref={mobilePhotoInputRef}
+                accept="image/*"
+                onChange={handleMobilePhotoUpload}
+                className="hidden"
+                id="mobile-dev-photo-upload"
+              />
+              <label
+                htmlFor="mobile-dev-photo-upload"
+                title="Upload Developer Photo"
+                className="absolute -bottom-1.5 -right-1.5 p-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-md cursor-pointer transition-all active:scale-90"
+              >
+                <Camera className="w-3.5 h-3.5" />
+              </label>
+            </>
+          ) : (
+            <div
+              title="केवल डेवलपर (Ashish Dey) फोटो बदल सकते हैं (Disabled)"
+              className="absolute -bottom-1.5 -right-1.5 p-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 cursor-not-allowed opacity-80"
+            >
+              <ShieldCheck className="w-3 h-3 text-cyan-400" />
+            </div>
+          )}
+        </div>
+
+        {isDeveloper && developerPhoto && (
+          <button
+            type="button"
+            onClick={handleMobileRemovePhoto}
+            className="text-[10px] text-rose-300 hover:text-rose-200 flex items-center justify-center gap-1 cursor-pointer transition-colors mx-auto pt-0.5"
+          >
+            <Trash2 className="w-3 h-3" />
+            <span>Remove Photo</span>
+          </button>
+        )}
+
+        <div>
+          <div className="inline-block px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/30 text-cyan-300 text-[10px] font-bold uppercase tracking-wider mb-1">
+            Developer & Leadership Profile
+          </div>
+          <h3 className="text-xl font-black text-white">Ashish Dey</h3>
+          <div className="text-xs font-bold text-amber-400 mt-0.5">
+            Chief Executive Officer
+          </div>
+          <div className="text-[11px] text-slate-300 font-medium">
+            Janpad Panchayat Baderajpur
+          </div>
+          <div className="text-[10px] text-cyan-200 mt-1 flex items-center justify-center gap-1">
+            <MapPin className="w-3 h-3 text-rose-400 shrink-0" />
+            <span>District Kondagaon (C.G.)</span>
+          </div>
+        </div>
+
+        <p className="text-[11px] text-slate-300 leading-relaxed bg-white/5 p-2.5 rounded-xl border border-white/10 text-left">
+          Dedicated administrative leadership driven by modern digital governance, technological innovation, and public service. Committed to empowering communities and fostering an enduring culture of discipline and excellence.
+        </p>
+
+        <div className="grid grid-cols-2 gap-2 pt-1">
+          <a
+            href="tel:9244249975"
+            className="py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[11px] uppercase flex items-center justify-center gap-1.5 shadow-xs"
+          >
+            <Phone className="w-3 h-3" />
+            <span>Call</span>
+          </a>
+          <a
+            href="https://wa.me/919244249975?text=Hello%20Sir,%20contacting%20regarding%20Kaushik%20Fitness%20mobile%20app."
+            target="_blank"
+            rel="noopener noreferrer"
+            className="py-2 px-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-black text-[11px] uppercase flex items-center justify-center gap-1.5 shadow-xs"
+          >
+            <MessageCircle className="w-3 h-3" />
+            <span>WhatsApp</span>
+          </a>
+        </div>
+
+        <button
+          onClick={onBack}
+          className="w-full py-2 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 text-xs font-bold transition-all cursor-pointer"
+        >
+          ← Back
+        </button>
+      </div>
+    </div>
+  );
+
   const screenContent = (
     <div
       className={`w-full max-w-full ${
@@ -429,14 +589,24 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                 )
               )}
               <button
-                onClick={() => setMobileTab(mobileTab === 'developer' ? 'home' : 'developer')}
+                onClick={() => {
+                  if (role === 'trainer') {
+                    setTrainerTab(trainerTab === 'developer' ? 'dashboard' : 'developer');
+                  } else {
+                    setMobileTab(mobileTab === 'developer' ? 'home' : 'developer');
+                  }
+                }}
                 title="Developer Profile (Ashish Dey - Chief Executive Officer)"
                 className="px-2 py-0.5 rounded-full bg-slate-900 text-white text-[10px] font-bold flex items-center gap-1 shadow-2xs hover:bg-slate-800 cursor-pointer border border-cyan-500/40"
               >
                 <CodeXml className="w-2.5 h-2.5 text-cyan-400" />
                 <span>Dev</span>
               </button>
-              {isMemberExpired ? (
+              {role === 'trainer' ? (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300">
+                  कोच
+                </span>
+              ) : isMemberExpired ? (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
                   <Lock className="w-2.5 h-2.5 text-rose-600" />
                   <span>समाप्त</span>
@@ -460,7 +630,199 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
 
           {/* Scrollable Screen Content - strictly vertical scrolling, NO horizontal side-scroll */}
           <div className="flex-1 overflow-y-auto overflow-x-hidden px-3.5 py-3 space-y-3.5 scrollbar-none w-full max-w-full box-border">
-            {isMemberExpired ? (
+            {role === 'trainer' ? (
+              trainerTab === 'dashboard' ? (
+                <div className="w-full max-w-full overflow-x-hidden">
+                  <TrainerDashboard
+                    onNavigate={(tab) => {
+                      if (tab === 'trainer_report' || tab === 'report') {
+                        setTrainerTab('reports');
+                      } else if (tab === 'helpdesk') {
+                        setIsHelpdeskOpen(true);
+                      }
+                    }}
+                  />
+                </div>
+              ) : trainerTab === 'reports' ? (
+                <div className="w-full max-w-full overflow-x-hidden">
+                  <TrainerGoswaraReport onBack={() => setTrainerTab('dashboard')} />
+                </div>
+              ) : trainerTab === 'developer' ? (
+                renderDeveloperProfile(() => setTrainerTab('profile'))
+              ) : (
+                /* TRAINER PROFILE SCREEN */
+                <div className="space-y-3.5 w-full max-w-full overflow-x-hidden">
+                  {/* Trainer Profile Hero Card */}
+                  <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm text-center relative overflow-hidden">
+                    <div className="absolute top-0 left-0 right-0 h-14 bg-gradient-to-r from-cyan-600 via-sky-600 to-cyan-700" />
+                    <div className="relative pt-4 flex flex-col items-center">
+                      <div className="relative group shrink-0 mb-2">
+                        <img
+                          src={getEffectiveAvatar(trainer.avatarUrl, (trainer as any)?.gender, trainer.name)}
+                          alt={trainer.name}
+                          className="w-20 h-20 rounded-2xl object-cover border-4 border-white shadow-md bg-slate-900"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => trainerPhotoInputRef.current?.click()}
+                          disabled={trainerPhotoUploading}
+                          className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white flex items-center justify-center shadow-md border-2 border-white cursor-pointer active:scale-95 transition-transform"
+                          title="कोच प्रोफ़ाइल फ़ोटो बदलें (Change Photo)"
+                        >
+                          <Camera className="w-3.5 h-3.5" />
+                        </button>
+                        <input
+                          ref={trainerPhotoInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleTrainerPhotoUpload}
+                          className="hidden"
+                        />
+                      </div>
+
+                      <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-800 text-[10px] font-bold uppercase tracking-wider mb-1">
+                        <Award className="w-3 h-3 text-cyan-600" />
+                        <span>हेड फिटनेस कोच • ID: {trainer.staffCode || trainer.id}</span>
+                      </div>
+
+                      <h2 className="text-base font-black text-slate-900">
+                        Coach {trainer.name}
+                      </h2>
+                      <p className="text-xs text-slate-500 font-medium">
+                        {trainer.designation || 'Head Fitness Coach & PT Lead'}
+                      </p>
+
+                      {/* Coach Details List */}
+                      <div className="w-full mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200 text-left text-xs space-y-2">
+                        <div className="flex items-center justify-between text-slate-700">
+                          <span className="font-semibold text-slate-500">संपर्क मोबाइल:</span>
+                          <span className="font-mono font-bold text-slate-900">{trainer.phone || '9826189002'}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-700">
+                          <span className="font-semibold text-slate-500">ईमेल:</span>
+                          <span className="font-mono font-bold text-slate-900 truncate max-w-[180px]">{trainer.email || 'trainer@kaushikfitness.com'}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-700">
+                          <span className="font-semibold text-slate-500">फ्लोर शिफ्ट समय:</span>
+                          <span className="font-bold text-slate-900">06:00 AM - 12:00 PM & 05:00 PM - 09:00 PM</span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-700">
+                          <span className="font-semibold text-slate-500">विशेषज्ञता:</span>
+                          <span className="font-bold text-cyan-800">हाइपरट्रॉफी, बॉडीबिल्डिंग व पावरलिफ्टिंग</span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-700">
+                          <span className="font-semibold text-slate-500">असाइन पीटी सदस्य:</span>
+                          <span className="font-bold text-emerald-700">{trainerAssignedClients.length} सदस्य सक्रिय</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* DEDICATED TRAINER HELPDESK & APP USER GUIDE CARD */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-50 via-orange-50/50 to-white border-2 border-amber-300 shadow-sm space-y-3 text-left">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black shadow-xs">
+                          <HelpCircle className="w-5 h-5 stroke-[2.5]" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                            🎧 ट्रेनर सहायता केंद्र एवं ऐप गाइड
+                          </h4>
+                          <span className="text-[10px] text-amber-700 font-bold">Trainer Helpdesk & App User Guide</span>
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300">
+                        कोच पोर्टल
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-700 leading-relaxed">
+                      यह सहायता केंद्र विशेष रूप से <strong>ट्रेनर ऐप</strong> की सभी सुविधाओं के उपयोग, जिम उपकरण मरम्मत रिपोर्टिंग (WhatsApp) और एडमिन हेल्पलाइन के लिए है।
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-2 text-[10px]">
+                      <div className="p-2 rounded-xl bg-white/90 border border-amber-200">
+                        <span className="font-bold text-slate-900 block">📱 फ्लोर ड्यूटी क्लॉक-इन</span>
+                        <span className="text-slate-500">लाइव GPS हाजिरी</span>
+                      </div>
+                      <div className="p-2 rounded-xl bg-white/90 border border-amber-200">
+                        <span className="font-bold text-slate-900 block">👥 नया सदस्य रजिस्ट्रेशन</span>
+                        <span className="text-slate-500">1-3 माह, 12/24 सत्र</span>
+                      </div>
+                      <div className="p-2 rounded-xl bg-white/90 border border-amber-200">
+                        <span className="font-bold text-slate-900 block">🥗 1-क्लिक ऑटो डाइट</span>
+                        <span className="text-slate-500">शाकाहारी / मांसाहारी</span>
+                      </div>
+                      <div className="p-2 rounded-xl bg-white/90 border border-amber-200">
+                        <span className="font-bold text-slate-900 block">📊 गोशवारा रिपोर्ट</span>
+                        <span className="text-slate-500">Excel व PDF एक्सपोर्ट</span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsHelpdeskOpen(true)}
+                      className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer active:scale-95"
+                    >
+                      <HelpCircle className="w-4 h-4 stroke-[2.5]" />
+                      <span>ट्रेनर ऐप गाइड व हेल्पडेस्क खोलें</span>
+                    </button>
+                  </div>
+
+                  {/* Quick Navigation to Reports */}
+                  <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-cyan-100 text-cyan-800 flex items-center justify-center">
+                        <FileSpreadsheet className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-900">गोशवारा रिपोर्ट (Reports)</h4>
+                        <p className="text-[10px] text-slate-500">सभी मेंबर्स का हाजिरी डेटा व Excel/PDF एक्सपोर्ट</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setTrainerTab('reports')}
+                      className="px-3 py-1.5 rounded-xl bg-cyan-700 hover:bg-cyan-600 text-white font-bold text-xs flex items-center gap-1 shadow-xs cursor-pointer active:scale-95"
+                    >
+                      <span>देखें</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Developer Profile Link Card */}
+                  <button
+                    onClick={() => setTrainerTab('developer')}
+                    className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 border border-slate-700 text-left flex items-center justify-between group shadow-sm cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-400">
+                        <CodeXml className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors">
+                          डेवलपर प्रोफ़ाइल (Ashish Dey)
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          Chief Executive Officer • जनपद पंचायत बड़ेराजपुर
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+                  </button>
+
+                  {/* Logout Button */}
+                  <button
+                    onClick={logout}
+                    className="w-full py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer active:scale-95"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>लॉगआउट करें (Sign Out)</span>
+                  </button>
+                </div>
+              )
+            ) : isMemberExpired ? (
               <div className="space-y-3.5 w-full max-w-full overflow-x-hidden py-2 text-center">
                 <div className="p-5 rounded-3xl bg-white border-2 border-rose-300 shadow-sm flex flex-col items-center">
                   <div className="w-16 h-16 rounded-3xl bg-rose-100 border border-rose-200 flex items-center justify-center text-rose-600 mb-3 shadow-inner">
@@ -1051,28 +1413,6 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                     <span>Workout Batch (समय):</span>
                     <strong className="text-slate-900 font-bold">{member.workoutSlot || '06:00 AM - 07:00 AM'}</strong>
                   </div>
-                  {isAdvanced && (
-                    <>
-                      <div className="flex justify-between text-slate-600">
-                        <span>Validity Date:</span>
-                        <strong className="text-slate-900">{formatDate(member.expiryDate)}</strong>
-                      </div>
-                      <div className="flex justify-between text-slate-600">
-                        <span>Fees Status:</span>
-                        <strong className="text-emerald-700 uppercase font-bold">Paid in Full (पूरा जमा)</strong>
-                      </div>
-                    </>
-                  )}
-
-                  {isAdvanced && (
-                    <button
-                      onClick={() => setSelectedInvoice(true)}
-                      className="w-full mt-3 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm hover:brightness-105 transition-all cursor-pointer"
-                    >
-                      <Receipt className="w-3.5 h-3.5" />
-                      Tax Receipt / Bill Download
-                    </button>
-                  )}
 
                   {/* Helpdesk & App User Guide Card */}
                   <div className="mt-3 p-3.5 rounded-2xl bg-gradient-to-br from-amber-50 via-orange-50/40 to-white border border-amber-200 shadow-2xs space-y-2 text-left">
@@ -1143,113 +1483,7 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
             )}
 
             {/* TAB 8: DEVELOPER PROFILE (ASHISH DEY) - Visible to ALL */}
-            {mobileTab === 'developer' && (
-              <div className="space-y-3.5 w-full max-w-full overflow-x-hidden animate-in fade-in">
-                <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-950 rounded-3xl p-5 text-white border border-slate-700 shadow-lg text-center space-y-3">
-                  {/* Photo / Avatar */}
-                  <div className="relative mx-auto w-24 h-24 rounded-2xl bg-gradient-to-tr from-cyan-600 to-amber-500 p-0.5 shadow-md">
-                    {developerPhoto ? (
-                      <img
-                        src={developerPhoto}
-                        alt="Ashish Dey"
-                        className="w-full h-full rounded-2xl object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-slate-900 rounded-2xl flex flex-col items-center justify-center p-2">
-                        <Building2 className="w-8 h-8 text-cyan-400 mb-0.5" />
-                        <span className="text-[10px] font-black text-amber-300">Ashish Dey</span>
-                      </div>
-                    )}
-
-                    {/* Photo Upload Option - ONLY ACTIVE FOR DEVELOPER */}
-                    {isDeveloper ? (
-                      <>
-                        <input
-                          type="file"
-                          ref={mobilePhotoInputRef}
-                          accept="image/*"
-                          onChange={handleMobilePhotoUpload}
-                          className="hidden"
-                          id="mobile-dev-photo-upload"
-                        />
-                        <label
-                          htmlFor="mobile-dev-photo-upload"
-                          title="Upload Developer Photo"
-                          className="absolute -bottom-1.5 -right-1.5 p-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-md cursor-pointer transition-all active:scale-90"
-                        >
-                          <Camera className="w-3.5 h-3.5" />
-                        </label>
-                      </>
-                    ) : (
-                      <div
-                        title="केवल डेवलपर (Ashish Dey) फोटो बदल सकते हैं (Disabled)"
-                        className="absolute -bottom-1.5 -right-1.5 p-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 cursor-not-allowed opacity-80"
-                      >
-                        <ShieldCheck className="w-3 h-3 text-cyan-400" />
-                      </div>
-                    )}
-                  </div>
-
-                  {isDeveloper && developerPhoto && (
-                    <button
-                      type="button"
-                      onClick={handleMobileRemovePhoto}
-                      className="text-[10px] text-rose-300 hover:text-rose-200 flex items-center justify-center gap-1 cursor-pointer transition-colors mx-auto pt-0.5"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      <span>Remove Photo</span>
-                    </button>
-                  )}
-
-                  <div>
-                    <div className="inline-block px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/30 text-cyan-300 text-[10px] font-bold uppercase tracking-wider mb-1">
-                      Developer & Leadership Profile
-                    </div>
-                    <h3 className="text-xl font-black text-white">Ashish Dey</h3>
-                    <div className="text-xs font-bold text-amber-400 mt-0.5">
-                      Chief Executive Officer
-                    </div>
-                    <div className="text-[11px] text-slate-300 font-medium">
-                      Janpad Panchayat Baderajpur
-                    </div>
-                    <div className="text-[10px] text-cyan-200 mt-1 flex items-center justify-center gap-1">
-                      <MapPin className="w-3 h-3 text-rose-400 shrink-0" />
-                      <span>District Kondagaon (C.G.)</span>
-                    </div>
-                  </div>
-
-                  <p className="text-[11px] text-slate-300 leading-relaxed bg-white/5 p-2.5 rounded-xl border border-white/10 text-left">
-                    Dedicated administrative leadership driven by modern digital governance, technological innovation, and public service. Committed to empowering communities and fostering an enduring culture of discipline and excellence.
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <a
-                      href="tel:9244249975"
-                      className="py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[11px] uppercase flex items-center justify-center gap-1.5 shadow-xs"
-                    >
-                      <Phone className="w-3 h-3" />
-                      <span>Call</span>
-                    </a>
-                    <a
-                      href="https://wa.me/919244249975?text=Hello%20Sir,%20contacting%20regarding%20Kaushik%20Fitness%20mobile%20app."
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="py-2 px-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-black text-[11px] uppercase flex items-center justify-center gap-1.5 shadow-xs"
-                    >
-                      <MessageCircle className="w-3 h-3" />
-                      <span>WhatsApp</span>
-                    </a>
-                  </div>
-
-                  <button
-                    onClick={() => setMobileTab('home')}
-                    className="w-full py-2 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 text-xs font-bold transition-all cursor-pointer"
-                  >
-                    ← Back to Home
-                  </button>
-                </div>
-              </div>
-            )}
+            {mobileTab === 'developer' && renderDeveloperProfile(() => setMobileTab('home'))}
               </>
             )}
           </div>
@@ -1259,6 +1493,38 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
             <div className="px-4 py-3 bg-rose-50 border-t border-rose-200 text-center flex items-center justify-center gap-2 text-xs font-bold text-rose-800 shrink-0">
               <Lock className="w-4 h-4 text-rose-600 shrink-0" />
               <span>ऐप लॉक है • सदस्यता रिन्यू कराने पर खुलेगा</span>
+            </div>
+          ) : role === 'trainer' ? (
+            <div className="px-2 py-2 bg-slate-100/95 backdrop-blur-md border-t border-slate-300 flex items-center justify-around z-30 shrink-0 shadow-sm w-full">
+              <button
+                onClick={() => setTrainerTab('dashboard')}
+                className={`flex flex-col items-center gap-0.5 text-[10px] font-bold transition-colors flex-1 min-w-0 cursor-pointer ${
+                  trainerTab === 'dashboard' ? 'text-amber-600' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                <span className="truncate">Dashboard</span>
+              </button>
+
+              <button
+                onClick={() => setTrainerTab('reports')}
+                className={`flex flex-col items-center gap-0.5 text-[10px] font-bold transition-colors flex-1 min-w-0 cursor-pointer ${
+                  trainerTab === 'reports' ? 'text-cyan-700' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                <span className="truncate">गोशवारा रिपोर्ट</span>
+              </button>
+
+              <button
+                onClick={() => setTrainerTab('profile')}
+                className={`flex flex-col items-center gap-0.5 text-[10px] font-bold transition-colors flex-1 min-w-0 cursor-pointer ${
+                  trainerTab === 'profile' ? 'text-slate-900' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Award className="w-4 h-4" />
+                <span className="truncate">प्रोफ़ाइल & हेल्पडेस्क</span>
+              </button>
             </div>
           ) : (
             <div className="px-1 py-2 bg-slate-100/95 backdrop-blur-md border-t border-slate-300 flex items-center justify-around z-30 shrink-0 shadow-sm w-full">

@@ -34,6 +34,7 @@ export interface DbUser {
   avatar_url?: string;
   pin: string; // 4-digit PIN for entrance check-in (replaces QR)
   address?: string;
+  gender?: Gender;
 }
 
 export interface DbMemberProfile {
@@ -278,6 +279,7 @@ export interface Staff {
   docFileUrl?: string;
   docFileName?: string;
   avatarUrl?: string;
+  gender?: Gender;
 }
 
 export interface User {
@@ -292,6 +294,7 @@ export interface User {
   token?: string;
   address?: string;
   pin?: string;
+  gender?: Gender;
 }
 
 export interface AttendanceRecord {
