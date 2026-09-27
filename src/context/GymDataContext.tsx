@@ -537,8 +537,20 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const updateMember = (id: string, data: Partial<Member>) => {
-    setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, ...data } : m)));
+    // 1. Direct local database update with full profile, user, and membership support
+    localDb.updateMember(id, data);
     localDb.upsertMemberFromCloud({ id, ...data });
+
+    // 2. React state update with flexible ID matching
+    setMembers((prev) =>
+      prev.map((m) =>
+        m.id === id || m.userId === id || (m.userId && id && m.userId === id)
+          ? { ...m, ...data }
+          : m
+      )
+    );
+
+    // 3. Cloud Firestore sync
     syncDocToFirestore(FIRESTORE_COLLECTIONS.MEMBERSHIPS, id, data);
     syncDocToFirestore(FIRESTORE_COLLECTIONS.MEMBER_PROFILES, id, data);
     if (data.pin) {
@@ -549,7 +561,10 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         syncDocToFirestore(FIRESTORE_COLLECTIONS.USERS, userId, { pin: data.pin });
       }
     }
+
+    // 4. Real-time 2-way event broadcasts for instant UI reflection
     window.dispatchEvent(new Event('kf_member_updated'));
+    window.dispatchEvent(new Event('kf_body_index_updated'));
     window.dispatchEvent(new Event('storage'));
   };
 
@@ -1000,7 +1015,43 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       ...log,
       id: `prog-${Date.now()}`,
     };
-    setProgressLogs((prev) => [newLog, ...prev]);
+    const logDateStr = log.date ? log.date.split('T')[0] : new Date().toISOString().split('T')[0];
+    setProgressLogs((prev) => [
+      newLog,
+      ...prev.filter((p) => !(p.memberId === log.memberId && p.date?.split('T')[0] === logDateStr)),
+    ]);
+
+    // Also sync to local database bodyIndexLog so Member & Trainer both see it immediately
+    const targetMember = members.find(
+      (m) => m.id === log.memberId || m.userId === log.memberId
+    );
+    const height = targetMember?.heightCm || 170;
+    const computedBmi = log.weightKg
+      ? Number((log.weightKg / Math.pow(height / 100, 2)).toFixed(1))
+      : 24;
+
+    localDb.addBodyIndexLog({
+      memberId: log.memberId,
+      date: log.date ? `${logDateStr}T10:00:00.000Z` : new Date().toISOString(),
+      weightKg: log.weightKg,
+      heightCm: height,
+      bmi: computedBmi,
+      chestInches: log.chestInches || 0,
+      waistInches: log.waistInches || 0,
+      bicepsInches: log.bicepsInches || 0,
+      thighsInches: log.thighsInches || 0,
+      hipsInches: log.hipsInches,
+      bodyFatPct: log.bodyFatPercentage,
+      notes: log.notes,
+    });
+
+    setMembers(localDb.getJoinedMembers());
+    const profs = localDb.getMemberProfiles();
+    setBodyIndexLogs(profs.flatMap((p) => localDb.getBodyIndexLogs(p.id)));
+
+    window.dispatchEvent(new Event('kf_member_updated'));
+    window.dispatchEvent(new Event('kf_body_index_updated'));
+    window.dispatchEvent(new Event('storage'));
     return newLog;
   };
 
@@ -1015,6 +1066,30 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setMembers(localDb.getJoinedMembers());
     const profs = localDb.getMemberProfiles();
     setBodyIndexLogs(profs.flatMap((p) => localDb.getBodyIndexLogs(p.id)));
+
+    // Also sync to progressLogs state so Trainer and Member charts update instantly
+    const progDate = log.date ? log.date.split('T')[0] : new Date().toISOString().split('T')[0];
+    const newProgLog: ProgressLog = {
+      id: `prog-${newLog.id}`,
+      memberId: log.memberId,
+      date: progDate,
+      weightKg: log.weightKg,
+      chestInches: log.chestInches,
+      waistInches: log.waistInches,
+      bicepsInches: log.bicepsInches,
+      thighsInches: log.thighsInches,
+      hipsInches: log.hipsInches,
+      bodyFatPercentage: log.bodyFatPct,
+      notes: log.notes,
+    };
+    setProgressLogs((prev) => [
+      newProgLog,
+      ...prev.filter((p) => !(p.memberId === log.memberId && p.date?.split('T')[0] === progDate)),
+    ]);
+
+    window.dispatchEvent(new Event('kf_member_updated'));
+    window.dispatchEvent(new Event('kf_body_index_updated'));
+    window.dispatchEvent(new Event('storage'));
     return newLog;
   };
 

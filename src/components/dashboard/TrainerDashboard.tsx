@@ -80,9 +80,14 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
 
   // Find trainer info
   const trainer =
-    staff.find((s) => s.id === currentUser?.staffId || s.id === currentUser?.id || (s.userId && s.userId === currentUser?.id) || (s.phone && s.phone === currentUser?.phone)) ||
+    (currentUser?.role === 'trainer'
+      ? staff.find((s) => s.id === currentUser?.staffId || s.id === currentUser?.id || (s.userId && s.userId === currentUser?.id) || (s.phone && s.phone === currentUser?.phone))
+      : null) ||
     staff.find((s) => s.role === 'trainer' && s.staffType === 'instructor') ||
     staff.find((s) => s.role === 'trainer') ||
+    staff.find((s) => s.staffType === 'instructor') ||
+    staff.find((s) => s.id === 'usr-2') ||
+    staff.find((s) => !s.designation?.includes('Front Desk')) ||
     staff[0];
 
   // Strictly check if member is assigned to this specific trainer
@@ -183,12 +188,19 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
   }, [displayClients, selectedClient]);
 
   // Real-time listener for member profile, stats, or body index updates
+  const [syncTick, setSyncTick] = useState(0);
   useEffect(() => {
     const handleMemberUpdate = () => {
+      setSyncTick((t) => t + 1);
       if (selectedClient) {
         const freshList = localDb.getJoinedMembers();
+        const cleanSelectedId = (selectedClient.id || '').replace('mem-', '').replace('prof-', '').replace('usr-', '');
         const updated = freshList.find(
-          (m) => m.id === selectedClient.id || (m.userId && m.userId === selectedClient.userId)
+          (m) =>
+            m.id === selectedClient.id ||
+            m.userId === selectedClient.id ||
+            (m.userId && selectedClient.userId && m.userId === selectedClient.userId) ||
+            (cleanSelectedId && (m.id || '').replace('mem-', '').replace('prof-', '') === cleanSelectedId)
         );
         if (updated) {
           setSelectedClient(updated);
@@ -441,18 +453,19 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
     setTimeout(() => setAttFeedback(null), 5000);
   };
 
-  // Find all progress logs for selected client across formats (mem-X or prof-X)
+  // Find all progress logs for selected client across formats (mem-X, prof-X, usr-X)
   const clientLogs = progressLogs.filter((p) => {
     if (!selectedClient) return false;
     if (p.memberId === selectedClient.id || p.memberId === selectedClient.userId) return true;
-    const pNum = (p.memberId || '').replace('mem-', '').replace('prof-', '');
-    const cNum = (selectedClient.id || '').replace('mem-', '').replace('prof-', '');
-    return Boolean(pNum && cNum && pNum === cNum);
+    const pNum = (p.memberId || '').replace('mem-', '').replace('prof-', '').replace('usr-', '');
+    const cNum = (selectedClient.id || '').replace('mem-', '').replace('prof-', '').replace('usr-', '');
+    const uNum = (selectedClient.userId || '').replace('mem-', '').replace('prof-', '').replace('usr-', '');
+    return Boolean((pNum && cNum && pNum === cNum) || (pNum && uNum && pNum === uNum));
   });
 
-  // Fallback to body index logs from database if progressLogs does not yet have entries
-  const fallbackBodyLogs: typeof clientLogs = (localDb.getBodyIndexLogs(selectedClient?.id || '') || []).map((b, idx) => ({
-    id: `fb-${b.id || idx}`,
+  // Body index logs from database for selectedClient (reactive to syncTick)
+  const bodyLogs = (localDb.getBodyIndexLogs(selectedClient?.id || '') || []).map((b, idx) => ({
+    id: `bi-${b.id || idx}`,
     memberId: selectedClient?.id || '',
     date: b.date ? b.date.split('T')[0] : new Date().toISOString().split('T')[0],
     weightKg: b.weightKg,
@@ -466,7 +479,51 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
     notes: b.notes,
   }));
 
-  const effectiveClientLogs = clientLogs.length > 0 ? clientLogs : fallbackBodyLogs;
+  // Unify and deduplicate all logs by date so entries from Member or Trainer are ALWAYS visible
+  const mergedLogsMap = new Map<string, any>();
+  [...clientLogs, ...bodyLogs].forEach((log) => {
+    const d = log.date ? log.date.split('T')[0] : '';
+    if (!d) return;
+    const existing = mergedLogsMap.get(d);
+    if (!existing) {
+      mergedLogsMap.set(d, log);
+    } else {
+      mergedLogsMap.set(d, {
+        ...existing,
+        ...log,
+        weightKg: log.weightKg || existing.weightKg,
+        chestInches: log.chestInches || existing.chestInches,
+        waistInches: log.waistInches || existing.waistInches,
+        bicepsInches: log.bicepsInches || existing.bicepsInches,
+        thighsInches: log.thighsInches || existing.thighsInches,
+        hipsInches: log.hipsInches || existing.hipsInches,
+        bodyFatPercentage: log.bodyFatPercentage || existing.bodyFatPercentage,
+        notes: log.notes || existing.notes,
+      });
+    }
+  });
+
+  // If member has measurements in profile but no historical checkpoints yet, include baseline checkpoint
+  if (mergedLogsMap.size === 0 && selectedClient) {
+    const baseDate = selectedClient.joiningDate ? selectedClient.joiningDate.split('T')[0] : new Date().toISOString().split('T')[0];
+    mergedLogsMap.set(baseDate, {
+      id: 'baseline-current',
+      memberId: selectedClient.id,
+      date: baseDate,
+      weightKg: selectedClient.weightKg || 70,
+      chestInches: selectedClient.measurements?.chest || 0,
+      waistInches: selectedClient.measurements?.waist || 0,
+      bicepsInches: selectedClient.measurements?.biceps || 0,
+      thighsInches: selectedClient.measurements?.thighs || 0,
+      hipsInches: selectedClient.measurements?.hips,
+      bodyFatPercentage: selectedClient.bodyFatPercentage,
+      notes: 'आरंभिक पंजीकरण माप (Baseline)',
+    });
+  }
+
+  const effectiveClientLogs = Array.from(mergedLogsMap.values()).sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
 
   // Client physical stats calculation
   const clientWeight = selectedClient?.weightKg || 75;
@@ -721,7 +778,7 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
                 Coach {trainer.name}
               </h1>
               <p className="text-slate-500 text-xs mt-0.5">
-                {trainer.designation} • Specialization: {trainer.specialization?.join(', ')}
+                {(trainer.designation && !trainer.designation.includes('Front Desk')) ? trainer.designation : 'हेड फिटनेस कोच व पीटी लीड'} • Specialization: {trainer.specialization?.join(', ')}
               </p>
             </div>
           </div>

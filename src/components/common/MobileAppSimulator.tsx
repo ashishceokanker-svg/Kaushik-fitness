@@ -190,15 +190,20 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
 
   const trainer: any =
     staff && staff.length > 0
-      ? staff.find(
-          (s) =>
-            s.id === currentUser?.staffId ||
-            s.id === currentUser?.id ||
-            (s.userId && s.userId === currentUser?.id) ||
-            (s.phone && s.phone === currentUser?.phone)
-        ) ||
+      ? (currentUser?.role === 'trainer'
+          ? staff.find(
+              (s) =>
+                s.id === currentUser?.staffId ||
+                s.id === currentUser?.id ||
+                (s.userId && s.userId === currentUser?.id) ||
+                (s.phone && s.phone === currentUser?.phone)
+            )
+          : null) ||
+        staff.find((s) => s.role === 'trainer' && s.staffType === 'instructor') ||
         staff.find((s) => s.role === 'trainer') ||
-        staff[1] ||
+        staff.find((s) => s.staffType === 'instructor') ||
+        staff.find((s) => s.id === 'usr-2') ||
+        staff.find((s) => !s.designation?.includes('Front Desk')) ||
         staff[0]
       : { id: 'usr-2', name: 'Vikram Sahu', designation: 'Head Coach', role: 'trainer' as const, gender: 'male' as const, phone: '9826189002', email: 'trainer@kaushikfitness.com', staffCode: 'KFS-002', avatarUrl: '' };
 
@@ -744,7 +749,9 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                     Coach {trainer.name}
                   </h2>
                   <p className="text-xs text-slate-500 font-medium">
-                    {trainer.designation || 'Head Fitness Coach & PT Lead'}
+                    {trainer.designation && !trainer.designation.includes('Front Desk')
+                      ? trainer.designation
+                      : 'हेड फिटनेस कोच व पीटी लीड'}
                   </p>
 
                   {/* Coach Details List */}
@@ -764,7 +771,9 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                       <span className="font-bold text-cyan-800">
                         {trainer.specialization && trainer.specialization.length > 0
                           ? trainer.specialization.join(', ')
-                          : trainer.designation || 'हेड फिटनेस कोच'}
+                          : (trainer.designation && !trainer.designation.includes('Front Desk')
+                              ? trainer.designation
+                              : 'हेड फिटनेस कोच')}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-slate-700">

@@ -35,17 +35,19 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({ memberId = 'me
     const allLogsMap = new Map<string, ProgressLog>();
 
     bodyLogs.forEach((b: any) => {
-      allLogsMap.set(b.date, {
+      const d = b.date ? b.date.split('T')[0] : '';
+      if (!d) return;
+      allLogsMap.set(d, {
         id: b.id,
         memberId: b.memberId,
-        date: b.date,
+        date: d,
         weightKg: b.weightKg,
         chestInches: b.chestInches,
         waistInches: b.waistInches,
         bicepsInches: b.bicepsInches,
         thighsInches: b.thighsInches,
         hipsInches: b.hipsInches,
-        bodyFatPercentage: b.bodyFatPercentage,
+        bodyFatPercentage: b.bodyFatPercentage || b.bodyFatPct,
         bmi: b.bmi,
         benchPressPR: b.benchPressPR,
         squatPR: b.squatPR,
@@ -54,10 +56,17 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({ memberId = 'me
       });
     });
 
+    const activeClean = (activeMember.id || '').replace('mem-', '').replace('prof-', '').replace('usr-', '');
     progressLogs
-      .filter((p) => p.memberId === activeMember.id)
+      .filter((p) => {
+        if (p.memberId === activeMember.id || p.memberId === activeMember.userId) return true;
+        const pClean = (p.memberId || '').replace('mem-', '').replace('prof-', '').replace('usr-', '');
+        return Boolean(pClean && activeClean && pClean === activeClean);
+      })
       .forEach((p) => {
-        allLogsMap.set(p.date, { ...allLogsMap.get(p.date), ...p });
+        const d = p.date ? p.date.split('T')[0] : '';
+        if (!d) return;
+        allLogsMap.set(d, { ...allLogsMap.get(d), ...p, date: d });
       });
 
     return Array.from(allLogsMap.values()).sort(

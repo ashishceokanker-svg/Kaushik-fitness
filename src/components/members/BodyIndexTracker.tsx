@@ -27,7 +27,7 @@ interface BodyIndexTrackerProps {
 }
 
 export const BodyIndexTracker: React.FC<BodyIndexTrackerProps> = ({ member, canEdit = true, isCompact = false }) => {
-  const { getBodyIndexLogs, addBodyIndexLog, bodyIndexLogs, updateMember } = useGymData();
+  const { getBodyIndexLogs, addBodyIndexLog, bodyIndexLogs, updateMember, addProgressLog } = useGymData();
   const [subTab, setSubTab] = useState<'photos' | 'measurements'>('photos');
   const [showAddForm, setShowAddForm] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
@@ -36,9 +36,11 @@ export const BodyIndexTracker: React.FC<BodyIndexTrackerProps> = ({ member, canE
   const [syncTick, setSyncTick] = useState(0);
   React.useEffect(() => {
     const handleSync = () => setSyncTick((t) => t + 1);
+    window.addEventListener('kf_member_updated', handleSync);
     window.addEventListener('kf_body_index_updated', handleSync);
     window.addEventListener('storage', handleSync);
     return () => {
+      window.removeEventListener('kf_member_updated', handleSync);
       window.removeEventListener('kf_body_index_updated', handleSync);
       window.removeEventListener('storage', handleSync);
     };
@@ -54,6 +56,20 @@ export const BodyIndexTracker: React.FC<BodyIndexTrackerProps> = ({ member, canE
   const [hipsInches, setHipsInches] = useState<number | string>(member.measurements?.hips || '');
   const [bodyFatPct, setBodyFatPct] = useState<number | string>(member.bodyFatPercentage || '');
   const [notes, setNotes] = useState('');
+
+  // Keep form fields synced when member measurements are updated externally by trainer or member
+  React.useEffect(() => {
+    if (member) {
+      if (member.weightKg) setWeightKg(member.weightKg);
+      if (member.heightCm) setHeightCm(member.heightCm);
+      if (member.measurements?.chest) setChestInches(member.measurements.chest);
+      if (member.measurements?.waist) setWaistInches(member.measurements.waist);
+      if (member.measurements?.biceps) setBicepsInches(member.measurements.biceps);
+      if (member.measurements?.thighs) setThighsInches(member.measurements.thighs);
+      if (member.measurements?.hips) setHipsInches(member.measurements.hips);
+      if (member.bodyFatPercentage) setBodyFatPct(member.bodyFatPercentage);
+    }
+  }, [member, syncTick]);
 
   // Fetch logs for this member (reactive to context updates & events)
   const logs = React.useMemo(() => {
@@ -97,6 +113,20 @@ export const BodyIndexTracker: React.FC<BodyIndexTrackerProps> = ({ member, canE
 
     addBodyIndexLog(newLog);
 
+    // Also record progress log so progress charts in Trainer & Member apps update synchronously
+    addProgressLog({
+      memberId: member.id,
+      date: new Date().toISOString().split('T')[0],
+      weightKg: finalWeight,
+      chestInches: Number(chestInches) || 0,
+      waistInches: Number(waistInches) || 0,
+      bicepsInches: Number(bicepsInches) || 0,
+      thighsInches: Number(thighsInches) || 0,
+      hipsInches: hipsInches ? Number(hipsInches) : undefined,
+      bodyFatPercentage: bodyFatPct ? Number(bodyFatPct) : undefined,
+      notes: finalNote,
+    });
+
     // Update member's core record so notes and measurements stay in sync immediately
     updateMember(member.id, {
       weightKg: finalWeight,
@@ -137,6 +167,7 @@ export const BodyIndexTracker: React.FC<BodyIndexTrackerProps> = ({ member, canE
     localDb.saveMemberDiet(updatedDiet);
 
     // Dispatch broadcast event for real-time reactivity
+    window.dispatchEvent(new Event('kf_member_updated'));
     window.dispatchEvent(new Event('kf_body_index_updated'));
     window.dispatchEvent(new Event('storage'));
 
