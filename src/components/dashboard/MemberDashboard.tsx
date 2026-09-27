@@ -446,12 +446,6 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
               </h1>
 
               <p className="text-xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-2">
-                {isAdvanced && (
-                  <>
-                    <span>Plan: <strong className="text-slate-800">{MEMBERSHIP_PRICING[member.membershipDuration]?.label}</strong></span>
-                    <span className="text-slate-300">•</span>
-                  </>
-                )}
                 <span>Goal: <strong className="text-cyan-700 capitalize">{member.fitnessGoal.replace('_', ' ')}</strong></span>
                 <span className="text-slate-300">•</span>
                 <span>Diet: <strong className="text-emerald-700 font-bold">{member.dietPreference === 'non_veg' ? '🍗 मांसाहारी (Non-Veg)' : '🥗 शाकाहारी (Veg)'}</strong></span>
@@ -493,16 +487,6 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
               <Camera className="w-4 h-4 text-cyan-400" />
               4-साइड फोटो व नाप (Photos)
             </button>
-
-            {isAdvanced && (
-              <button
-                onClick={() => setIsInvoiceOpen(true)}
-                className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs border border-slate-300 shadow-sm transition-all cursor-pointer"
-              >
-                <Receipt className="w-4 h-4 text-amber-600" />
-                Receipt / Bill
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -608,20 +592,6 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
           <Activity className="w-4 h-4 text-purple-600" />
           <span>Body Index (बदलाव)</span>
         </button>
-
-        {isAdvanced && (
-          <button
-            onClick={() => setActiveTab('receipt')}
-            className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === 'receipt'
-                ? 'bg-white text-amber-800 shadow-sm border border-slate-200/80 font-black'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-            }`}
-          >
-            <Receipt className="w-4 h-4 text-amber-600" />
-            <span>Fees (फीस)</span>
-          </button>
-        )}
 
         <button
           onClick={() => setActiveTab('3d')}

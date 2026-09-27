@@ -46,10 +46,24 @@ import {
 
 interface TrainerDashboardProps {
   onNavigate?: (tab: string) => void;
+  activeView?: 'all' | 'dashboard' | 'clients' | 'progress' | 'planner';
+  onViewChange?: (view: string) => void;
 }
 
-export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }) => {
+export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
+  onNavigate,
+  activeView,
+  onViewChange,
+}) => {
   const { currentUser, updateCurrentUserProfile } = useAuth();
+  const [internalView, setInternalView] = useState<'all' | 'dashboard' | 'clients' | 'progress' | 'planner'>(activeView || 'all');
+  const currentView = activeView !== undefined ? activeView : internalView;
+
+  useEffect(() => {
+    if (activeView !== undefined) {
+      setInternalView(activeView);
+    }
+  }, [activeView]);
   const {
     staff,
     members,
@@ -142,14 +156,58 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
   const isDeveloper = currentUser?.email === 'admin@kaushikfitness.com' || currentUser?.phone === '9826189001' || currentUser?.id === 'usr-1' || currentUser?.role === 'admin' || (typeof window !== 'undefined' && localStorage.getItem('kf_dev_unlocked') === 'true');
   const showAllDietOptions = isDeveloper && isAdvanced;
 
-  // Sync selected client if list updates
+  // Sync selected client if list updates or client data changes
   useEffect(() => {
     if (!selectedClient && displayClients.length > 0) {
       setSelectedClient(displayClients[0]);
-    } else if (selectedClient && !displayClients.some((c) => c.id === selectedClient.id)) {
-      setSelectedClient(displayClients[0] || null);
+    } else if (selectedClient) {
+      const freshClient = displayClients.find(
+        (c) => c.id === selectedClient.id || (c.userId && c.userId === selectedClient.userId)
+      );
+      if (freshClient) {
+        if (
+          freshClient.weightKg !== selectedClient.weightKg ||
+          freshClient.heightCm !== selectedClient.heightCm ||
+          freshClient.targetWeightKg !== selectedClient.targetWeightKg ||
+          freshClient.dietPreference !== selectedClient.dietPreference ||
+          freshClient.avatarUrl !== selectedClient.avatarUrl ||
+          freshClient.pin !== selectedClient.pin ||
+          freshClient.status !== selectedClient.status
+        ) {
+          setSelectedClient(freshClient);
+        }
+      } else if (displayClients.length > 0) {
+        setSelectedClient(displayClients[0]);
+      }
     }
   }, [displayClients, selectedClient]);
+
+  // Real-time listener for member profile, stats, or body index updates
+  useEffect(() => {
+    const handleMemberUpdate = () => {
+      if (selectedClient) {
+        const freshList = localDb.getJoinedMembers();
+        const updated = freshList.find(
+          (m) => m.id === selectedClient.id || (m.userId && m.userId === selectedClient.userId)
+        );
+        if (updated) {
+          setSelectedClient(updated);
+          const d = localDb.getMemberDiet(updated.id);
+          if (d) setClientDiet(d);
+          const w = localDb.getMemberWorkout(updated.id);
+          if (w) setClientWorkout(w);
+        }
+      }
+    };
+    window.addEventListener('kf_member_updated', handleMemberUpdate);
+    window.addEventListener('kf_body_index_updated', handleMemberUpdate);
+    window.addEventListener('storage', handleMemberUpdate);
+    return () => {
+      window.removeEventListener('kf_member_updated', handleMemberUpdate);
+      window.removeEventListener('kf_body_index_updated', handleMemberUpdate);
+      window.removeEventListener('storage', handleMemberUpdate);
+    };
+  }, [selectedClient]);
 
   // Form for logging new body measurements
   const [logForm, setLogForm] = useState({
@@ -167,16 +225,32 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
     notes: '',
   });
 
-  // Load client's diet and workout plan
+  // Load client's diet and workout plan, strictly adhering to member's diet preference
   useEffect(() => {
     if (selectedClient) {
-      const diet = localDb.getMemberDiet(selectedClient.id);
+      const memberPref = selectedClient.dietPreference === 'non_veg' ? 'non_veg' : 'veg';
+      let diet = localDb.getMemberDiet(selectedClient.id);
+      if (!diet || (!isDeveloper && diet.dietType !== memberPref)) {
+        diet = generateAutomaticCustomDiet({
+          memberId: selectedClient.id,
+          memberName: selectedClient.name,
+          trainerId: trainer.id,
+          trainerName: trainer.name,
+          weightKg: selectedClient.weightKg || 70,
+          heightCm: selectedClient.heightCm || 172,
+          age: selectedClient.age || 25,
+          gender: selectedClient.gender || 'male',
+          goal: selectedClient.fitnessGoal || 'muscle_building',
+          dietType: memberPref,
+        });
+        localDb.saveMemberDiet(diet);
+      }
       setClientDiet(diet);
       const workout = localDb.getMemberWorkout(selectedClient.id);
       setClientWorkout(workout);
       setActiveWorkoutDayIdx(0);
     }
-  }, [selectedClient]);
+  }, [selectedClient, isDeveloper, trainer.id, trainer.name]);
 
   const todayDate = new Date().toISOString().split('T')[0];
   const [trainerDailyAtt, setTrainerDailyAtt] = useState<StaffDailyAttendance | undefined>(() => {
@@ -447,6 +521,9 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
 
     localDb.saveMemberDiet(autoDiet);
     setClientDiet(autoDiet);
+    const cleanPref = dietType === 'eggitarian' ? 'non_veg' : dietType;
+    updateMember(selectedClient.id, { dietPreference: cleanPref });
+    window.dispatchEvent(new Event('kf_body_index_updated'));
 
     const typeLabel =
       dietType === 'veg'
@@ -749,45 +826,131 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
         </div>
       )}
 
-      {/* Trainer Stats Grid */}
-      <div className={`grid grid-cols-2 ${isAdvanced ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-4`}>
-        <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
-          <span className="text-xs text-slate-500 font-bold uppercase">Assigned PT Clients</span>
-          <div className="text-2xl font-black text-slate-900 font-mono mt-1">
-            {displayClients.length} <span className="text-xs text-slate-400 font-normal">athletes</span>
-          </div>
-          <div className="text-[11px] text-cyan-700 font-medium mt-0.5">Personal training roster</div>
-        </div>
+      {/* Adaptive View Switcher Pills */}
+      <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 overflow-x-auto scrollbar-none gap-1.5 shrink-0">
+        <button
+          type="button"
+          onClick={() => {
+            setInternalView('all');
+            onViewChange?.('all');
+          }}
+          className={`flex-1 min-w-[90px] py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            currentView === 'all'
+              ? 'bg-white text-slate-900 shadow-sm border border-slate-200 font-black'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+          }`}
+        >
+          <Award className="w-3.5 h-3.5 text-amber-500" />
+          <span>समग्र (All)</span>
+        </button>
 
-        {isAdvanced && (
-          <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
-            <span className="text-xs text-slate-500 font-bold uppercase">Monthly Base Salary</span>
-            <div className="text-2xl font-black text-emerald-600 font-mono mt-1">
-              ₹{trainer.salaryMonthly.toLocaleString('en-IN')}
-            </div>
-            <div className="text-[11px] text-emerald-700 font-medium mt-0.5">Salary disbursed by admin</div>
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={() => {
+            setInternalView('clients');
+            onViewChange?.('clients');
+          }}
+          className={`flex-1 min-w-[100px] py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            currentView === 'clients'
+              ? 'bg-white text-cyan-800 shadow-sm border border-slate-200 font-black'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+          }`}
+        >
+          <Users className="w-3.5 h-3.5 text-cyan-600" />
+          <span>मेंबर्स ({displayClients.length})</span>
+        </button>
 
-        <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
-          <span className="text-xs text-slate-500 font-bold uppercase">Client Diet Status</span>
-          <div className="text-2xl font-black text-amber-600 font-mono mt-1">
-            {clientDiet ? 'Active Split' : 'Pending'}
-          </div>
-          <div className="text-[11px] text-amber-700 font-medium mt-0.5">Custom macros assigned</div>
-        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setInternalView('progress');
+            onViewChange?.('progress');
+          }}
+          className={`flex-1 min-w-[110px] py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            currentView === 'progress'
+              ? 'bg-white text-purple-800 shadow-sm border border-slate-200 font-black'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+          }`}
+        >
+          <TrendingUp className="w-3.5 h-3.5 text-purple-600" />
+          <span>प्रोग्रेस चार्ट</span>
+        </button>
 
-        <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
-          <span className="text-xs text-slate-500 font-bold uppercase">Client Strength PRs</span>
-          <div className="text-2xl font-black text-purple-600 font-mono mt-1">
-            {clientLogs.length > 0 ? `${clientLogs[clientLogs.length - 1].benchPressPR || 0} kg` : 'Logged'}
-          </div>
-          <div className="text-[11px] text-purple-700 font-medium mt-0.5">Bench Press current max</div>
-        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setInternalView('planner');
+            onViewChange?.('planner');
+          }}
+          className={`flex-1 min-w-[120px] py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            currentView === 'planner'
+              ? 'bg-white text-emerald-800 shadow-sm border border-slate-200 font-black'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+          }`}
+        >
+          <Utensils className="w-3.5 h-3.5 text-emerald-600" />
+          <span>डाइट व वर्कआउट</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setInternalView('dashboard');
+            onViewChange?.('dashboard');
+          }}
+          className={`flex-1 min-w-[110px] py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            currentView === 'dashboard'
+              ? 'bg-white text-amber-800 shadow-sm border border-slate-200 font-black'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+          }`}
+        >
+          <CalendarCheck className="w-3.5 h-3.5 text-amber-600" />
+          <span>पीटी हाजिरी</span>
+        </button>
       </div>
 
+      {/* Trainer Stats Grid */}
+      {(currentView === 'all' || currentView === 'dashboard') && (
+        <div className={`grid grid-cols-2 ${isAdvanced ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-4`}>
+          <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
+            <span className="text-xs text-slate-500 font-bold uppercase">Assigned PT Clients</span>
+            <div className="text-2xl font-black text-slate-900 font-mono mt-1">
+              {displayClients.length} <span className="text-xs text-slate-400 font-normal">athletes</span>
+            </div>
+            <div className="text-[11px] text-cyan-700 font-medium mt-0.5">Personal training roster</div>
+          </div>
+
+          {isAdvanced && (
+            <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
+              <span className="text-xs text-slate-500 font-bold uppercase">Monthly Base Salary</span>
+              <div className="text-2xl font-black text-emerald-600 font-mono mt-1">
+                ₹{trainer.salaryMonthly.toLocaleString('en-IN')}
+              </div>
+              <div className="text-[11px] text-emerald-700 font-medium mt-0.5">Salary disbursed by admin</div>
+            </div>
+          )}
+
+          <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
+            <span className="text-xs text-slate-500 font-bold uppercase">Client Diet Status</span>
+            <div className="text-2xl font-black text-amber-600 font-mono mt-1">
+              {clientDiet ? 'Active Split' : 'Pending'}
+            </div>
+            <div className="text-[11px] text-amber-700 font-medium mt-0.5">Custom macros assigned</div>
+          </div>
+
+          <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
+            <span className="text-xs text-slate-500 font-bold uppercase">Client Strength PRs</span>
+            <div className="text-2xl font-black text-purple-600 font-mono mt-1">
+              {clientLogs.length > 0 ? `${clientLogs[clientLogs.length - 1].benchPressPR || 0} kg` : 'Logged'}
+            </div>
+            <div className="text-[11px] text-purple-700 font-medium mt-0.5">Bench Press current max</div>
+          </div>
+        </div>
+      )}
+
       {/* Assigned PT Clients Selector Roster */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+      {(currentView === 'all' || currentView === 'clients') && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <div>
             <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
@@ -868,6 +1031,7 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
           </div>
         )}
       </div>
+      )}
 
       {/* SELECTED CLIENT WORKSPACE */}
       {selectedClient && (
@@ -887,151 +1051,191 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
             </div>
           )}
 
-          {/* 1. BODY MASS & AUTO DIET ENGINE BAR */}
-          <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-950 text-white p-5 rounded-2xl shadow-md border border-slate-700 space-y-4">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/30 text-cyan-300 text-[10px] font-black uppercase tracking-wider mb-1.5">
-                  <Scale className="w-3.5 h-3.5 text-cyan-400" />
-                  बॉडी मास एवं ऑटो डाइट इंजन (Body Mass & Auto Diet)
-                </div>
-                <h3 className="text-xl font-black tracking-tight text-white flex items-center gap-2">
-                  <span>{selectedClient.name} का बॉडी कम्पोज़ीशन व न्यूट्रिशन</span>
-                </h3>
-                <p className="text-slate-300 text-xs mt-0.5">
-                  सदस्य के वजन ({clientWeight} kg) और लक्ष्य ({selectedClient.fitnessGoal?.replace('_', ' ')}) के अनुसार 1-क्लिक में पूर्ण भारतीय जिम डाइट तैयार करें:
-                </p>
-              </div>
-
-              {/* Log Measurement Button */}
-              <button
-                type="button"
-                onClick={handleOpenLogModal}
-                className="self-start lg:self-center flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow transition-all cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>नया माप दर्ज करें (Log Body Index)</span>
-              </button>
-            </div>
-
-            {/* Body Mass Metric Pills */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 pt-3 border-t border-slate-700/70 text-xs">
-              <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-                <span className="text-slate-400 text-[10px] uppercase font-bold block">वजन (Weight)</span>
-                <span className="text-lg font-black text-white font-mono">{clientWeight} kg</span>
-                <span className="text-[10px] text-cyan-300 block">लक्ष्य: {selectedClient.targetWeightKg || 80} kg</span>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-                <span className="text-slate-400 text-[10px] uppercase font-bold block">कद (Height)</span>
-                <span className="text-lg font-black text-white font-mono">{clientHeight} cm</span>
-                <span className="text-[10px] text-slate-300 block">{((clientHeight) / 30.48).toFixed(1)} feet</span>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-                <span className="text-slate-400 text-[10px] uppercase font-bold block">BMI इंडेक्स</span>
-                <span className="text-lg font-black text-amber-400 font-mono">{clientBmi}</span>
-                <span className="text-[10px] text-slate-300 block">
-                  {clientBmi < 18.5 ? 'कम वजन' : clientBmi < 25 ? 'सामान्य' : 'अधिक वजन'}
-                </span>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-                <span className="text-slate-400 text-[10px] uppercase font-bold block">BMR (बेस कैलोरी)</span>
-                <span className="text-lg font-black text-emerald-400 font-mono">{clientBmr} kcal</span>
-                <span className="text-[10px] text-slate-300 block">Resting Rate</span>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-                <span className="text-slate-400 text-[10px] uppercase font-bold block">TDEE (दैनिक ऊर्जा)</span>
-                <span className="text-lg font-black text-cyan-400 font-mono">{clientTdee} kcal</span>
-                <span className="text-[10px] text-slate-300 block">Active Burn</span>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-                <span className="text-slate-400 text-[10px] uppercase font-bold block">फिटनेस लक्ष्य</span>
-                <span className="text-sm font-black text-white capitalize block mt-0.5 truncate">
-                  {selectedClient.fitnessGoal?.replace('_', ' ') || 'Muscle'}
-                </span>
-                <span className="text-[10px] text-cyan-300 block font-mono">
-                  {selectedClient.gender === 'female' ? 'Female' : 'Male'}, {selectedClient.age || 26}y
-                </span>
-              </div>
-            </div>
-
-            {/* 1-Click Veg / Non-Veg Diet Selector Toolbar */}
-            <div className="pt-3 border-t border-slate-700/70">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-xs text-slate-200">
-                  <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span className="font-bold">बॉडी मास आधारित ऑटो डाइट चार्ट जनरेट करें (Select Diet Type):</span>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  {(showAllDietOptions || selectedClient.dietPreference !== 'non_veg') && (
-                    <button
-                      type="button"
-                      onClick={() => handleAutoGenerateDiet('veg')}
-                      className="px-3.5 py-2 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
-                      title="पनीर, सोया, दाल, ओट्स, चना आधारित शाकाहारी डाइट"
-                    >
-                      <Apple className="w-3.5 h-3.5" />
-                      <span>🥗 1-Click Pure Veg (शाकाहारी)</span>
-                    </button>
-                  )}
-
-                  {(showAllDietOptions || selectedClient.dietPreference === 'non_veg') && (
-                    <button
-                      type="button"
-                      onClick={() => handleAutoGenerateDiet('non_veg')}
-                      className="px-3.5 py-2 rounded-xl text-xs font-black bg-rose-600 hover:bg-rose-500 text-white shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
-                      title="चिकन, अंडे, मछली आधारित उच्च प्रोटीन डाइट"
-                    >
-                      <Drumstick className="w-3.5 h-3.5" />
-                      <span>🍗 1-Click Non-Veg (मांसाहारी)</span>
-                    </button>
-                  )}
-
-                  {showAllDietOptions && (
-                    <button
-                      type="button"
-                      onClick={() => handleAutoGenerateDiet('eggitarian')}
-                      className="px-3.5 py-2 rounded-xl text-xs font-black bg-amber-600 hover:bg-amber-500 text-white shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
-                      title="उबले अंडे + शाकाहारी प्रोटीन युक्त डाइट"
-                    >
-                      <Egg className="w-3.5 h-3.5" />
-                      <span>🥚 1-Click Eggitarian (अंडा युक्त)</span>
-                    </button>
-                  )}
-
+          {/* Quick Athlete Switcher Chips for Fast Navigation */}
+          {(currentView === 'progress' || currentView === 'planner' || currentView === 'dashboard') && displayClients.length > 1 && (
+            <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-2 overflow-x-auto scrollbar-none">
+              <span className="text-xs font-black text-slate-700 whitespace-nowrap flex items-center gap-1">
+                <Users className="w-3.5 h-3.5 text-cyan-600" />
+                <span>सदस्य:</span>
+              </span>
+              {displayClients.map((client) => {
+                const isSel = selectedClient?.id === client.id;
+                return (
                   <button
                     type="button"
-                    onClick={() => setIsDietModalOpen(true)}
-                    className="px-3.5 py-2 rounded-xl text-xs font-black bg-slate-700 hover:bg-slate-600 text-cyan-200 border border-slate-600 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
-                    title="डाइट प्लान में कोई भी बदलाव या कस्टम भोजन जोड़ें"
+                    key={client.id}
+                    onClick={() => setSelectedClient(client)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 ${
+                      isSel
+                        ? 'bg-cyan-600 text-white shadow-xs font-black ring-2 ring-cyan-400/40'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
+                    }`}
                   >
-                    <Edit3 className="w-3.5 h-3.5" />
-                    <span>✏️ एडिट / कस्टम डाइट</span>
+                    <img
+                      src={getEffectiveAvatar(client.avatarUrl, client.gender, client.name)}
+                      alt={client.name}
+                      className="w-4 h-4 rounded-full object-cover"
+                    />
+                    <span>{client.name}</span>
+                    <span className="text-[10px] opacity-80">
+                      ({client.dietPreference === 'non_veg' ? '🍗 Non-Veg' : '🥗 Veg'})
+                    </span>
                   </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* 1. BODY MASS & AUTO DIET ENGINE BAR */}
+          {(currentView === 'all' || currentView === 'progress' || currentView === 'planner') && (
+            <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-950 text-white p-5 rounded-2xl shadow-md border border-slate-700 space-y-4">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/30 text-cyan-300 text-[10px] font-black uppercase tracking-wider mb-1.5">
+                    <Scale className="w-3.5 h-3.5 text-cyan-400" />
+                    बॉडी मास एवं ऑटो डाइट इंजन (Body Mass & Auto Diet)
+                  </div>
+                  <h3 className="text-xl font-black tracking-tight text-white flex items-center gap-2">
+                    <span>{selectedClient.name} का बॉडी कम्पोज़ीशन व न्यूट्रिशन</span>
+                  </h3>
+                  <p className="text-slate-300 text-xs mt-0.5">
+                    सदस्य के वजन ({clientWeight} kg) और लक्ष्य ({selectedClient.fitnessGoal?.replace('_', ' ')}) के अनुसार 1-क्लिक में पूर्ण भारतीय जिम डाइट तैयार करें:
+                  </p>
+                </div>
+
+                {/* Log Measurement Button */}
+                <button
+                  type="button"
+                  onClick={handleOpenLogModal}
+                  className="self-start lg:self-center flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow transition-all cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>नया माप दर्ज करें (Log Body Index)</span>
+                </button>
+              </div>
+
+              {/* Body Mass Metric Pills */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 pt-3 border-t border-slate-700/70 text-xs">
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                  <span className="text-slate-400 text-[10px] uppercase font-bold block">वजन (Weight)</span>
+                  <span className="text-lg font-black text-white font-mono">{clientWeight} kg</span>
+                  <span className="text-[10px] text-cyan-300 block">लक्ष्य: {selectedClient.targetWeightKg || 80} kg</span>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                  <span className="text-slate-400 text-[10px] uppercase font-bold block">कद (Height)</span>
+                  <span className="text-lg font-black text-white font-mono">{clientHeight} cm</span>
+                  <span className="text-[10px] text-slate-300 block">{((clientHeight) / 30.48).toFixed(1)} feet</span>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                  <span className="text-slate-400 text-[10px] uppercase font-bold block">BMI इंडेक्स</span>
+                  <span className="text-lg font-black text-amber-400 font-mono">{clientBmi}</span>
+                  <span className="text-[10px] text-slate-300 block">
+                    {clientBmi < 18.5 ? 'कम वजन' : clientBmi < 25 ? 'सामान्य' : 'अधिक वजन'}
+                  </span>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                  <span className="text-slate-400 text-[10px] uppercase font-bold block">BMR (बेस कैलोरी)</span>
+                  <span className="text-lg font-black text-emerald-400 font-mono">{clientBmr} kcal</span>
+                  <span className="text-[10px] text-slate-300 block">Resting Rate</span>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                  <span className="text-slate-400 text-[10px] uppercase font-bold block">TDEE (दैनिक ऊर्जा)</span>
+                  <span className="text-lg font-black text-cyan-400 font-mono">{clientTdee} kcal</span>
+                  <span className="text-[10px] text-slate-300 block">Active Burn</span>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                  <span className="text-slate-400 text-[10px] uppercase font-bold block">फिटनेस लक्ष्य</span>
+                  <span className="text-sm font-black text-white capitalize block mt-0.5 truncate">
+                    {selectedClient.fitnessGoal?.replace('_', ' ') || 'Muscle'}
+                  </span>
+                  <span className="text-[10px] text-cyan-300 block font-mono">
+                    {selectedClient.gender === 'female' ? 'Female' : 'Male'}, {selectedClient.age || 26}y
+                  </span>
                 </div>
               </div>
 
-              {clientDiet && (
-                <div className="mt-3 inline-flex items-center gap-2 text-xs bg-cyan-950/70 border border-cyan-800/70 px-3 py-1.5 rounded-xl text-cyan-300">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                  <span>
-                    वर्तमान एक्टिव डाइट: <strong>{clientDiet.dietType === 'veg' ? '🥗 शाकाहारी (Pure Veg)' : clientDiet.dietType === 'non_veg' ? '🍗 मांसाहारी (Non-Veg)' : clientDiet.dietType === 'eggitarian' ? '🥚 अंडे के साथ (Eggitarian)' : 'कस्टम न्यूट्रिशन'}</strong> • {clientDiet.targetCalories} kcal • P: {clientDiet.targetProtein}g • C: {clientDiet.targetCarbs}g • F: {clientDiet.targetFats}g ({clientDiet.meals?.length || 0} मील्स)
-                  </span>
+              {/* 1-Click Veg / Non-Veg Diet Selector Toolbar */}
+              <div className="pt-3 border-t border-slate-700/70">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-xs text-slate-200">
+                    <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span className="font-bold">बॉडी मास आधारित ऑटो डाइट चार्ट जनरेट करें (Select Diet Type):</span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {(showAllDietOptions || selectedClient.dietPreference !== 'non_veg') && (
+                      <button
+                        type="button"
+                        onClick={() => handleAutoGenerateDiet('veg')}
+                        className="px-3.5 py-2 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                        title="पनीर, सोया, दाल, ओट्स, चना आधारित शाकाहारी डाइट"
+                      >
+                        <Apple className="w-3.5 h-3.5" />
+                        <span>🥗 1-Click Pure Veg (शाकाहारी)</span>
+                      </button>
+                    )}
+
+                    {(showAllDietOptions || selectedClient.dietPreference === 'non_veg') && (
+                      <button
+                        type="button"
+                        onClick={() => handleAutoGenerateDiet('non_veg')}
+                        className="px-3.5 py-2 rounded-xl text-xs font-black bg-rose-600 hover:bg-rose-500 text-white shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                        title="चिकन, अंडे, मछली आधारित उच्च प्रोटीन डाइट"
+                      >
+                        <Drumstick className="w-3.5 h-3.5" />
+                        <span>🍗 1-Click Non-Veg (मांसाहारी)</span>
+                      </button>
+                    )}
+
+                    {showAllDietOptions && (
+                      <button
+                        type="button"
+                        onClick={() => handleAutoGenerateDiet('eggitarian')}
+                        className="px-3.5 py-2 rounded-xl text-xs font-black bg-amber-600 hover:bg-amber-500 text-white shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                        title="उबले अंडे + शाकाहारी प्रोटीन युक्त डाइट"
+                      >
+                        <Egg className="w-3.5 h-3.5" />
+                        <span>🥚 1-Click Eggitarian (अंडा युक्त)</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => setIsDietModalOpen(true)}
+                      className="px-3.5 py-2 rounded-xl text-xs font-black bg-slate-700 hover:bg-slate-600 text-cyan-200 border border-slate-600 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                      title="डाइट प्लान में कोई भी बदलाव या कस्टम भोजन जोड़ें"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>✏️ एडिट / कस्टम डाइट</span>
+                    </button>
+                  </div>
                 </div>
-              )}
+
+                {clientDiet && (
+                  <div className="mt-3 inline-flex items-center gap-2 text-xs bg-cyan-950/70 border border-cyan-800/70 px-3 py-1.5 rounded-xl text-cyan-300">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>
+                      वर्तमान एक्टिव डाइट: <strong>{clientDiet.dietType === 'veg' ? '🥗 शाकाहारी (Pure Veg)' : clientDiet.dietType === 'non_veg' ? '🍗 मांसाहारी (Non-Veg)' : clientDiet.dietType === 'eggitarian' ? '🥚 अंडे के साथ (Eggitarian)' : 'कस्टम न्यूट्रिशन'}</strong> • {clientDiet.targetCalories} kcal • P: {clientDiet.targetProtein}g • C: {clientDiet.targetCarbs}g • F: {clientDiet.targetFats}g ({clientDiet.meals?.length || 0} मील्स)
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* 2. VISUAL PROGRESS & TRANSFORMATION CHANGE CHART */}
-          <MemberProgressChart
-            logs={effectiveClientLogs}
-            memberName={selectedClient.name}
-            targetWeightKg={selectedClient.targetWeightKg || 82}
-            onOpenLogModal={handleOpenLogModal}
-          />
+          {(currentView === 'all' || currentView === 'progress') && (
+            <MemberProgressChart
+              logs={effectiveClientLogs}
+              memberName={selectedClient.name}
+              targetWeightKg={selectedClient.targetWeightKg || 82}
+              onOpenLogModal={handleOpenLogModal}
+            />
+          )}
 
           {/* 2.3. MEMBER PT ATTENDANCE CALENDAR & SESSIONS TRACKER */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+          {(currentView === 'all' || currentView === 'dashboard') && (
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-3">
               <div>
@@ -1423,9 +1627,11 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
               </span>
             </div>
           </div>
+          )}
 
           {/* 2.5. CLIENT WEEKLY WORKOUT ROUTINE VIEWER & MODIFIER */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+          {(currentView === 'all' || currentView === 'planner') && (
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-3">
               <div>
                 <div className="flex items-center gap-2 mb-1">
@@ -1536,9 +1742,11 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
               );
             })()}
           </div>
+          )}
 
           {/* 3. CLIENT DIET PLAN VIEWER & MODIFIER */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+          {(currentView === 'all' || currentView === 'planner') && (
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-3">
               <div>
                 <div className="flex items-center gap-2 mb-1">
@@ -1636,39 +1844,42 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
               </div>
             )}
           </div>
+          )}
 
           {/* 4. LOG SESSION NOTES */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
-            <h4 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-              <ClipboardList className="w-4 h-4 text-cyan-600" />
-              <span>Log Training Session Note for {selectedClient.name}</span>
-            </h4>
+          {(currentView === 'all' || currentView === 'dashboard') && (
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+              <h4 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                <ClipboardList className="w-4 h-4 text-cyan-600" />
+                <span>Log Training Session Note for {selectedClient.name}</span>
+              </h4>
 
-            {noteSaved && (
-              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-emerald-600" />
-                <span>Training note saved and synchronized with {selectedClient.name}'s profile!</span>
-              </div>
-            )}
+              {noteSaved && (
+                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-600" />
+                  <span>Training note saved and synchronized with {selectedClient.name}'s profile!</span>
+                </div>
+              )}
 
-            <form onSubmit={handleSaveNotes} className="space-y-3">
-              <textarea
-                rows={3}
-                required
-                placeholder="e.g. Rahul hit 85kg on bench press today for 3 reps! Form was stable. Recommended adding 50g oats to post-workout."
-                value={sessionNotes}
-                onChange={(e) => setSessionNotes(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-cyan-500 focus:bg-white"
-              />
+              <form onSubmit={handleSaveNotes} className="space-y-3">
+                <textarea
+                  rows={3}
+                  required
+                  placeholder="e.g. Rahul hit 85kg on bench press today for 3 reps! Form was stable. Recommended adding 50g oats to post-workout."
+                  value={sessionNotes}
+                  onChange={(e) => setSessionNotes(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-cyan-500 focus:bg-white"
+                />
 
-              <button
-                type="submit"
-                className="py-2 px-5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
-              >
-                Save Coach Session Log
-              </button>
-            </form>
-          </div>
+                <button
+                  type="submit"
+                  className="py-2 px-5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
+                >
+                  Save Coach Session Log
+                </button>
+              </form>
+            </div>
+          )}
         </div>
       )}
 

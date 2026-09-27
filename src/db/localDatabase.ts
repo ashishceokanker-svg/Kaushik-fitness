@@ -83,7 +83,7 @@ const SEED_USERS: DbUser[] = [
     created_at: '2023-01-01T00:00:00.000Z',
     pin: '8902',
     gender: 'male',
-    address: 'वार्ड क्र. 12, उपनगर कॉलोनी, स्टेडियम रोड, कांकेर (छ.ग.) - 494334',
+    address: 'कांकेर (छ.ग.)',
   },
   {
     id: 'usr-5',
@@ -490,7 +490,7 @@ class LocalGymDatabase {
         created_at: '2023-01-01T00:00:00.000Z',
         pin: '8902',
         gender: 'male',
-        address: 'वार्ड क्र. 12, उपनगर कॉलोनी, स्टेडियम रोड, कांकेर (छ.ग.) - 494334',
+        address: 'कांकेर (छ.ग.)',
       });
       changed = true;
     }
@@ -958,10 +958,10 @@ class LocalGymDatabase {
             : '1998-11-22',
         address:
           u.id === 'usr-1'
-            ? (u.address || 'मेन रोड, नया बस स्टैंड के पास, कांकेर (छ.ग.) - 494334')
+            ? (u.address || 'कांकेर (छ.ग.)')
             : u.id === 'usr-2'
-            ? 'वार्ड क्र. 12, उपनगर कॉलोनी, स्टेडियम रोड, कांकेर (छ.ग.) - 494334'
-            : 'शीतला पारा, पुराना बस डिपो, कांकेर (छ.ग.) - 494334',
+            ? (u.address || 'कांकेर (छ.ग.)')
+            : (u.address || 'कांकेर (छ.ग.)'),
         docType:
           u.id === 'usr-2'
             ? 'Master Trainer Certification & Aadhaar'

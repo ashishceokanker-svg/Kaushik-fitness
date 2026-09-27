@@ -37,7 +37,7 @@ interface BodyPhotoTrackerProps {
 type PhotoSide = 'front' | 'back' | 'left' | 'right';
 
 export const BodyPhotoTracker: React.FC<BodyPhotoTrackerProps> = ({ member, canEdit = true, isCompact = false }) => {
-  const { getBodyPhotoLogs, saveBodyPhotoLog, deleteBodyPhotoLog } = useGymData();
+  const { getBodyPhotoLogs, saveBodyPhotoLog, deleteBodyPhotoLog, updateMember } = useGymData();
 
   // Active view tab
   const [activeTab, setActiveTab] = useState<'compare' | 'upload' | 'history'>('compare');
@@ -174,6 +174,14 @@ export const BodyPhotoTracker: React.FC<BodyPhotoTrackerProps> = ({ member, canE
         leftPhotoUrl: cLeft,
         rightPhotoUrl: cRight,
       });
+
+      if (Number(uploadWeight) > 0 && member.id) {
+        updateMember(member.id, { weightKg: Number(uploadWeight) });
+      }
+
+      window.dispatchEvent(new Event('kf_member_updated'));
+      window.dispatchEvent(new Event('kf_body_index_updated'));
+      window.dispatchEvent(new Event('storage'));
 
       // Fire celebratory confetti!
       try {

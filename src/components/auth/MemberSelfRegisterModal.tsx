@@ -333,41 +333,57 @@ export const MemberSelfRegisterModal: React.FC<MemberSelfRegisterModalProps> = (
           </div>
 
           {/* High-Visibility Custom Personal PIN Section */}
-          <div className="p-4 bg-gradient-to-br from-amber-500/15 via-amber-400/10 to-transparent border-2 border-amber-400 rounded-2xl">
-            <div className="mb-2">
-              <label className="block text-xs font-black text-amber-950 uppercase tracking-wide">
-                🔑 आपका 4-अंकीय व्यक्तिगत सुरक्षा पिन (Your 4-Digit PIN) *
-              </label>
-              <p className="text-[11px] text-amber-900 font-medium">
-                भविष्य में जिम लॉगिन और अटेंडेंस हेतु यह 4-अंकीय पिन स्वतः जनरेट हुआ है:
-              </p>
+          <div className="p-4 bg-gradient-to-br from-amber-50 via-orange-50/60 to-amber-100/50 border-2 border-amber-400 rounded-2xl shadow-xs space-y-2">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1.5">
+              <div>
+                <label className="block text-xs font-black text-amber-950 uppercase tracking-wide flex items-center gap-1.5">
+                  <KeyRound className="w-4 h-4 text-amber-700" />
+                  <span>🔑 आपका 4-अंकीय व्यक्तिगत सुरक्षा पिन (Your 4-Digit PIN) *</span>
+                </label>
+                <p className="text-[11px] text-amber-900 font-medium">
+                  भविष्य में जिम लॉगिन और अटेंडेंस हेतु यह 4-अंकीय पिन स्वतः जनरेट हुआ है:
+                </p>
+              </div>
+              <div className="text-xs">
+                {pin.length === 4 ? (
+                  <span className="text-emerald-700 font-bold flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>पिन सुरक्षित है (PIN Ready)</span>
+                  </span>
+                ) : (
+                  <span className="text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
+                    ⚠️ 4 अंकों का पिन दर्ज करें ({pin.length}/4)
+                  </span>
+                )}
+              </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <KeyRound className="w-5 h-5 text-amber-600 absolute left-3 top-2.5" />
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              {/* 4 Large High-Contrast Digit Display Cards */}
+              <div className="flex items-center gap-2">
+                {pin.padEnd(4, '•').split('').map((char, cIdx) => (
+                  <div
+                    key={cIdx}
+                    className="w-12 h-14 rounded-2xl bg-white border-2 border-amber-500 shadow-sm flex items-center justify-center text-3xl font-mono font-black text-slate-950"
+                  >
+                    {char}
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2">
                 <input
                   type="text"
                   maxLength={4}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   required
                   placeholder="4 अंक"
                   value={pin}
                   onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                  className="w-36 bg-white border-2 border-amber-500 rounded-2xl pl-10 pr-3 py-2 text-center text-xl font-mono font-black text-amber-950 tracking-widest focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-inner"
+                  className="w-28 bg-white border-2 border-slate-300 focus:border-amber-500 rounded-xl px-2.5 py-2 text-center text-base font-mono font-black text-slate-900 shadow-inner focus:outline-none"
                 />
-              </div>
-
-              <div className="text-xs">
-                {pin.length === 4 ? (
-                  <span className="text-emerald-700 font-bold flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>पिन सुरक्षित है (PIN Ready)</span>
-                  </span>
-                ) : (
-                  <span className="text-rose-600 font-bold">
-                    ⚠️ 4 अंकों का पिन दर्ज करें ({pin.length}/4)
-                  </span>
-                )}
+                <span className="text-[11px] text-slate-600 font-medium">(बदलने हेतु)</span>
               </div>
             </div>
           </div>

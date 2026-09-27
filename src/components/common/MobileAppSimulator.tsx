@@ -18,6 +18,7 @@ import {
   Activity,
   Dumbbell,
   User,
+  Users,
   Clock,
   Sparkles,
   Receipt,
@@ -116,7 +117,7 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
   const [desktopViewMode, setDesktopViewMode] = useState<'fit_screen' | 'phone_frame'>('fit_screen');
 
   const [mobileTab, setMobileTab] = useState<'home' | 'pass' | 'photos' | 'body_index' | 'workout' | 'diet' | '3d' | 'profile' | 'developer'>('home');
-  const [trainerTab, setTrainerTab] = useState<'dashboard' | 'reports' | 'fitness' | 'profile' | 'developer'>('dashboard');
+  const [trainerTab, setTrainerTab] = useState<'dashboard' | 'clients' | 'progress' | 'planner' | 'reports' | 'profile' | 'developer'>('dashboard');
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedInvoice, setSelectedInvoice] = useState(false);
   const [isHelpdeskOpen, setIsHelpdeskOpen] = useState(false);
@@ -683,14 +684,16 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
       {/* Scrollable Screen Content - strictly vertical scrolling, NO horizontal side-scroll */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden px-3.5 py-3 space-y-3.5 scrollbar-none w-full max-w-full box-border">
         {role === 'trainer' ? (
-          trainerTab === 'dashboard' ? (
+          (trainerTab === 'dashboard' || trainerTab === 'clients' || trainerTab === 'progress' || trainerTab === 'planner') ? (
             <div className="w-full max-w-full overflow-x-hidden">
               <TrainerDashboard
+                activeView={trainerTab}
+                onViewChange={(v) => setTrainerTab(v as any)}
                 onNavigate={(tab) => {
                   if (tab === 'trainer_report' || tab === 'report') {
                     setTrainerTab('reports');
                   } else if (tab === 'fitness') {
-                    setTrainerTab('fitness');
+                    setTrainerTab('planner');
                   }
                 }}
               />
@@ -698,10 +701,6 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
           ) : trainerTab === 'reports' ? (
             <div className="w-full max-w-full overflow-x-hidden">
               <TrainerGoswaraReport onBack={() => setTrainerTab('dashboard')} />
-            </div>
-          ) : trainerTab === 'fitness' ? (
-            <div className="w-full max-w-full overflow-x-hidden">
-              <SmartFitnessEngine />
             </div>
           ) : trainerTab === 'developer' ? (
             renderDeveloperProfile(() => setTrainerTab('profile'))
@@ -754,17 +753,19 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                       <span className="font-semibold text-slate-500">संपर्क मोबाइल:</span>
                       <span className="font-mono font-bold text-slate-900">{trainer.phone || '9826189002'}</span>
                     </div>
+                    {trainer.email && (
+                      <div className="flex items-center justify-between text-slate-700">
+                        <span className="font-semibold text-slate-500">ईमेल:</span>
+                        <span className="font-mono font-bold text-slate-900 truncate max-w-[180px]">{trainer.email}</span>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between text-slate-700">
-                      <span className="font-semibold text-slate-500">ईमेल:</span>
-                      <span className="font-mono font-bold text-slate-900 truncate max-w-[180px]">{trainer.email || 'trainer@kaushikfitness.com'}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-slate-700">
-                      <span className="font-semibold text-slate-500">फ्लोर शिफ्ट समय:</span>
-                      <span className="font-bold text-slate-900">06:00 AM - 12:00 PM & 05:00 PM - 09:00 PM</span>
-                    </div>
-                    <div className="flex items-center justify-between text-slate-700">
-                      <span className="font-semibold text-slate-500">विशेषज्ञता:</span>
-                      <span className="font-bold text-cyan-800">हाइपरट्रॉफी, बॉडीबिल्डिंग व पावरलिफ्टिंग</span>
+                      <span className="font-semibold text-slate-500">पद / विशेषज्ञता:</span>
+                      <span className="font-bold text-cyan-800">
+                        {trainer.specialization && trainer.specialization.length > 0
+                          ? trainer.specialization.join(', ')
+                          : trainer.designation || 'हेड फिटनेस कोच'}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-slate-700">
                       <span className="font-semibold text-slate-500">असाइन पीटी सदस्य:</span>
@@ -790,14 +791,14 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
 
                 <button
                   type="button"
-                  onClick={() => setTrainerTab('fitness')}
+                  onClick={() => setTrainerTab('planner')}
                   className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col items-start gap-1 text-left cursor-pointer hover:border-amber-400 active:scale-95 transition-all"
                 >
                   <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center mb-1">
-                    <Dumbbell className="w-4 h-4" />
+                    <Utensils className="w-4 h-4" />
                   </div>
-                  <h4 className="text-xs font-bold text-slate-900">स्मार्ट फिटनेस इंजन</h4>
-                  <p className="text-[10px] text-slate-500">BMR / TDEE व डाइट</p>
+                  <h4 className="text-xs font-bold text-slate-900">डाइट व वर्कआउट प्लानर</h4>
+                  <p className="text-[10px] text-slate-500">6-Day Split व डाइट</p>
                 </button>
               </div>
 
@@ -1603,10 +1604,6 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                     <strong className="text-cyan-800 font-mono font-bold">{member.memberCode}</strong>
                   </div>
                   <div className="flex justify-between text-slate-600">
-                    <span>Plan:</span>
-                    <strong className="text-amber-800 font-bold">{MEMBERSHIP_PRICING[member.membershipDuration]?.label || 'Standard'}</strong>
-                  </div>
-                  <div className="flex justify-between text-slate-600">
                     <span>Diet Preference:</span>
                     <strong className="text-emerald-700 font-bold">
                       {member.dietPreference === 'non_veg' ? '🍗 Non-Veg (मांसाहारी)' : '🥗 Veg (शाकाहारी)'}
@@ -1615,18 +1612,6 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                   <div className="flex justify-between text-slate-600">
                     <span>Workout Batch (समय):</span>
                     <strong className="text-slate-900 font-bold">{member.workoutSlot || '06:00 AM - 07:00 AM'}</strong>
-                  </div>
-
-                  {/* Fees & Bill Receipt Button */}
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedInvoice(true)}
-                      className="w-full py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-950 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-2xs transition-all active:scale-98"
-                    >
-                      <Receipt className="w-4 h-4 text-amber-700" />
-                      <span>रसीद / इनवॉइस देखें (Fees Receipt)</span>
-                    </button>
                   </div>
 
                   {/* Helpdesk & App User Guide Card */}
@@ -1710,45 +1695,65 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
           <span>ऐप लॉक है • सदस्यता रिन्यू कराने पर खुलेगा</span>
         </div>
       ) : role === 'trainer' ? (
-        <div className="px-2 py-2 bg-white/95 backdrop-blur-md border-t border-slate-300 flex items-center justify-around z-30 shrink-0 shadow-sm w-full">
+        <div className="px-1 py-2 bg-white/95 backdrop-blur-md border-t border-slate-300 flex items-center justify-around z-30 shrink-0 shadow-sm w-full">
           <button
             onClick={() => setTrainerTab('dashboard')}
-            className={`flex flex-col items-center gap-0.5 text-[10px] font-bold transition-colors flex-1 min-w-0 cursor-pointer ${
+            className={`flex flex-col items-center gap-0.5 text-[9px] font-bold transition-colors flex-1 min-w-0 cursor-pointer ${
               trainerTab === 'dashboard' ? 'text-amber-600' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             <LayoutDashboard className="w-4 h-4" />
-            <span className="truncate">Dashboard</span>
+            <span className="truncate">Home</span>
+          </button>
+
+          <button
+            onClick={() => setTrainerTab('clients')}
+            className={`flex flex-col items-center gap-0.5 text-[9px] font-bold transition-colors flex-1 min-w-0 cursor-pointer ${
+              trainerTab === 'clients' ? 'text-cyan-700' : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span className="truncate">Clients</span>
+          </button>
+
+          <button
+            onClick={() => setTrainerTab('progress')}
+            className={`flex flex-col items-center gap-0.5 text-[9px] font-bold transition-colors flex-1 min-w-0 cursor-pointer ${
+              trainerTab === 'progress' ? 'text-purple-700' : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <TrendingUp className="w-4 h-4" />
+            <span className="truncate">Progress</span>
+          </button>
+
+          <button
+            onClick={() => setTrainerTab('planner')}
+            className={`flex flex-col items-center gap-0.5 text-[9px] font-bold transition-colors flex-1 min-w-0 cursor-pointer ${
+              trainerTab === 'planner' ? 'text-emerald-700' : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Utensils className="w-4 h-4" />
+            <span className="truncate">Planner</span>
           </button>
 
           <button
             onClick={() => setTrainerTab('reports')}
-            className={`flex flex-col items-center gap-0.5 text-[10px] font-bold transition-colors flex-1 min-w-0 cursor-pointer ${
+            className={`flex flex-col items-center gap-0.5 text-[9px] font-bold transition-colors flex-1 min-w-0 cursor-pointer ${
               trainerTab === 'reports' ? 'text-cyan-700' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             <FileSpreadsheet className="w-4 h-4" />
-            <span className="truncate">गोशवारा</span>
-          </button>
-
-          <button
-            onClick={() => setTrainerTab('fitness')}
-            className={`flex flex-col items-center gap-0.5 text-[10px] font-bold transition-colors flex-1 min-w-0 cursor-pointer ${
-              trainerTab === 'fitness' ? 'text-amber-600' : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Dumbbell className="w-4 h-4" />
-            <span className="truncate">फिटनेस</span>
+            <span className="truncate">Report</span>
           </button>
 
           <button
             onClick={() => setTrainerTab('profile')}
-            className={`flex flex-col items-center gap-0.5 text-[10px] font-bold transition-colors flex-1 min-w-0 cursor-pointer ${
+            className={`flex flex-col items-center gap-0.5 text-[9px] font-bold transition-colors flex-1 min-w-0 cursor-pointer ${
               trainerTab === 'profile' ? 'text-slate-900' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             <Award className="w-4 h-4" />
-            <span className="truncate">प्रोफ़ाइल</span>
+            <span className="truncate">Profile</span>
           </button>
         </div>
       ) : (

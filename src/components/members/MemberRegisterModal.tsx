@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useGymData } from '../../context/GymDataContext';
 import { Gender, FitnessGoal, MembershipDuration, PTPackageDuration, PaymentMethod, Member } from '../../types';
 import { MEMBERSHIP_PRICING, PT_PRICING, formatINR, calculateExpiryDate } from '../../utils/formatters';
-import { X, UserPlus, Sparkles, Dumbbell, ShieldCheck, Tag, Camera, Upload, Smartphone, Eye, EyeOff, Award, Minus, Plus } from 'lucide-react';
+import { X, UserPlus, Sparkles, Dumbbell, ShieldCheck, Tag, Camera, Upload, Smartphone, Eye, EyeOff, Award, Minus, Plus, KeyRound, CheckCircle2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { LiveCameraModal } from '../common/LiveCameraModal';
 import { compressImageFile } from '../../utils/imageCompressor';
@@ -446,39 +446,61 @@ export const MemberRegisterModal: React.FC<MemberRegisterModalProps> = ({
               </div>
             </div>
 
-            {/* PIN Generation & Customization Box */}
-            <div className="p-3 bg-amber-500/10 border border-amber-300/80 rounded-xl">
-              <div className="mb-1.5">
-                <label className="block text-xs font-bold text-amber-950">
-                  सदस्य ऐप लॉगिन व अटेंडेंस 4-अंक पिन (Member Security PIN) *
-                </label>
-                <p className="text-[11px] text-amber-800">
-                  सदस्य मोबाइल ऐप लॉगिन और जिम अटेंडेंस के लिए यह 4-अंक पिन स्वतः जनरेट हुआ है:
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <input
-                  type="text"
-                  maxLength={4}
-                  required
-                  placeholder="उदा. 7784"
-                  value={pin}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
-                    setPin(val);
-                  }}
-                  className="w-32 bg-white border-2 border-amber-500/60 rounded-xl px-3 py-1.5 text-center text-lg font-mono font-black text-amber-950 tracking-widest focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-600 shadow-inner"
-                />
+            {/* PIN Generation & Customization Box - Ultra Readable */}
+            <div className="p-4 bg-gradient-to-r from-amber-50 via-orange-50/60 to-amber-100/50 border-2 border-amber-400 rounded-2xl shadow-xs space-y-2">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1.5">
+                <div>
+                  <label className="block text-xs font-black text-amber-950 uppercase tracking-wide flex items-center gap-1.5">
+                    <KeyRound className="w-4 h-4 text-amber-700" />
+                    <span>सदस्य ऐप लॉगिन व अटेंडेंस 4-अंक पिन (Member Security PIN) *</span>
+                  </label>
+                  <p className="text-[11px] text-amber-800 font-medium">
+                    सदस्य मोबाइल ऐप लॉगिन और जिम अटेंडेंस के लिए यह 4-अंक पिन स्वतः जनरेट हुआ है:
+                  </p>
+                </div>
                 <div className="text-xs">
                   {pin.length === 4 ? (
-                    <span className="text-emerald-700 font-bold flex items-center gap-1">
-                      ✓ 4 अंकों का पिन मान्य है
+                    <span className="text-emerald-700 font-bold flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>4-अंक पिन मान्य है</span>
                     </span>
                   ) : (
-                    <span className="text-rose-600 font-medium">
-                      ⚠️ कृपया 4 अंकों का पिन दर्ज करें ({pin.length}/4)
+                    <span className="text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
+                      ⚠️ 4 अंकों का पिन दर्ज करें ({pin.length}/4)
                     </span>
                   )}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 pt-1">
+                {/* 4 Large High-Contrast Digit Display Cards */}
+                <div className="flex items-center gap-2">
+                  {pin.padEnd(4, '•').split('').map((char, cIdx) => (
+                    <div
+                      key={cIdx}
+                      className="w-12 h-14 rounded-2xl bg-white border-2 border-amber-500 shadow-sm flex items-center justify-center text-3xl font-mono font-black text-slate-950"
+                    >
+                      {char}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    maxLength={4}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    required
+                    placeholder="4 अंक"
+                    value={pin}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                      setPin(val);
+                    }}
+                    className="w-28 bg-white border-2 border-slate-300 focus:border-amber-500 rounded-xl px-2.5 py-2 text-center text-base font-mono font-black text-slate-900 shadow-inner focus:outline-none"
+                  />
+                  <span className="text-[11px] text-slate-600 font-medium">(बदलने हेतु)</span>
                 </div>
               </div>
             </div>

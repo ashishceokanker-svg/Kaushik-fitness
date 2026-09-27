@@ -253,7 +253,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         created_at: '2023-01-01T00:00:00.000Z',
         pin: '8902',
         gender: 'male',
-        address: 'वार्ड क्र. 12, उपनगर कॉलोनी, स्टेडियम रोड, कांकेर (छ.ग.) - 494334',
+        address: 'कांकेर (छ.ग.)',
       };
       localDb.updateUser('usr-2', { pin: '8902', name: 'Vikram Sahu' });
     }
