@@ -5,6 +5,7 @@ import { localDb } from '../../db/localDatabase';
 import { StaffDailyAttendance } from '../../types';
 import { formatINR, formatDate } from '../../utils/formatters';
 import { MemberFeeEntryModal } from '../finance/MemberFeeEntryModal';
+import { getEffectiveAvatar } from '../../utils/animatedAvatars';
 import {
   CreditCard,
   DollarSign,
@@ -142,17 +143,11 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({ onNavigate }) =>
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm relative overflow-hidden">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-4">
-            {staffMember?.avatarUrl ? (
-              <img
-                src={staffMember.avatarUrl}
-                alt={staffMember.name}
-                className="w-16 h-16 rounded-2xl object-cover border-2 border-amber-300 shadow-sm"
-              />
-            ) : (
-              <div className="w-16 h-16 rounded-2xl bg-amber-100 border-2 border-amber-300 flex items-center justify-center text-2xl font-black text-amber-800 shadow-sm">
-                {staffMember?.name ? staffMember.name.slice(0, 2).toUpperCase() : 'ST'}
-              </div>
-            )}
+            <img
+              src={getEffectiveAvatar(staffMember?.avatarUrl, staffMember?.gender, staffMember?.name)}
+              alt={staffMember?.name || 'Staff User'}
+              className="w-16 h-16 rounded-2xl object-cover border-2 border-amber-300 shadow-sm shrink-0 bg-slate-900"
+            />
             <div>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-bold uppercase tracking-wider mb-1">
                 <CreditCard className="w-3.5 h-3.5 text-amber-600" />

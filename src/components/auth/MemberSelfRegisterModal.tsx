@@ -194,8 +194,8 @@ export const MemberSelfRegisterModal: React.FC<MemberSelfRegisterModalProps> = (
                 <h3 className="font-black text-slate-950 text-base leading-tight">
                   नया सदस्य सेल्फ रजिस्ट्रेशन (Self-Registration)
                 </h3>
-                <span className="px-2 py-0.5 rounded-full bg-slate-950 text-amber-300 font-mono font-black text-[11px] shadow-2xs">
-                  PIN: 1111
+                <span className="px-2 py-0.5 rounded-full bg-slate-950 text-amber-300 font-bold text-[11px] shadow-2xs">
+                  स्व-पंजीकरण
                 </span>
               </div>
               <p className="text-xs text-slate-900/80 font-medium mt-0.5">

@@ -4,7 +4,7 @@
  * Generates smooth, self-contained SVG animations (rotating neon halo & subtle athletic breathing).
  */
 
-export const MALE_ATHLETE_ANIMATED_AVATAR = `data:image/svg+xml;utf8,${encodeURIComponent(`
+export const MALE_ATHLETE_ANIMATED_AVATAR = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="100%" height="100%">
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -92,7 +92,7 @@ export const MALE_ATHLETE_ANIMATED_AVATAR = `data:image/svg+xml;utf8,${encodeURI
 </svg>
 `)}`;
 
-export const FEMALE_ATHLETE_ANIMATED_AVATAR = `data:image/svg+xml;utf8,${encodeURIComponent(`
+export const FEMALE_ATHLETE_ANIMATED_AVATAR = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="100%" height="100%">
   <defs>
     <linearGradient id="fBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -196,7 +196,8 @@ export function getDefaultAnimatedAvatar(gender?: string | null, name?: string |
     g === 'महिला' ||
     g === 'स्त्री' ||
     g === 'woman' ||
-    g === 'girl'
+    g === 'girl' ||
+    g === 'fem'
   ) {
     return FEMALE_ATHLETE_ANIMATED_AVATAR;
   }
@@ -212,11 +213,13 @@ export function getDefaultAnimatedAvatar(gender?: string | null, name?: string |
   // If gender is unspecified, check common female names or honorifics
   const n = (name || '').trim().toLowerCase();
   const femalePatterns = [
-    'priya', 'pooja', 'neha', 'anjali', 'shreya', 'divya', 'sunita', 'kavita',
-    'mrs', 'ms', 'miss', 'rani', 'devi', 'kumari', 'rekha', 'geeta', 'seema',
-    'anita', 'meena', 'arti', 'sonia', 'nisha', 'sneha', 'swati', 'sapna',
-    'mona', 'preeti', 'ritu', 'tanu', 'shikha', 'mamta', 'rashmi', 'pallavi',
-    'poonam', 'komal', 'jyoti', 'simran', 'payal', 'khushi', 'pinky'
+    'priya', 'pooja', 'puja', 'neha', 'anjali', 'shreya', 'divya', 'sunita', 'kavita',
+    'mrs', 'ms', 'miss', 'rani', 'devi', 'kumari', 'rekha', 'geeta', 'gita', 'seema', 'sima',
+    'anita', 'meena', 'mina', 'arti', 'aarti', 'sonia', 'sonya', 'nisha', 'sneha', 'swati', 'sapna',
+    'mona', 'preeti', 'priti', 'ritu', 'tanu', 'shikha', 'mamta', 'rashmi', 'pallavi',
+    'poonam', 'komal', 'jyoti', 'simran', 'payal', 'khushi', 'pinky', 'pinki', 'muskan',
+    'deepika', 'sweta', 'shweta', 'kajal', 'priyanka', 'vandana', 'kiran', 'babita', 'chhaya',
+    'anushka', 'sheetal', 'shital', 'sita', 'radha', 'laxmi', 'lakshmi'
   ];
   if (femalePatterns.some((p) => n.includes(p))) {
     return FEMALE_ATHLETE_ANIMATED_AVATAR;
@@ -225,19 +228,51 @@ export function getDefaultAnimatedAvatar(gender?: string | null, name?: string |
 }
 
 /**
+ * Checks if a URL is a genuine user-uploaded photo (e.g. camera capture or file upload)
+ * rather than a placeholder, stock image, or generated SVG avatar.
+ */
+export function isRealUserUploadedPhoto(url?: string | null): boolean {
+  if (!url || typeof url !== 'string') return false;
+  const trimmed = url.trim();
+  if (trimmed.length < 50) return false;
+  // If it's an SVG data URI or contains svg, it's a generated avatar, not a real user photo
+  if (trimmed.startsWith('data:image/svg+xml') || trimmed.includes('<svg') || trimmed.includes('%3Csvg')) {
+    return false;
+  }
+  // If it's a known stock placeholder or dummy image
+  if (
+    trimmed.includes('unsplash.com') ||
+    trimmed.includes('placeholder') ||
+    trimmed.includes('dicebear') ||
+    trimmed.includes('ui-avatars') ||
+    trimmed.includes('gravatar')
+  ) {
+    return false;
+  }
+  // If it's a real base64 photo (e.g. uploaded via camera/file input)
+  if (
+    trimmed.startsWith('data:image/jpeg') ||
+    trimmed.startsWith('data:image/png') ||
+    trimmed.startsWith('data:image/webp') ||
+    trimmed.startsWith('data:image/jpg')
+  ) {
+    return true;
+  }
+  // If it's a real remote URL (e.g. firebasestorage or cdn)
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Resolves avatar with fallback to the high-performance animated avatar.
- * Stock placeholder photos (Unsplash demo images) are filtered out so that
- * the appropriate Male or Female animated athlete avatar is always displayed.
+ * If user hasn't uploaded an authentic photo (camera/upload), it returns
+ * the Gender-Aware Animated Avatar (Female athlete for females, Male athlete for males).
  */
 export function getEffectiveAvatar(avatarUrl?: string | null, gender?: string | null, name?: string | null): string {
-  if (
-    avatarUrl &&
-    typeof avatarUrl === 'string' &&
-    avatarUrl.trim().length > 10 &&
-    !avatarUrl.includes('images.unsplash.com') &&
-    !avatarUrl.includes('placeholder')
-  ) {
-    return avatarUrl;
+  if (isRealUserUploadedPhoto(avatarUrl)) {
+    return avatarUrl!.trim();
   }
   return getDefaultAnimatedAvatar(gender, name);
 }

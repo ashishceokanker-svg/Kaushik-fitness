@@ -7,7 +7,6 @@ import { MemberProgressChart } from '../progress/MemberProgressChart';
 import { TrainerDietModal } from '../trainer/TrainerDietModal';
 import { TrainerWorkoutModal } from '../trainer/TrainerWorkoutModal';
 import { MemberRegisterModal } from '../members/MemberRegisterModal';
-import { TrainerHelpdeskModal } from '../trainer/TrainerHelpdeskModal';
 import { localDb } from '../../db/localDatabase';
 import { CustomDietPlan, CustomWorkoutPlan, StaffDailyAttendance, WorkoutDay, Staff } from '../../types';
 import { generateAutomaticCustomDiet, generateAutomaticCustomWorkout, generateWorkoutRoutine, calculateBMR, calculateTDEE } from '../../utils/fitnessCalculator';
@@ -105,8 +104,7 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
   const [activeWorkoutDayIdx, setActiveWorkoutDayIdx] = useState<number>(0);
   const [autoDietToast, setAutoDietToast] = useState<string | null>(null);
 
-  // Trainer Profile Photo Upload & Helpdesk Modal States
-  const [isHelpdeskOpen, setIsHelpdeskOpen] = useState(false);
+  // Trainer Profile Photo Upload State
   const [isUploadingTrainerPhoto, setIsUploadingTrainerPhoto] = useState(false);
   const trainerPhotoInputRef = useRef<HTMLInputElement>(null);
 
@@ -665,16 +663,6 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
               </button>
             )}
 
-            {/* Trainer Helpdesk Button */}
-            <button
-              type="button"
-              onClick={() => setIsHelpdeskOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
-              title="कोच सहायता केंद्र एवं मेंटेनेंस हेल्पलाइन"
-            >
-              <HelpCircle className="w-4 h-4 text-slate-950" />
-              <span>🎧 ट्रेनर हेल्पडेस्क</span>
-            </button>
             {/* Live Floor Status & 1-Click Floor Check-Out */}
             <div className={`p-3 rounded-2xl border flex items-center gap-2.5 text-xs ${
               isTrainerOnLiveFloor
@@ -1975,13 +1963,6 @@ export const TrainerDashboard: React.FC<TrainerDashboardProps> = ({ onNavigate }
           }}
         />
       )}
-
-      {/* Trainer Helpdesk Modal */}
-      <TrainerHelpdeskModal
-        isOpen={isHelpdeskOpen}
-        onClose={() => setIsHelpdeskOpen(false)}
-        trainerName={trainer?.name || 'Coach'}
-      />
     </div>
   );
 };

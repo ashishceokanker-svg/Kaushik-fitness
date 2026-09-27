@@ -1003,6 +1003,7 @@ class LocalGymDatabase {
       pin,
       avatar_url: staffData.avatarUrl,
       address: staffData.address,
+      gender: staffData.gender || 'male',
     };
 
     users.push(newUser);
@@ -1082,6 +1083,7 @@ class LocalGymDatabase {
       created_at: new Date().toISOString(),
       pin,
       avatar_url: input.avatarUrl,
+      gender: input.gender || 'male',
     };
     users.unshift(newUser);
     this.setTable(DB_KEYS.USERS, users);
@@ -1282,6 +1284,7 @@ class LocalGymDatabase {
       pin: cloudUser.pin || (existing?.pin ? existing.pin : '1111'),
       avatar_url: cloudUser.avatar_url || cloudUser.avatarUrl || (existing ? existing.avatar_url : undefined),
       address: cloudUser.address || (existing ? existing.address : undefined),
+      gender: cloudUser.gender || (existing ? existing.gender : undefined),
     };
     if (existingIdx >= 0) {
       users[existingIdx] = { ...users[existingIdx], ...updatedUser };
@@ -1316,6 +1319,7 @@ class LocalGymDatabase {
       created_at: cloudMember.joiningDate || (existingUser ? existingUser.created_at : new Date().toISOString()),
       pin: cloudMember.pin || (existingUser?.pin ? existingUser.pin : '1111'),
       avatar_url: cloudMember.avatarUrl || (existingUser ? existingUser.avatar_url : undefined),
+      gender: cloudMember.gender || (existingUser ? existingUser.gender : (existingProfile ? existingProfile.gender : 'male')),
     };
     if (existingUserIdx >= 0) {
       users[existingUserIdx] = { ...users[existingUserIdx], ...updatedUser };
@@ -1330,12 +1334,12 @@ class LocalGymDatabase {
       id: profileId,
       user_id: userId,
       member_code: cloudMember.memberCode || `KF-2024-${String(profiles.length + 1).padStart(3, '0')}`,
-      age: cloudMember.age || 25,
-      gender: cloudMember.gender || 'male',
-      height: cloudMember.heightCm || 170,
-      weight: cloudMember.weightKg || 70,
-      target_weight: cloudMember.targetWeightKg,
-      fitness_goal: cloudMember.fitnessGoal || 'muscle_building',
+      age: cloudMember.age || (existingProfIdx >= 0 ? profiles[existingProfIdx].age : 25),
+      gender: cloudMember.gender || (existingProfIdx >= 0 ? profiles[existingProfIdx].gender : (existingUser?.gender || 'male')),
+      height: cloudMember.heightCm || (existingProfIdx >= 0 ? profiles[existingProfIdx].height : 170),
+      weight: cloudMember.weightKg || (existingProfIdx >= 0 ? profiles[existingProfIdx].weight : 70),
+      target_weight: cloudMember.targetWeightKg !== undefined ? cloudMember.targetWeightKg : (existingProfIdx >= 0 ? profiles[existingProfIdx].target_weight : undefined),
+      fitness_goal: cloudMember.fitnessGoal || (existingProfIdx >= 0 ? profiles[existingProfIdx].fitness_goal : 'muscle_building'),
       fitness_level: cloudMember.fitnessLevel || 'Intermediate',
       fitness_score: cloudMember.fitnessScore || 80,
       bmi: cloudMember.bmi || 24,
@@ -1566,6 +1570,7 @@ class LocalGymDatabase {
         docFileName: staffData.docFileName,
         docFileUrl: staffData.docFileUrl,
         avatarUrl: staffData.avatarUrl || matchedUser?.avatar_url,
+        gender: staffData.gender || (matchedUser as any)?.gender || 'male',
       };
       staffProfiles.push(currentStaff);
     }
@@ -1582,6 +1587,7 @@ class LocalGymDatabase {
         address: staffData.address !== undefined ? staffData.address : u.address,
         avatar_url: staffData.avatarUrl !== undefined ? staffData.avatarUrl : u.avatar_url,
         pin: staffData.pin !== undefined ? staffData.pin : u.pin,
+        gender: staffData.gender !== undefined ? staffData.gender : u.gender,
         role: isFounder
           ? u.role
           : staffData.role ||

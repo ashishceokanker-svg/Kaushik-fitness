@@ -117,8 +117,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSuccess }) =>
             type="button"
             onClick={() => {
               setPortalType('member');
-              setIdentifier('9826112345');
-              setPassword('1234');
+              setIdentifier('');
+              setPassword('');
               setErrorMsg('');
             }}
             className={`py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
@@ -135,8 +135,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSuccess }) =>
             type="button"
             onClick={() => {
               setPortalType('staff');
-              setIdentifier('koushik@koushikfitness.com');
-              setPassword('admin123');
+              setIdentifier('');
+              setPassword('');
               setErrorMsg('');
             }}
             className={`py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
@@ -235,7 +235,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSuccess }) =>
                           {m.name}
                         </div>
                         <div className="text-[10px] text-slate-500 font-mono">
-                          {m.memberCode} • PIN: {m.pin}
+                          {m.memberCode}
                         </div>
                       </div>
                     </div>

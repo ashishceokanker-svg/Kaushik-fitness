@@ -28,6 +28,7 @@ import {
 import * as XLSX from 'xlsx';
 import { ExcelImportModal } from '../common/ExcelImportModal';
 import { EditMemberModal } from './EditMemberModal';
+import { getEffectiveAvatar } from '../../utils/animatedAvatars';
 
 interface MemberListProps {
   onSelectMember?: (member: Member) => void;
@@ -323,17 +324,11 @@ export const MemberList: React.FC<MemberListProps> = ({ onSelectMember }) => {
                       {/* Member Info */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
-                          {member.avatarUrl ? (
-                            <img
-                              src={member.avatarUrl}
-                              alt={member.name}
-                              className="w-10 h-10 rounded-xl object-cover border border-amber-300 shadow-xs shrink-0"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center text-sm font-black text-amber-900 shrink-0">
-                              {member.name.slice(0, 2).toUpperCase()}
-                            </div>
-                          )}
+                          <img
+                            src={getEffectiveAvatar(member.avatarUrl, member.gender, member.name)}
+                            alt={member.name}
+                            className="w-10 h-10 rounded-xl object-cover border border-amber-300 shadow-xs shrink-0 bg-slate-900"
+                          />
                           <div>
                             <div
                               onClick={() => onSelectMember && onSelectMember(member)}

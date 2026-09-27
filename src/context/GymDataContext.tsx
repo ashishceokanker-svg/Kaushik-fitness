@@ -512,6 +512,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         pin: registered.pin,
         created_at: registered.joiningDate,
         avatar_url: registered.avatarUrl,
+        gender: registered.gender,
       });
     }
 
@@ -655,6 +656,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         pin: newStaff.pin,
         avatar_url: newStaff.avatarUrl,
         address: newStaff.address,
+        gender: newStaff.gender,
       });
     }
 
@@ -677,6 +679,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         pin: updatedStaff.pin,
         avatar_url: updatedStaff.avatarUrl,
         address: updatedStaff.address,
+        gender: updatedStaff.gender,
       });
       syncDocToFirestore('kf_staff_profiles', updatedStaff.id, updatedStaff);
     }

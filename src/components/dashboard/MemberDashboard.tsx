@@ -6,6 +6,7 @@ import { ExpirationCountdown } from '../common/ExpirationCountdown';
 import { InvoiceModal } from '../common/InvoiceModal';
 import { BodyVisualizer3D } from '../fitness/BodyVisualizer3D';
 import { BodyIndexTracker } from '../members/BodyIndexTracker';
+import { BodyPhotoTracker } from '../members/BodyPhotoTracker';
 import { generateWorkoutRoutine, generateDietPlan, generateAutomaticCustomDiet } from '../../utils/fitnessCalculator';
 import { localDb } from '../../db/localDatabase';
 import { CustomDietPlan } from '../../types';
@@ -95,7 +96,7 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
     ? new Date(member.expiryDate).getTime() < Date.now() || member.status === 'expired' || !member.active
     : false;
 
-  const [activeTab, setActiveTab] = useState<'home' | 'workout' | 'diet' | 'pass' | 'body_index' | 'receipt' | '3d'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'workout' | 'diet' | 'pass' | 'photos' | 'body_index' | 'receipt' | '3d'>('home');
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [completedExercises, setCompletedExercises] = useState<Record<string, boolean>>({});
   const [selectedWorkoutDay, setSelectedWorkoutDay] = useState<number>(0);
@@ -486,10 +487,10 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
             </button>
 
             <button
-              onClick={() => setActiveTab('body_index')}
+              onClick={() => setActiveTab('photos')}
               className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase shadow-sm transition-all cursor-pointer"
             >
-              <Activity className="w-4 h-4 text-cyan-400" />
+              <Camera className="w-4 h-4 text-cyan-400" />
               4-साइड फोटो व नाप (Photos)
             </button>
 
@@ -582,6 +583,18 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
         >
           <KeyRound className="w-4 h-4 text-cyan-600" />
           <span>4-Digit PIN Pass (हाजिरी)</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('photos')}
+          className={`flex-1 min-w-[130px] flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'photos'
+              ? 'bg-white text-cyan-800 shadow-sm border border-slate-200/80 font-black'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+          }`}
+        >
+          <Camera className="w-4 h-4 text-cyan-600" />
+          <span>4-Side Photos (फ़ोटो)</span>
         </button>
 
         <button
@@ -1251,6 +1264,11 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({ onNavigate }) 
             </div>
           </div>
         </div>
+      )}
+
+      {/* TAB 4.2: 4-SIDE BODY PHOTOS & TRANSFORMATION */}
+      {activeTab === 'photos' && (
+        <BodyPhotoTracker member={member} canEdit={true} />
       )}
 
       {/* TAB 4.5: BODY INDEX & PHYSICAL CHANGES TRACKER */}

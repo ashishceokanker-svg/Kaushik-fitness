@@ -164,6 +164,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       role: 'member',
       memberId: targetProf ? targetProf.id : 'prof-1',
       token: mockJwt,
+      gender: targetProf?.gender || (targetUser as any)?.gender || 'male',
     };
 
     setCurrentUser(userObj);
@@ -392,6 +393,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   created_at: mData.joiningDate || new Date().toISOString(),
                   pin: mPin || cleanId,
                   avatar_url: mData.avatarUrl,
+                  gender: mData.gender || 'male',
                 };
                 localDb.upsertUserFromCloud(matchedDbUser);
                 localDb.upsertMemberFromCloud({
@@ -401,6 +403,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   phone: mData.phone,
                   email: mData.email,
                   pin: mPin || cleanId,
+                  gender: mData.gender || 'male',
                   memberCode: mData.memberCode,
                   membershipDuration: mData.membershipDuration || mData.package_type,
                   expiryDate: mData.expiryDate || mData.expiry_date,
@@ -464,6 +467,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       staffId: matchedDbUser.role !== 'member' ? matchedDbUser.id : undefined,
       token: mockJwt,
       pin: matchedDbUser.pin,
+      gender: (matchedDbUser as any).gender || linkedProfile?.gender || 'male',
     };
 
     setCurrentUser(userObj);

@@ -7,6 +7,7 @@ import { AddStaffModal } from './AddStaffModal';
 import { EditStaffModal } from './EditStaffModal';
 import { ExpirationCountdown } from '../common/ExpirationCountdown';
 import { ChangePinModal } from '../admin/ChangePinModal';
+import { getEffectiveAvatar } from '../../utils/animatedAvatars';
 import {
   Users,
   Award,
@@ -296,17 +297,11 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigateToPl
                 {/* Trainer Header Summary Card */}
                 <div className="p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   <div className="flex items-start gap-4">
-                    {trainer.avatarUrl ? (
-                      <img
-                        src={trainer.avatarUrl}
-                        alt={trainer.name}
-                        className="w-14 h-14 rounded-2xl object-cover border border-cyan-300 shadow-sm shrink-0"
-                      />
-                    ) : (
-                      <div className="w-14 h-14 rounded-2xl bg-cyan-100 border border-cyan-300 flex items-center justify-center text-xl font-black text-cyan-900 shrink-0 shadow-sm">
-                        {trainer.name.slice(0, 2).toUpperCase()}
-                      </div>
-                    )}
+                    <img
+                      src={getEffectiveAvatar(trainer.avatarUrl, trainer.gender, trainer.name)}
+                      alt={trainer.name}
+                      className="w-14 h-14 rounded-2xl object-cover border border-cyan-300 shadow-sm shrink-0 bg-slate-900"
+                    />
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="text-base font-bold text-slate-900">{trainer.name}</h3>
@@ -557,17 +552,11 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigateToPl
               className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4"
             >
               <div className="flex items-start gap-3.5">
-                {staffMember.avatarUrl ? (
-                  <img
-                    src={staffMember.avatarUrl}
-                    alt={staffMember.name}
-                    className="w-12 h-12 rounded-xl object-cover border border-amber-300 shadow-xs shrink-0"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center font-black text-amber-900 text-sm shrink-0">
-                    {staffMember.name.slice(0, 2).toUpperCase()}
-                  </div>
-                )}
+                <img
+                  src={getEffectiveAvatar(staffMember.avatarUrl, staffMember.gender, staffMember.name)}
+                  alt={staffMember.name}
+                  className="w-12 h-12 rounded-xl object-cover border border-amber-300 shadow-xs shrink-0 bg-slate-900"
+                />
                 <div className="space-y-1 flex-1">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 flex-wrap">

@@ -6,6 +6,7 @@ import { ExpirationCountdown } from '../common/ExpirationCountdown';
 import { localDb } from '../../db/localDatabase';
 import { AdminProfileModal } from '../admin/AdminProfileModal';
 import { LiveFloorRosterModal } from '../attendance/LiveFloorRosterModal';
+import { getEffectiveAvatar } from '../../utils/animatedAvatars';
 import {
   Users,
   TrendingUp,
@@ -117,17 +118,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       <div className="bg-white border border-slate-200 rounded-2xl p-6 relative overflow-hidden shadow-sm">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div className="flex items-center gap-4">
-            {currentUser?.avatarUrl ? (
-              <img
-                src={currentUser.avatarUrl}
-                alt={currentUser.name}
-                className="w-16 h-16 rounded-2xl object-cover border-2 border-amber-400 shadow-sm shrink-0"
-              />
-            ) : (
-              <div className="w-16 h-16 rounded-2xl bg-amber-100 border-2 border-amber-300 flex items-center justify-center text-2xl font-black text-amber-900 shadow-sm shrink-0">
-                {(currentUser?.name || 'Admin').slice(0, 2).toUpperCase()}
-              </div>
-            )}
+            <img
+              src={getEffectiveAvatar(currentUser?.avatarUrl, (currentUser as any)?.gender, currentUser?.name)}
+              alt={currentUser?.name || 'Admin'}
+              className="w-16 h-16 rounded-2xl object-cover border-2 border-amber-400 shadow-sm shrink-0 bg-slate-900"
+            />
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold uppercase tracking-wider mb-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
