@@ -1619,7 +1619,7 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                     <strong className="text-slate-900 font-bold">{member.workoutSlot || '06:00 AM - 07:00 AM'}</strong>
                   </div>
 
-                  {/* Helpdesk & App User Guide Card */}
+                  {/* App User Guide Card */}
                   <div className="mt-3 p-3.5 rounded-2xl bg-gradient-to-br from-amber-50 via-orange-50/40 to-white border border-amber-200 shadow-2xs space-y-2 text-left">
                     <div className="flex items-start gap-2.5">
                       <div className="p-2 rounded-xl bg-amber-500 text-slate-950 shadow-2xs shrink-0 mt-0.5">
@@ -1627,9 +1627,9 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-black text-xs text-slate-900">सहायता केंद्र एवं ऐप गाइड</span>
+                          <span className="font-black text-xs text-slate-900">ऐप फीचर्स एवं यूजर गाइड</span>
                           <span className="px-1.5 py-0.2 rounded bg-amber-200 text-amber-950 font-bold text-[9px] uppercase">
-                            Helpdesk
+                            App Guide
                           </span>
                         </div>
                         <p className="text-[10.5px] text-slate-600 mt-0.5 leading-snug">
@@ -1644,7 +1644,7 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                       className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-all active:scale-98 cursor-pointer"
                     >
                       <HelpCircle className="w-3.5 h-3.5" />
-                      <span>गाइड व सहायता केंद्र खोलें</span>
+                      <span>ऐप फीचर्स गाइड देखें</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
