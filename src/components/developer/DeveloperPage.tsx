@@ -19,7 +19,7 @@ import {
   KeyRound,
 } from 'lucide-react';
 import { LiveCameraModal } from '../common/LiveCameraModal';
-import { compressImageFile } from '../../utils/imageCompressor';
+import { compressImageFile, compressAvatarIcon } from '../../utils/imageCompressor';
 
 interface DeveloperPageProps {
   onBack?: () => void;
@@ -59,11 +59,7 @@ export const DeveloperPage: React.FC<DeveloperPageProps> = ({ onBack }) => {
     if (!file) return;
 
     try {
-      const compressed = await compressImageFile(file, {
-        maxWidth: 720,
-        maxHeight: 720,
-        quality: 0.75,
-      });
+      const compressed = await compressAvatarIcon(file);
       setDeveloperPhoto(compressed);
       localStorage.setItem('kf_developer_photo', compressed);
     } catch {
@@ -137,17 +133,17 @@ export const DeveloperPage: React.FC<DeveloperPageProps> = ({ onBack }) => {
                 <img
                   src={developerPhoto}
                   alt="Ashish Dey - Chief Executive Officer, Janpad Panchayat Baderajpur"
-                  className="w-36 h-36 sm:w-44 sm:h-44 rounded-3xl object-cover border-4 border-cyan-400/80 shadow-2xl"
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-cyan-400/90 shadow-xl"
                 />
               ) : (
-                <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-3xl bg-gradient-to-tr from-cyan-600 to-amber-500 p-1 shadow-2xl">
-                  <div className="w-full h-full bg-slate-900 rounded-[22px] flex flex-col items-center justify-center text-center p-3">
-                    <Building2 className="w-12 h-12 text-cyan-400 mb-2" />
-                    <span className="text-sm font-black tracking-wider uppercase text-amber-300">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-tr from-cyan-600 to-amber-500 p-0.5 shadow-xl">
+                  <div className="w-full h-full bg-slate-900 rounded-[14px] flex flex-col items-center justify-center text-center p-1.5">
+                    <Building2 className="w-6 h-6 text-cyan-400 mb-1" />
+                    <span className="text-[10px] font-black tracking-wider uppercase text-amber-300">
                       Ashish Dey
                     </span>
-                    <span className="text-[10px] text-slate-300 text-center leading-tight mt-1">
-                      Chief Executive Officer
+                    <span className="text-[8px] text-slate-300 text-center leading-tight">
+                      CEO
                     </span>
                   </div>
                 </div>

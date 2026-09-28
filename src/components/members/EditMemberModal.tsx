@@ -19,7 +19,7 @@ import {
   Award,
 } from 'lucide-react';
 import { LiveCameraModal } from '../common/LiveCameraModal';
-import { compressImageFile } from '../../utils/imageCompressor';
+import { compressImageFile, compressAvatarIcon } from '../../utils/imageCompressor';
 import { calculateFitnessMetrics, generateAutomaticCustomDiet } from '../../utils/fitnessCalculator';
 import { localDb } from '../../db/localDatabase';
 
@@ -100,11 +100,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ member, onClos
     if (!file) return;
 
     try {
-      const compressed = await compressImageFile(file, {
-        maxWidth: 720,
-        maxHeight: 720,
-        quality: 0.75,
-      });
+      const compressed = await compressAvatarIcon(file);
       setAvatarUrl(compressed);
     } catch {
       const reader = new FileReader();
@@ -228,12 +224,12 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ member, onClos
                 <img
                   src={avatarUrl}
                   alt={member.name}
-                  className="w-20 h-20 rounded-2xl object-cover border-2 border-cyan-500 shadow-md"
+                  className="w-16 h-16 rounded-2xl object-cover border-2 border-cyan-500 shadow-md"
                 />
               ) : (
-                <div className="w-20 h-20 rounded-2xl bg-slate-100 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 font-bold">
-                  <Camera className="w-7 h-7 mb-1 text-slate-400" />
-                  <span className="text-[10px]">फ़ोटो</span>
+                <div className="w-16 h-16 rounded-2xl bg-slate-100 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 font-bold">
+                  <Camera className="w-6 h-6 mb-0.5 text-slate-400" />
+                  <span className="text-[9px]">फ़ोटो</span>
                 </div>
               )}
             </div>
@@ -561,6 +557,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ member, onClos
         <LiveCameraModal
           isOpen={showCameraModal}
           title="सदस्य की लाइव फोटो लें"
+          guideType="face"
           onCapture={(capturedBase64) => {
             setAvatarUrl(capturedBase64);
             setShowCameraModal(false);

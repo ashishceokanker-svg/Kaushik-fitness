@@ -60,27 +60,39 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
         await videoRef.current.play();
       }
     } catch (err: unknown) {
-      console.warn('getUserMedia error:', err);
-      // If environment camera fails, try user camera
-      if (facing === 'environment') {
+      console.warn('getUserMedia ideal error, attempting fallback:', err);
+      // Try facingMode only without strict dimensions
+      try {
+        const fallback1 = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: facing },
+          audio: false,
+        });
+        setStream(fallback1);
+        if (videoRef.current) {
+          videoRef.current.srcObject = fallback1;
+          await videoRef.current.play();
+        }
+        return;
+      } catch {
+        // Try any available camera
         try {
-          const mediaStreamFallback = await navigator.mediaDevices.getUserMedia({
+          const fallback2 = await navigator.mediaDevices.getUserMedia({
             video: true,
             audio: false,
           });
-          setStream(mediaStreamFallback);
+          setStream(fallback2);
           if (videoRef.current) {
-            videoRef.current.srcObject = mediaStreamFallback;
+            videoRef.current.srcObject = fallback2;
             await videoRef.current.play();
           }
           return;
         } catch {
-          // Both failed
+          // All getUserMedia failed
         }
       }
 
       setCameraError(
-        'कैमरा शुरू नहीं हो सका (अनुमति नहीं मिली या कैमरा व्यस्त है)। कृपया नीचे दिए गए "मोबाइल कैमरा से फोटो लें" बटन का उपयोग करें।'
+        'कैमरा शुरू नहीं हो सका (अनुमति नहीं मिली या कैमरा व्यस्त है)। कृपया ऊपर या नीचे दिए गए "मोबाइल कैमरा से फोटो लें" बटन का उपयोग करें।'
       );
     }
   }, [stopStream]);
@@ -114,14 +126,32 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
 
     const video = videoRef.current;
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    const isAvatar = guideType === 'face';
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Draw video frame to canvas
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    if (isAvatar) {
+      // Icon square crop centered on face
+      const vw = video.videoWidth || 640;
+      const vh = video.videoHeight || 480;
+      const minSide = Math.min(vw, vh);
+      const sx = Math.round((vw - minSide) / 2);
+      const sy = Math.round((vh - minSide) / 2);
+      canvas.width = 240;
+      canvas.height = 240;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, 240, 240);
+      ctx.drawImage(video, sx, sy, minSide, minSide, 0, 0, 240, 240);
+    } else {
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    }
+
     const rawDataUrl = canvas.toDataURL('image/jpeg', 0.85);
     setCapturedPhoto(rawDataUrl);
   };
@@ -138,11 +168,13 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
   const handleAcceptPhoto = async () => {
     if (!capturedPhoto) return;
     setIsProcessing(true);
+    const isAvatar = guideType === 'face';
     try {
       const compressed = await compressDataUrl(capturedPhoto, {
-        maxWidth: 960,
-        maxHeight: 960,
-        quality: 0.75,
+        maxWidth: isAvatar ? 240 : 960,
+        maxHeight: isAvatar ? 240 : 960,
+        quality: isAvatar ? 0.85 : 0.75,
+        cropSquare: isAvatar,
       });
       onCapture(compressed);
       stopStream();
@@ -163,15 +195,17 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
     if (!file) return;
 
     setIsProcessing(true);
+    const isAvatar = guideType === 'face';
     try {
       const reader = new FileReader();
       reader.onload = async (ev) => {
         const raw = ev.target?.result as string;
         if (raw) {
           const compressed = await compressDataUrl(raw, {
-            maxWidth: 960,
-            maxHeight: 960,
-            quality: 0.75,
+            maxWidth: isAvatar ? 240 : 960,
+            maxHeight: isAvatar ? 240 : 960,
+            quality: isAvatar ? 0.85 : 0.75,
+            cropSquare: isAvatar,
           });
           onCapture(compressed);
           stopStream();
@@ -193,18 +227,30 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
         <div className="px-4 py-3 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between z-10">
           <div className="flex items-center gap-2">
             <Camera className="w-4 h-4 text-cyan-400" />
-            <span className="text-xs sm:text-sm font-bold text-white tracking-wide">{title}</span>
+            <span className="text-xs sm:text-sm font-bold text-white tracking-wide truncate max-w-[170px] sm:max-w-xs">{title}</span>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              stopStream();
-              onClose();
-            }}
-            className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => fallbackInputRef.current?.click()}
+              className="px-2.5 py-1 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/40 text-[11px] font-bold flex items-center gap-1 cursor-pointer active:scale-95 transition-all"
+              title="फोन के मूल कैमरा ऐप से तुरंत फोटो लें"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">सीधे फोन कैमरे से लें</span>
+              <span className="sm:hidden">कैमरा ऐप</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                stopStream();
+                onClose();
+              }}
+              className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Viewfinder / Preview Area */}

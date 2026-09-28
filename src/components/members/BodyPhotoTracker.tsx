@@ -23,6 +23,7 @@ import {
   Smartphone,
   Check,
   X,
+  Video,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { LiveCameraModal } from '../common/LiveCameraModal';
@@ -732,8 +733,9 @@ export const BodyPhotoTracker: React.FC<BodyPhotoTrackerProps> = ({ member, canE
               </div>
 
               <div
-                onClick={() => frontImg && setPreviewPhotoModal({ url: frontImg, title: 'सामने (Front View)' })}
-                className={`w-full aspect-[3/4] max-h-48 rounded-xl overflow-hidden bg-slate-200 border border-slate-300 flex items-center justify-center relative ${frontImg ? 'cursor-pointer group' : ''}`}
+                onClick={() => frontImg ? setPreviewPhotoModal({ url: frontImg, title: 'सामने (Front View)' }) : frontCameraRef.current?.click()}
+                className="w-full aspect-[3/4] max-h-48 rounded-xl overflow-hidden bg-slate-200 border-2 border-dashed border-slate-300 hover:border-cyan-500 flex items-center justify-center relative cursor-pointer group transition-all"
+                title={frontImg ? "बड़ा देखने के लिए क्लिक करें" : "फोटो खींचने के लिए टैप करें"}
               >
                 {frontImg ? (
                   <>
@@ -743,9 +745,10 @@ export const BodyPhotoTracker: React.FC<BodyPhotoTrackerProps> = ({ member, canE
                     </div>
                   </>
                 ) : (
-                  <div className="p-3 text-slate-400 text-xs">
-                    <Camera className="w-8 h-8 mx-auto mb-1 text-slate-400" />
-                    सामने खड़े होकर फोटो लें
+                  <div className="p-3 text-slate-500 text-xs flex flex-col items-center gap-1 group-hover:text-cyan-700">
+                    <Camera className="w-8 h-8 text-slate-400 group-hover:text-cyan-600 group-hover:scale-110 transition-all" />
+                    <span className="font-bold">फोटो लेने हेतु टैप करें</span>
+                    <span className="text-[10px] text-slate-400">या नीचे विकल्प चुनें</span>
                   </div>
                 )}
               </div>
@@ -767,21 +770,30 @@ export const BodyPhotoTracker: React.FC<BodyPhotoTrackerProps> = ({ member, canE
                 onChange={(e) => handleFileChange(e, setFrontImg)}
               />
 
-              {/* Dual Action Buttons: Live Camera + Gallery */}
-              <div className="w-full grid grid-cols-2 gap-1.5">
+              {/* 3 Action Buttons: Phone Camera, Live Guide, Gallery */}
+              <div className="w-full grid grid-cols-3 gap-1">
                 <button
                   type="button"
-                  onClick={() => setActiveCameraTarget('front')}
-                  className="py-2 px-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[11px] flex items-center justify-center gap-1 shadow-xs cursor-pointer active:scale-95 transition-all"
-                  title="लाइव कैमरा से फोटो लें"
+                  onClick={() => frontCameraRef.current?.click()}
+                  className="py-2 px-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-[11px] flex items-center justify-center gap-1 shadow-xs cursor-pointer transition-all"
+                  title="सीधे फोन कैमरे से फोटो खींचें"
                 >
                   <Camera className="w-3.5 h-3.5" />
                   <span>कैमरा</span>
                 </button>
                 <button
                   type="button"
+                  onClick={() => setActiveCameraTarget('front')}
+                  className="py-2 px-1 rounded-xl bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white font-bold text-[11px] flex items-center justify-center gap-1 shadow-xs cursor-pointer transition-all"
+                  title="लाइव बॉडी गाइड कैमरा"
+                >
+                  <Video className="w-3.5 h-3.5" />
+                  <span>लाइव</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => frontInputRef.current?.click()}
-                  className="py-2 px-2 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-bold text-[11px] flex items-center justify-center gap-1 shadow-xs cursor-pointer active:scale-95 border border-slate-300 transition-all"
+                  className="py-2 px-1 rounded-xl bg-white hover:bg-slate-100 active:scale-95 text-slate-800 font-bold text-[11px] flex items-center justify-center gap-1 shadow-xs cursor-pointer border border-slate-300 transition-all"
                   title="गैलरी / फ़ाइल से चुनें"
                 >
                   <Upload className="w-3.5 h-3.5 text-slate-600" />
@@ -810,8 +822,9 @@ export const BodyPhotoTracker: React.FC<BodyPhotoTrackerProps> = ({ member, canE
               </div>
 
               <div
-                onClick={() => backImg && setPreviewPhotoModal({ url: backImg, title: 'पीछे (Back View)' })}
-                className={`w-full aspect-[3/4] max-h-48 rounded-xl overflow-hidden bg-slate-200 border border-slate-300 flex items-center justify-center relative ${backImg ? 'cursor-pointer group' : ''}`}
+                onClick={() => backImg ? setPreviewPhotoModal({ url: backImg, title: 'पीछे (Back View)' }) : backCameraRef.current?.click()}
+                className="w-full aspect-[3/4] max-h-48 rounded-xl overflow-hidden bg-slate-200 border-2 border-dashed border-slate-300 hover:border-cyan-500 flex items-center justify-center relative cursor-pointer group transition-all"
+                title={backImg ? "बड़ा देखने के लिए क्लिक करें" : "फोटो खींचने के लिए टैप करें"}
               >
                 {backImg ? (
                   <>
@@ -821,9 +834,10 @@ export const BodyPhotoTracker: React.FC<BodyPhotoTrackerProps> = ({ member, canE
                     </div>
                   </>
                 ) : (
-                  <div className="p-3 text-slate-400 text-xs">
-                    <Camera className="w-8 h-8 mx-auto mb-1 text-slate-400" />
-                    पीठ व लैट्स की फोटो लें
+                  <div className="p-3 text-slate-500 text-xs flex flex-col items-center gap-1 group-hover:text-cyan-700">
+                    <Camera className="w-8 h-8 text-slate-400 group-hover:text-cyan-600 group-hover:scale-110 transition-all" />
+                    <span className="font-bold">फोटो लेने हेतु टैप करें</span>
+                    <span className="text-[10px] text-slate-400">या नीचे विकल्प चुनें</span>
                   </div>
                 )}
               </div>
@@ -845,21 +859,30 @@ export const BodyPhotoTracker: React.FC<BodyPhotoTrackerProps> = ({ member, canE
                 onChange={(e) => handleFileChange(e, setBackImg)}
               />
 
-              {/* Dual Action Buttons */}
-              <div className="w-full grid grid-cols-2 gap-1.5">
+              {/* 3 Action Buttons */}
+              <div className="w-full grid grid-cols-3 gap-1">
                 <button
                   type="button"
-                  onClick={() => setActiveCameraTarget('back')}
-                  className="py-2 px-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[11px] flex items-center justify-center gap-1 shadow-xs cursor-pointer active:scale-95 transition-all"
-                  title="लाइव कैमरा से फोटो लें"
+                  onClick={() => backCameraRef.current?.click()}
+                  className="py-2 px-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-[11px] flex items-center justify-center gap-1 shadow-xs cursor-pointer transition-all"
+                  title="सीधे फोन कैमरे से फोटो खींचें"
                 >
                   <Camera className="w-3.5 h-3.5" />
                   <span>कैमरा</span>
                 </button>
                 <button
                   type="button"
+                  onClick={() => setActiveCameraTarget('back')}
+                  className="py-2 px-1 rounded-xl bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white font-bold text-[11px] flex items-center justify-center gap-1 shadow-xs cursor-pointer transition-all"
+                  title="लाइव बॉडी गाइड कैमरा"
+                >
+                  <Video className="w-3.5 h-3.5" />
+                  <span>लाइव</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => backInputRef.current?.click()}
-                  className="py-2 px-2 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-bold text-[11px] flex items-center justify-center gap-1 shadow-xs cursor-pointer active:scale-95 border border-slate-300 transition-all"
+                  className="py-2 px-1 rounded-xl bg-white hover:bg-slate-100 active:scale-95 text-slate-800 font-bold text-[11px] flex items-center justify-center gap-1 shadow-xs cursor-pointer border border-slate-300 transition-all"
                   title="गैलरी / फ़ाइल से चुनें"
                 >
                   <Upload className="w-3.5 h-3.5 text-slate-600" />
@@ -888,8 +911,9 @@ export const BodyPhotoTracker: React.FC<BodyPhotoTrackerProps> = ({ member, canE
               </div>
 
               <div
-                onClick={() => leftImg && setPreviewPhotoModal({ url: leftImg, title: 'बाईं तरफ (Left Side View)' })}
-                className={`w-full aspect-[3/4] max-h-48 rounded-xl overflow-hidden bg-slate-200 border border-slate-300 flex items-center justify-center relative ${leftImg ? 'cursor-pointer group' : ''}`}
+                onClick={() => leftImg ? setPreviewPhotoModal({ url: leftImg, title: 'बाईं तरफ (Left Side View)' }) : leftCameraRef.current?.click()}
+                className="w-full aspect-[3/4] max-h-48 rounded-xl overflow-hidden bg-slate-200 border-2 border-dashed border-slate-300 hover:border-cyan-500 flex items-center justify-center relative cursor-pointer group transition-all"
+                title={leftImg ? "बड़ा देखने के लिए क्लिक करें" : "फोटो खींचने के लिए टैप करें"}
               >
                 {leftImg ? (
                   <>
@@ -899,9 +923,10 @@ export const BodyPhotoTracker: React.FC<BodyPhotoTrackerProps> = ({ member, canE
                     </div>
                   </>
                 ) : (
-                  <div className="p-3 text-slate-400 text-xs">
-                    <Camera className="w-8 h-8 mx-auto mb-1 text-slate-400" />
-                    बाएं प्रोफाइल का फोटो लें
+                  <div className="p-3 text-slate-500 text-xs flex flex-col items-center gap-1 group-hover:text-cyan-700">
+                    <Camera className="w-8 h-8 text-slate-400 group-hover:text-cyan-600 group-hover:scale-110 transition-all" />
+                    <span className="font-bold">फोटो लेने हेतु टैप करें</span>
+                    <span className="text-[10px] text-slate-400">या नीचे विकल्प चुनें</span>
                   </div>
                 )}
               </div>
@@ -923,21 +948,30 @@ export const BodyPhotoTracker: React.FC<BodyPhotoTrackerProps> = ({ member, canE
                 onChange={(e) => handleFileChange(e, setLeftImg)}
               />
 
-              {/* Dual Action Buttons */}
-              <div className="w-full grid grid-cols-2 gap-1.5">
+              {/* 3 Action Buttons */}
+              <div className="w-full grid grid-cols-3 gap-1">
                 <button
                   type="button"
-                  onClick={() => setActiveCameraTarget('left')}
-                  className="py-2 px-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[11px] flex items-center justify-center gap-1 shadow-xs cursor-pointer active:scale-95 transition-all"
-                  title="लाइव कैमरा से फोटो लें"
+                  onClick={() => leftCameraRef.current?.click()}
+                  className="py-2 px-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-[11px] flex items-center justify-center gap-1 shadow-xs cursor-pointer transition-all"
+                  title="सीधे फोन कैमरे से फोटो खींचें"
                 >
                   <Camera className="w-3.5 h-3.5" />
                   <span>कैमरा</span>
                 </button>
                 <button
                   type="button"
+                  onClick={() => setActiveCameraTarget('left')}
+                  className="py-2 px-1 rounded-xl bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white font-bold text-[11px] flex items-center justify-center gap-1 shadow-xs cursor-pointer transition-all"
+                  title="लाइव बॉडी गाइड कैमरा"
+                >
+                  <Video className="w-3.5 h-3.5" />
+                  <span>लाइव</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => leftInputRef.current?.click()}
-                  className="py-2 px-2 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-bold text-[11px] flex items-center justify-center gap-1 shadow-xs cursor-pointer active:scale-95 border border-slate-300 transition-all"
+                  className="py-2 px-1 rounded-xl bg-white hover:bg-slate-100 active:scale-95 text-slate-800 font-bold text-[11px] flex items-center justify-center gap-1 shadow-xs cursor-pointer border border-slate-300 transition-all"
                   title="गैलरी / फ़ाइल से चुनें"
                 >
                   <Upload className="w-3.5 h-3.5 text-slate-600" />
@@ -966,8 +1000,9 @@ export const BodyPhotoTracker: React.FC<BodyPhotoTrackerProps> = ({ member, canE
               </div>
 
               <div
-                onClick={() => rightImg && setPreviewPhotoModal({ url: rightImg, title: 'दाईं तरफ (Right Side View)' })}
-                className={`w-full aspect-[3/4] max-h-48 rounded-xl overflow-hidden bg-slate-200 border border-slate-300 flex items-center justify-center relative ${rightImg ? 'cursor-pointer group' : ''}`}
+                onClick={() => rightImg ? setPreviewPhotoModal({ url: rightImg, title: 'दाईं तरफ (Right Side View)' }) : rightCameraRef.current?.click()}
+                className="w-full aspect-[3/4] max-h-48 rounded-xl overflow-hidden bg-slate-200 border-2 border-dashed border-slate-300 hover:border-cyan-500 flex items-center justify-center relative cursor-pointer group transition-all"
+                title={rightImg ? "बड़ा देखने के लिए क्लिक करें" : "फोटो खींचने के लिए टैप करें"}
               >
                 {rightImg ? (
                   <>
@@ -977,9 +1012,10 @@ export const BodyPhotoTracker: React.FC<BodyPhotoTrackerProps> = ({ member, canE
                     </div>
                   </>
                 ) : (
-                  <div className="p-3 text-slate-400 text-xs">
-                    <Camera className="w-8 h-8 mx-auto mb-1 text-slate-400" />
-                    दाएं प्रोफाइल का फोटो लें
+                  <div className="p-3 text-slate-500 text-xs flex flex-col items-center gap-1 group-hover:text-cyan-700">
+                    <Camera className="w-8 h-8 text-slate-400 group-hover:text-cyan-600 group-hover:scale-110 transition-all" />
+                    <span className="font-bold">फोटो लेने हेतु टैप करें</span>
+                    <span className="text-[10px] text-slate-400">या नीचे विकल्प चुनें</span>
                   </div>
                 )}
               </div>
@@ -1001,21 +1037,30 @@ export const BodyPhotoTracker: React.FC<BodyPhotoTrackerProps> = ({ member, canE
                 onChange={(e) => handleFileChange(e, setRightImg)}
               />
 
-              {/* Dual Action Buttons */}
-              <div className="w-full grid grid-cols-2 gap-1.5">
+              {/* 3 Action Buttons */}
+              <div className="w-full grid grid-cols-3 gap-1">
                 <button
                   type="button"
-                  onClick={() => setActiveCameraTarget('right')}
-                  className="py-2 px-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[11px] flex items-center justify-center gap-1 shadow-xs cursor-pointer active:scale-95 transition-all"
-                  title="लाइव कैमरा से फोटो लें"
+                  onClick={() => rightCameraRef.current?.click()}
+                  className="py-2 px-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-[11px] flex items-center justify-center gap-1 shadow-xs cursor-pointer transition-all"
+                  title="सीधे फोन कैमरे से फोटो खींचें"
                 >
                   <Camera className="w-3.5 h-3.5" />
                   <span>कैमरा</span>
                 </button>
                 <button
                   type="button"
+                  onClick={() => setActiveCameraTarget('right')}
+                  className="py-2 px-1 rounded-xl bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white font-bold text-[11px] flex items-center justify-center gap-1 shadow-xs cursor-pointer transition-all"
+                  title="लाइव बॉडी गाइड कैमरा"
+                >
+                  <Video className="w-3.5 h-3.5" />
+                  <span>लाइव</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => rightInputRef.current?.click()}
-                  className="py-2 px-2 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-bold text-[11px] flex items-center justify-center gap-1 shadow-xs cursor-pointer active:scale-95 border border-slate-300 transition-all"
+                  className="py-2 px-1 rounded-xl bg-white hover:bg-slate-100 active:scale-95 text-slate-800 font-bold text-[11px] flex items-center justify-center gap-1 shadow-xs cursor-pointer border border-slate-300 transition-all"
                   title="गैलरी / फ़ाइल से चुनें"
                 >
                   <Upload className="w-3.5 h-3.5 text-slate-600" />

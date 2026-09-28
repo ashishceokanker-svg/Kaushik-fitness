@@ -8,6 +8,7 @@ export interface CompressionOptions {
   maxWidth?: number;
   maxHeight?: number;
   quality?: number; // 0.1 to 1.0 (default: 0.75)
+  cropSquare?: boolean; // When true, crops center 1:1 square for icon avatars
 }
 
 /**
@@ -17,7 +18,7 @@ export async function compressImageFile(
   file: File | Blob,
   options: CompressionOptions = {}
 ): Promise<string> {
-  const { maxWidth = 1000, maxHeight = 1000, quality = 0.75 } = options;
+  const { maxWidth = 1000, maxHeight = 1000, quality = 0.75, cropSquare = false } = options;
 
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -35,42 +36,47 @@ export async function compressImageFile(
       img.onerror = () => reject(new Error('इमेज लोड करने में त्रुटि'));
       img.onload = () => {
         try {
-          let { width, height } = img;
-
-          // Calculate proportional scale
-          if (width > maxWidth || height > maxHeight) {
-            const ratio = Math.min(maxWidth / width, maxHeight / height);
-            width = Math.round(width * ratio);
-            height = Math.round(height * ratio);
-          }
-
           const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-
           const ctx = canvas.getContext('2d');
           if (!ctx) {
-            // Fallback to original data URL if 2D context fails
             resolve(result);
             return;
           }
 
-          // Smooth rendering
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = 'high';
 
-          // White background for transparent PNGs converted to JPEG
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(0, 0, width, height);
+          if (cropSquare) {
+            const minSide = Math.min(img.width, img.height);
+            const sx = Math.round((img.width - minSide) / 2);
+            const sy = Math.round((img.height - minSide) / 2);
+            const targetDim = Math.min(maxWidth, maxHeight, minSide);
 
-          // Draw image scaled
-          ctx.drawImage(img, 0, 0, width, height);
+            canvas.width = targetDim;
+            canvas.height = targetDim;
 
-          // Export as JPEG with given quality
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, targetDim, targetDim);
+            ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, targetDim, targetDim);
+          } else {
+            let { width, height } = img;
+            if (width > maxWidth || height > maxHeight) {
+              const ratio = Math.min(maxWidth / width, maxHeight / height);
+              width = Math.round(width * ratio);
+              height = Math.round(height * ratio);
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+          }
+
           const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
           resolve(compressedDataUrl);
         } catch (err) {
-          // If canvas fails, fallback to original
           console.warn('[ImageCompressor] Canvas compression failed, using original:', err);
           resolve(result);
         }
@@ -94,28 +100,19 @@ export async function compressDataUrl(
     return dataUrl;
   }
 
-  // If already small (< 120KB), return directly
-  if (dataUrl.length < 160000) {
+  const { maxWidth = 1000, maxHeight = 1000, quality = 0.75, cropSquare = false } = options;
+
+  // Only bypass if neither resizing nor square crop is requested and size is small
+  if (!cropSquare && !options.maxWidth && !options.maxHeight && dataUrl.length < 160000) {
     return dataUrl;
   }
-
-  const { maxWidth = 1000, maxHeight = 1000, quality = 0.75 } = options;
 
   return new Promise((resolve) => {
     const img = new Image();
     img.onerror = () => resolve(dataUrl); // fallback
     img.onload = () => {
       try {
-        let { width, height } = img;
-        if (width > maxWidth || height > maxHeight) {
-          const ratio = Math.min(maxWidth / width, maxHeight / height);
-          width = Math.round(width * ratio);
-          height = Math.round(height * ratio);
-        }
-
         const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (!ctx) {
           resolve(dataUrl);
@@ -124,9 +121,34 @@ export async function compressDataUrl(
 
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, width, height);
-        ctx.drawImage(img, 0, 0, width, height);
+
+        if (cropSquare) {
+          const minSide = Math.min(img.width, img.height);
+          const sx = Math.round((img.width - minSide) / 2);
+          const sy = Math.round((img.height - minSide) / 2);
+          const targetDim = Math.min(maxWidth, maxHeight, minSide);
+
+          canvas.width = targetDim;
+          canvas.height = targetDim;
+
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, targetDim, targetDim);
+          ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, targetDim, targetDim);
+        } else {
+          let { width, height } = img;
+          if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+        }
 
         const compressed = canvas.toDataURL('image/jpeg', quality);
         resolve(compressed);
@@ -136,4 +158,25 @@ export async function compressDataUrl(
     };
     img.src = dataUrl;
   });
+}
+
+/**
+ * Standard Icon Size Avatar Compressor:
+ * Resizes to 240x240 px, 1:1 center-cropped icon square, lightweight JPEG (~25KB)
+ * Used for Member, Trainer, Admin, and Developer profile avatars.
+ */
+export async function compressAvatarIcon(
+  input: File | Blob | string
+): Promise<string> {
+  const avatarOptions: CompressionOptions = {
+    maxWidth: 240,
+    maxHeight: 240,
+    quality: 0.85,
+    cropSquare: true,
+  };
+
+  if (typeof input === 'string') {
+    return compressDataUrl(input, avatarOptions);
+  }
+  return compressImageFile(input, avatarOptions);
 }

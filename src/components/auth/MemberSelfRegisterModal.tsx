@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { LiveCameraModal } from '../common/LiveCameraModal';
-import { compressImageFile } from '../../utils/imageCompressor';
+import { compressImageFile, compressAvatarIcon } from '../../utils/imageCompressor';
 
 interface MemberSelfRegisterModalProps {
   onClose: () => void;
@@ -79,11 +79,7 @@ export const MemberSelfRegisterModal: React.FC<MemberSelfRegisterModalProps> = (
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const compressed = await compressImageFile(file, {
-        maxWidth: 720,
-        maxHeight: 720,
-        quality: 0.75,
-      });
+      const compressed = await compressAvatarIcon(file);
       setAvatarUrl(compressed);
     } catch {
       const reader = new FileReader();
@@ -231,12 +227,12 @@ export const MemberSelfRegisterModal: React.FC<MemberSelfRegisterModalProps> = (
                 <img
                   src={avatarUrl}
                   alt="Member Preview"
-                  className="w-20 h-20 rounded-2xl object-cover border-2 border-amber-500 shadow-md"
+                  className="w-16 h-16 rounded-2xl object-cover border-2 border-amber-500 shadow-md"
                 />
               ) : (
-                <div className="w-20 h-20 rounded-2xl bg-slate-100 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400">
-                  <Camera className="w-7 h-7 mb-1 text-slate-400" />
-                  <span className="text-[10px] font-bold">फ़ोटो</span>
+                <div className="w-16 h-16 rounded-2xl bg-slate-100 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400">
+                  <Camera className="w-6 h-6 mb-0.5 text-slate-400" />
+                  <span className="text-[9px] font-bold">फ़ोटो</span>
                 </div>
               )}
             </div>

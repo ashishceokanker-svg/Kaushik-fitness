@@ -11,7 +11,7 @@ import { BodyPhotoTracker } from '../members/BodyPhotoTracker';
 import { BodyVisualizer3D } from '../fitness/BodyVisualizer3D';
 import { generateWorkoutRoutine, generateAutomaticCustomDiet } from '../../utils/fitnessCalculator';
 import { localDb } from '../../db/localDatabase';
-import { compressImageFile } from '../../utils/imageCompressor';
+import { compressImageFile, compressAvatarIcon } from '../../utils/imageCompressor';
 import {
   Home,
   KeyRound,
@@ -81,11 +81,7 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const compressed = await compressImageFile(file, {
-        maxWidth: 720,
-        maxHeight: 720,
-        quality: 0.75,
-      });
+      const compressed = await compressAvatarIcon(file);
       setDeveloperPhoto(compressed);
       localStorage.setItem('kf_developer_photo', compressed);
     } catch {
@@ -231,7 +227,7 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
     if (!file || !trainer?.id) return;
     setTrainerPhotoUploading(true);
     try {
-      const compressed = await compressImageFile(file, { maxWidth: 600, maxHeight: 600, quality: 0.85 });
+      const compressed = await compressAvatarIcon(file);
       updateStaff(trainer.id, { avatarUrl: compressed });
       updateCurrentUserProfile({ avatarUrl: compressed });
       localDb.updateStaff(trainer.id, { avatarUrl: compressed });
@@ -287,7 +283,7 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
     if (!file || !member?.id) return;
     setMemberPhotoUploading(true);
     try {
-      const compressed = await compressImageFile(file, { maxWidth: 600, maxHeight: 600, quality: 0.85 });
+      const compressed = await compressAvatarIcon(file);
       updateMember(member.id, { avatarUrl: compressed });
       updateCurrentUserProfile({ avatarUrl: compressed });
       alert('📸 आपकी प्रोफ़ाइल फ़ोटो सफलतापूर्वक अपडेट हो गई!');
@@ -494,8 +490,8 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
   const renderDeveloperProfile = (onBack: () => void) => (
     <div className="space-y-3.5 w-full max-w-full overflow-x-hidden animate-in fade-in">
       <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-950 rounded-3xl p-5 text-white border border-slate-700 shadow-lg text-center space-y-3">
-        {/* Photo / Avatar */}
-        <div className="relative mx-auto w-24 h-24 rounded-2xl bg-gradient-to-tr from-cyan-600 to-amber-500 p-0.5 shadow-md">
+        {/* Photo / Avatar (Compact Icon Size) */}
+        <div className="relative mx-auto w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-600 to-amber-500 p-0.5 shadow-md">
           {developerPhoto ? (
             <img
               src={developerPhoto}
@@ -720,7 +716,7 @@ export const MobileAppSimulator: React.FC<MobileAppSimulatorProps> = ({ onExitMo
                     <img
                       src={getEffectiveAvatar(trainer.avatarUrl, (trainer as any)?.gender, trainer.name)}
                       alt={trainer.name}
-                      className="w-20 h-20 rounded-2xl object-cover border-4 border-white shadow-md bg-slate-900"
+                      className="w-16 h-16 rounded-2xl object-cover border-2 border-white shadow-md bg-slate-900"
                     />
                     <button
                       type="button"

@@ -15,7 +15,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { LiveCameraModal } from '../common/LiveCameraModal';
-import { compressImageFile } from '../../utils/imageCompressor';
+import { compressImageFile, compressAvatarIcon } from '../../utils/imageCompressor';
 
 interface AdminProfileModalProps {
   isOpen: boolean;
@@ -42,11 +42,7 @@ export const AdminProfileModal: React.FC<AdminProfileModalProps> = ({ isOpen, on
     if (!file) return;
 
     try {
-      const compressed = await compressImageFile(file, {
-        maxWidth: 720,
-        maxHeight: 720,
-        quality: 0.75,
-      });
+      const compressed = await compressAvatarIcon(file);
       setAvatarUrl(compressed);
     } catch {
       const reader = new FileReader();
@@ -127,10 +123,10 @@ export const AdminProfileModal: React.FC<AdminProfileModalProps> = ({ isOpen, on
                 <img
                   src={avatarUrl}
                   alt={name}
-                  className="w-20 h-20 rounded-2xl object-cover border-2 border-amber-500 shadow-md"
+                  className="w-16 h-16 rounded-2xl object-cover border-2 border-amber-500 shadow-md"
                 />
               ) : (
-                <div className="w-20 h-20 rounded-2xl bg-amber-100 border-2 border-amber-300 flex items-center justify-center text-xl font-black text-amber-900 shadow-inner">
+                <div className="w-16 h-16 rounded-2xl bg-amber-100 border-2 border-amber-300 flex items-center justify-center text-lg font-black text-amber-900 shadow-inner">
                   {(name || 'Admin').slice(0, 2).toUpperCase()}
                 </div>
               )}
